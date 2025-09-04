@@ -1,4 +1,63 @@
-{% extends  "base.html" %} {% block title %} Home Page{% endblock %}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Home Page{% endblock %}
+
 {% block content %} 
-<P>this is the home page</P>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <img src="{% static 'images/logo.png' %}" alt="Logo">
+    <h2>Company Name</h2>
+    <nav>
+      <a href="{% url 'courses' %}">Courses</a>
+      <a href="{% url 'classrooms' %}">Classrooms</a>
+      <a href="{% url 'students' %}">Students</a>
+      <a href="{% url 'report' %}">Report</a>
+      <a href="{% url 'enrolment' %}">Enrolment</a>
+    </nav>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <h1>Your Courses</h1>
+
+    <!-- Example course card -->
+    <div class="course-card published">
+      <div class="course-info">
+        <div class="course-meta">COURSE ID</div>
+        <h2>Course Title</h2>
+        <div class="course-meta">Status: Published</div>
+        <div class="course-meta">Created by: XXX on 1/6/2023</div>
+      </div>
+      <div class="course-meta">Last Updated: 1/6/2023</div>
+    </div>
+
+    <div class="course-card draft">
+      <div class="course-info">
+        <div class="course-meta">COURSE ID</div>
+        <h2>Course Title</h2>
+        <div class="course-meta">Status: Draft</div>
+        <div class="course-meta">Created by: XXX on 8/4/2023</div>
+      </div>
+      <div class="course-meta">Last Updated: 11/10/2023</div>
+    </div>
+
+    <div class="course-card archived">
+      <div class="course-info">
+        <div class="course-meta">COURSE ID</div>
+        <h2>Course Title</h2>
+        <div class="course-meta">Status: Archived</div>
+        <div class="course-meta">Created by: XXX on 1/3/2023</div>
+      </div>
+      <div class="dropdown">
+        <button>ACTIONS ▼</button>
+        <div class="dropdown-content">
+          <a href="#">Edit</a>
+          <a href="#">Delete</a>
+          <a href="#">View</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
 {% endblock %}
