@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Course{% endblock %}
+{% block content %}
+  <div class="container">
+    <h2>{{ action }} Course</h2>
+    <form method="POST">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">{{ action }}</button>
+      <a href="{% url 'instructor_dashboard' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+  </div>
+{% endblock %}
