@@ -17,24 +17,40 @@ from .models import Course, Student, StudentProfile  # note: import Student & St
 def home(request):
     return render(request, "home.html")
 
+# def student_login(request):
+#     if request.method == "POST":
+#         form = StudentLoginForm(request.POST)
+#         if form.is_valid():
+#             email = form.cleaned_data["email"]
+#             password = form.cleaned_data["password"]
+
+#             # Authenticate user
+#             user = authenticate(request, username=email, password=password)
+#             if user is not None:
+#                 login(request, user)  # Start session
+#                 return redirect("student_dashboard")
+#             else:
+#                 messages.error(request, "Invalid email or password.")
+#     else:
+#         form = StudentLoginForm()
+
+#     return render(request, "login.html", {"form": form})
 def student_login(request):
     if request.method == "POST":
-        form = StudentLoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data["email"]
-            password = form.cleaned_data["password"]
+        email = (request.POST.get("email") or "").strip().lower()
+        password = request.POST.get("password") or ""
 
-            # Authenticate user
-            user = authenticate(request, username=email, password=password)
-            if user is not None:
-                login(request, user)  # Start session
+        user = authenticate(request, username=email, password=password)
+        if user is None:
+            messages.error(request, "Invalid email or password.")
+        else:
+            # allow only Student accounts here
+            if getattr(user, "role", None) == "STUDENT":
+                login(request, user)
                 return redirect("student_dashboard")
             else:
-                messages.error(request, "Invalid email or password.")
-    else:
-        form = StudentLoginForm()
-
-    return render(request, "login.html", {"form": form})
+                messages.error(request, "This account is not a student. Please use the instructor login.")
+    return render(request, "login.html")
 
 # def student_signup(request):
 #     if request.method == "POST":
@@ -93,7 +109,7 @@ def student_signup(request):
     # GET → show the page
     return render(request, "signup.html")
 
-@login_required
+@login_required(login_url="/login/")
 def student_dashboard(request):
     student = request.user
     enrolled = student.courses_enroling.all()  # Assuming ManyToManyField 'students'
@@ -113,26 +129,40 @@ def enrol_course(request, course_id):
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
 
+# def instructor_login(request):
+#     if request.method == "POST":
+#         form = InstructorLoginForm(request.POST)
+#         if form.is_valid():
+#             email = form.cleaned_data["email"]
+#             password = form.cleaned_data["password"]
+
+#             # Authenticate user
+#             user = authenticate(request, username=email, password=password)
+#             if user is not None:
+#                 login(request, user)  # Start session
+#                 return redirect("instructor_dashboard")
+#             else:
+#                 messages.error(request, "Invalid email or password.")
+#     else:
+#         form = InstructorLoginForm()
+
+#     return render(request, "instructor_login.html", {"form": form})
 def instructor_login(request):
     if request.method == "POST":
-        form = InstructorLoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data["email"]
-            password = form.cleaned_data["password"]
+        email = (request.POST.get("email") or "").strip().lower()
+        password = request.POST.get("password") or ""
 
-            # Authenticate user
-            user = authenticate(request, username=email, password=password)
-            if user is not None:
-                login(request, user)  # Start session
+        user = authenticate(request, username=email, password=password)
+        if user is None:
+            messages.error(request, "Invalid email or password.")
+        else:
+            if getattr(user, "role", None) == "TEACHER":
+                login(request, user)
                 return redirect("instructor_dashboard")
-            else:
-                messages.error(request, "Invalid email or password.")
-    else:
-        form = InstructorLoginForm()
+            messages.error(request, "This account is not an instructor. Please use the student login.")
+    return render(request, "instructor_login.html")
 
-    return render(request, "instructor_login.html", {"form": form})
-
-@login_required
+@login_required(login_url="/i_login/")
 def instructor_dashboard(request):
     courses = Course.objects.filter(instructor=request.user)
     return render(request, "instructor_dashboard.html", {"courses": courses})
