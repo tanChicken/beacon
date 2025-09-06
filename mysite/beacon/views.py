@@ -1,19 +1,92 @@
-from django.shortcuts import render, HttpResponse
-from .models import TodoItem
+from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
+from .models import Course
+from .forms import CourseForm
+from django.contrib import messages
+from django.contrib.auth.models import User
 
 # Create your views here.
 def home(request):
     return render(request, "home.html")
 
-# def todos(request):
-#     items =  TodoItem.objects.all()
-#     return render(request, "todos.html", {"todos":items})
-
-def create_edit_course(request):
-    return render(request, "create_edit_courses.html")
-
 def login(request):
     return render(request, "login.html")
 
 def sign_up(request):
-    return render(request, "singup.html")
+    return render(request, "signup.html")
+
+def instructor_dashboard(request):
+    courses = Course.objects.all()
+    return render(request, "instructor_dashboard.html", {"courses": courses})
+
+def create_course(request):
+    if request.method == "POST":
+        form = CourseForm(request.POST)
+        if form.is_valid():
+            course = form.save(commit=False)
+            
+            dummy_instructor = User.objects.first()
+            if dummy_instructor:
+                course.instructor = dummy_instructor
+            else:
+                dummy_instructor = User.objects.create(username="test_instructor")
+                course.instructor = dummy_instructor
+
+            course.save()
+            messages.success(request, "Course created successfully!")
+            return redirect("instructor_dashboard")
+    else:
+        form = CourseForm()
+    return render(request, "course_form.html", {"form": form, "action": "Create"})
+
+def edit_course(request, pk):
+    # Pick dummy instructor if no login system yet
+    dummy_instructor = User.objects.first()
+    if not dummy_instructor:
+        dummy_instructor = User.objects.create(username="test_instructor")
+
+    course = get_object_or_404(Course, pk=pk, instructor=dummy_instructor)
+
+    if request.method == "POST":
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Course updated successfully!")
+            return redirect("instructor_dashboard")
+    else:
+        form = CourseForm(instance=course)
+
+    return render(request, "course_form.html", {"form": form, "action": "Update"})
+
+def delete_course(request, pk):
+    dummy_instructor = User.objects.first()
+    if not dummy_instructor:
+        dummy_instructor = User.objects.create(username="test_instructor")
+
+    course = get_object_or_404(Course, pk=pk, instructor=dummy_instructor)
+
+    if request.method == "POST":
+        course.delete()
+        messages.success(request, "Course deleted successfully!")
+        return redirect("instructor_dashboard")
+
+    return render(request, "course_confirm_delete.html", {"course": course})
+
+def student_dashboard(request):
+    # Use a dummy student until login is ready
+    dummy_student, created = User.objects.get_or_create(username="test_student")
+    enrolled = dummy_student.courses_enroling.all()
+    return render(request, "student_dashboard.html", {"courses": enrolled, "student": dummy_student})
+
+def enrolment_page(request):
+    dummy_student, created = User.objects.get_or_create(username="test_student")
+    # Only show active courses not already enrolled
+    available_courses = Course.objects.filter(status="active").exclude(students=dummy_student)
+    return render(request, "enrolment.html", {"available_courses": available_courses, "student": dummy_student})
+
+def enrol_course(request, course_id):
+    dummy_student, created = User.objects.get_or_create(username="test_student")
+    course = get_object_or_404(Course, id=course_id)
+    course.students.add(dummy_student)
+    messages.success(request, f"You have enrolled in {course.title}!")
+    return redirect("student_dashboard")
+
