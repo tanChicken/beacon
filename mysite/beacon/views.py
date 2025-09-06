@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Course
-from .forms import CourseForm
+from .forms import CourseForm, StudentLoginForm
 from django.contrib import messages
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from django.contrib.auth.decorators import login_required
 
 # Create your views here.
 def home(request):
@@ -17,6 +19,32 @@ def sign_up(request):
 def instructor_dashboard(request):
     courses = Course.objects.all()
     return render(request, "instructor_dashboard.html", {"courses": courses})
+
+
+# Mock user data
+MOCK_USERS = [
+    {"email": "test", "password": "1234"},
+    {"email": "hi", "password": "abcd"}
+]
+
+def student_login(request):
+    if request.method == "POST":
+        form = StudentLoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+            password = form.cleaned_data["password"]
+
+            # Authenticate user
+            user = authenticate(request, username=email, password=password)
+            if user is not None:
+                login(request, user)  # Start session
+                return redirect("student_dashboard")
+            else:
+                messages.error(request, "Invalid email or password.")
+    else:
+        form = StudentLoginForm()
+
+    return render(request, "login.html", {"form": form})
 
 def create_course(request):
     if request.method == "POST":
@@ -71,6 +99,7 @@ def delete_course(request, pk):
 
     return render(request, "course_confirm_delete.html", {"course": course})
 
+#@login_required
 def student_dashboard(request):
     # Use a dummy student until login is ready
     dummy_student, created = User.objects.get_or_create(username="test_student")
@@ -89,4 +118,8 @@ def enrol_course(request, course_id):
     course.students.add(dummy_student)
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
+
+def course_detail(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    return render(request, "course_details.html", {"course": course})
 
