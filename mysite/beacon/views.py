@@ -122,15 +122,16 @@ def student_dashboard(request):
 
 
 def enrolment_page(request):
-    dummy_student, created = User.objects.get_or_create(username="test_student")
-    # Only show active courses not already enrolled
-    available_courses = Course.objects.filter(status="active").exclude(students=dummy_student)
-    return render(request, "enrolment.html", {"available_courses": available_courses, "student": dummy_student})
+    enrolled = request.user.enrolled_courses.all()
+    available_courses = Course.objects.exclude(id__in=enrolled)
+    return render(request, "enrolment.html", {"available_courses": available_courses})
 
-def enrol_course(request, course_id):
-    dummy_student, created = User.objects.get_or_create(username="test_student")
-    course = get_object_or_404(Course, id=course_id)
-    course.students.add(dummy_student)
-    messages.success(request, f"You have enrolled in {course.title}!")
-    return redirect("student_dashboard")
-
+def enroll_course(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    user = request.user
+    if user not in course.students.all():
+        course.students.add(user)
+        messages.success(request, f"You have successfully enrolled in {course.name}!")
+    else:
+        messages.info(request, f"You are already enrolled in {course.name}.")
+    return redirect("student_dashboard")  # Replace with your dashboard URL name
