@@ -20,6 +20,8 @@ def instructor_dashboard(request):
     courses = Course.objects.filter(instructor=request.user)
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
+def i_login(request):
+    return render(request, "blank.html")
 
 # Mock user data
 MOCK_USERS = [
