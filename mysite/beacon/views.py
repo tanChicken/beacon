@@ -17,7 +17,7 @@ def sign_up(request):
     return render(request, "signup.html")
 
 def instructor_dashboard(request):
-    courses = Course.objects.all()
+    courses = Course.objects.filter(instructor=request.user)
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
 
@@ -122,10 +122,10 @@ def delete_course(request, pk):
 
 #@login_required
 def student_dashboard(request):
-    # Use a dummy student until login is ready
-    dummy_student, created = User.objects.get_or_create(username="test_student")
-    enrolled = dummy_student.courses_enroling.all()
-    return render(request, "student_dashboard.html", {"courses": enrolled, "student": dummy_student})
+    student = request.user
+    enrolled = student.courses_enroling.all()  # Assuming ManyToManyField 'students'
+    return render(request, "student_dashboard.html", {"courses": enrolled, "student": student})
+
 
 def enrolment_page(request):
     dummy_student, created = User.objects.get_or_create(username="test_student")
