@@ -6,6 +6,12 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
+from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
+from django.contrib.auth import get_user_model
+
+from .models import Course, Student, StudentProfile  # note: import Student & StudentProfile
+
 
 # Create your views here.
 def home(request):
@@ -30,19 +36,62 @@ def student_login(request):
 
     return render(request, "login.html", {"form": form})
 
+# def student_signup(request):
+#     if request.method == "POST":
+#         form = StudentSignupForm(request.POST)
+#         if form.is_valid():
+#             user = form.save(commit=False)
+#             user.username = form.cleaned_data['email']  # use email as username
+#             user.set_password(form.cleaned_data['password'])  # hash password
+#             user.save()
+#             messages.success(request, "Signup successful! Please log in.")
+#             return redirect("login")  # redirect to your login page
+#     else:
+#         form = StudentSignupForm()
+#     return render(request, "signup.html", {"form": form})
+
+
 def student_signup(request):
     if request.method == "POST":
-        form = StudentSignupForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.username = form.cleaned_data['email']  # use email as username
-            user.set_password(form.cleaned_data['password'])  # hash password
+        full_name = (request.POST.get("full_name") or "").strip()
+        email = (request.POST.get("email") or "").strip().lower()
+        password = request.POST.get("password") or ""
+        confirm = request.POST.get("confirm_password") or ""
+
+        if not full_name or not email or not password or not confirm:
+            messages.error(request, "Please fill in all fields.")
+            return render(request, "signup.html")
+
+        if password != confirm:
+            messages.error(request, "Passwords do not match.")
+            return render(request, "signup.html")
+
+        UserModel = get_user_model()
+        if UserModel.objects.filter(email=email).exists():
+            messages.error(request, "This email is already registered.")
+            return render(request, "signup.html")
+
+        first, *rest = full_name.split()
+        last = " ".join(rest) if rest else ""
+
+        with transaction.atomic():
+            # Create via Student proxy so role=STUDENT is set by your overridden save()
+            # and the Student post_save signal can create StudentProfile.
+            user = Student(username=email, email=email, first_name=first, last_name=last)
+            user.set_password(password)
             user.save()
-            messages.success(request, "Signup successful! Please log in.")
-            return redirect("login")  # redirect to your login page
-    else:
-        form = StudentSignupForm()
-    return render(request, "signup.html", {"form": form})
+
+            # Safety net: ensure profile exists even if the signal didn't run.
+            try:
+                _ = user.studentprofile
+            except StudentProfile.DoesNotExist:
+                StudentProfile.objects.create(user=user)
+
+        messages.success(request, "Signup successful! Please log in.")
+        return redirect("home")
+
+    # GET → show the page
+    return render(request, "signup.html")
 
 @login_required
 def student_dashboard(request):
