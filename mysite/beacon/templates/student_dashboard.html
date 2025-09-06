@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<style>
+  h1, h3 {
+    font-weight: bold;
+  }
+  h3 {
+    margin-top: 20px;
+  }
+  .list-group-item {
+    background-color: #ffffff; 
+    border: 2px solid #f5d0a9; 
+    border-radius: 5px;
+    margin-bottom: 10px;
+    padding: 15px;
+  }
+  .btn-primary {
+    background-color: #e67e22;
+    border-color: #e67e22;
+  }
+  .btn-primary:hover {
+    background-color: #cf711f;
+    border-color: #cf711f;
+  }
+  .btn-outline-secondary {
+    border-color: #e67e22;
+    color: #e67e22;
+  }
+  .btn-outline-secondary:hover {
+    background-color: #e67e22;
+    color: #fff;
+  }
+  .btn-danger {
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+  }
+  .btn-danger:hover {
+    background-color: #c0392b;
+    border-color: #c0392b;
+  }
+  .dropdown.mb-3 {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  }
+  .dropdown-toggle::after {
+    content: "▲";
+    border: none;
+    position: relative;
+    top: 0.2em;  
+  }
+  .dropdown.show .dropdown-toggle::after {
+    content: "▼"; /* changes when dropdown is open */
+  }
+  .custom-course-card {
+    border: 2px solid #f5d0a9; 
+    border-radius: 5px;
+    background-color: #ffffff; 
+    height: 220px; /* fixed uniform height */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card-title,
+  .course-meta {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* adds "..." if text too long */
+  }
+</style>
+
+<div class="container mt-4">
+  <h1>YOUR COURSES</h1>
+
+  <div class="d-flex justify-content-end mb-3">
+    <button id="listViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+    <button id="cardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+  </div>
+
+  <div id="listView">
+    <ul class="list-group mt-3">
+      {% for course in courses %}
+        <li class="list-group-item course-card" data-course-id="{{ course.pk }}">
+          <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+            <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
+            <div class="small text-muted">Instructor: {{ course.instructor.username }}</div>
+          </a>
+        </li>
+      {% empty %}
+        <li class="list-group-item text-muted">No courses created yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div id="cardView" class="row d-none">
+    {% for course in courses %}
+      <div class="col-md-4 mb-4">
+        <div class="card custom-course-card course-card" data-course-id="{{ course.pk }}">
+          <a href="#" class="stretched-link text-dark" style="text-decoration:none;"></a>
+          
+          <div class="card-body">
+            <div class="course-meta">{{ course.course_id }}</div>
+            <h5 class="card-title">{{ course.title }}</h5>
+            <p class="course-meta">Status: {{ course.status }}</p>
+            <hr>
+            <p class="course-meta">
+              Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}
+            </p>
+            <p class="course-meta">
+              Last Updated: {{ course.updated_at|date:"j/n/Y" }}
+            </p>
+          </div>
+
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No courses created yet.</p>
+    {% endfor %}
+  </div>
+
+  <script>
+    document.getElementById("listViewBtn").addEventListener("click", function() {
+      document.getElementById("listView").classList.remove("d-none");
+      document.getElementById("cardView").classList.add("d-none");
+    });
+
+    document.getElementById("cardViewBtn").addEventListener("click", function() {
+      document.getElementById("cardView").classList.remove("d-none");
+      document.getElementById("listView").classList.add("d-none");
+    });
+  </script>
+{% endblock %}

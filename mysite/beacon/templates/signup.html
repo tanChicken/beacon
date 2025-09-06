@@ -1,10 +1,10 @@
-{% extends  "base.html" %} {% block title %} Login Page{% endblock %}
+{% extends  "base.html" %} {% block title %} SIgn Up Page{% endblock %}
 {% block content %} 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
+  <title>Sign Up</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@
       align-items: center;
       height: 100vh;
     }
-    .login-box {
+    .signup-box {
       background: #fff;
       padding: 30px;
       border-radius: 12px;
@@ -35,14 +35,14 @@
     button {
       width: 100%;
       padding: 10px;
-      background: #f7c942;
+      background: #42c9f7;
       border: none;
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
     }
     button:hover {
-      background: #f5b700;
+      background: #00a4db;
     }
     p {
       text-align: center;
@@ -55,15 +55,27 @@
   </style>
 </head>
 <body>
-  <div class="login-box">
-    <h2>Account Login</h2>
-    <form action="{% url 'instructor_dashboard' %}" method="post">
+  <div class="signup-box">
+    <h2>Create Account</h2>
+    <form action="dashboard.html" method="post">
+      <input type="text" placeholder="Full Name" required>
       <input type="email" placeholder="Email Address" required>
       <input type="password" placeholder="Password" required>
-      <button type="submit">Login</button>
+      <input type="password" placeholder="Confirm Password" required>
+      <input type="hidden" name="role" id="role" value="">
+      <button type="submit">Sign Up</button>
     </form>
-    <p>Don’t have an account? <a href="{% url 'sign_up' %}">Sign Up</a></p>
+    <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
   </div>
+
+  <script>
+    // Capture role from query string and set hidden input
+    const params = new URLSearchParams(window.location.search);
+    const role = params.get("role");
+    if(role){
+      document.getElementById("role").value = role;
+    }
+  </script>
 </body>
 </html>
 {% endblock %}
