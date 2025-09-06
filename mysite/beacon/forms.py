@@ -33,6 +33,10 @@ class StudentLoginForm(forms.Form):
     email = forms.EmailField()
     password = forms.CharField(widget=forms.PasswordInput)
 
+class InstructorLoginForm(forms.Form):
+    email = forms.EmailField()
+    password = forms.CharField(widget=forms.PasswordInput)
+
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course

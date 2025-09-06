@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Course
-from .forms import CourseForm, StudentLoginForm, StudentSignupForm
+from .forms import CourseForm, InstructorLoginForm, StudentLoginForm, StudentSignupForm
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
@@ -17,7 +17,7 @@ def sign_up(request):
     return render(request, "signup.html")
 
 def instructor_dashboard(request):
-    courses = Course.objects.all()
+    courses = Course.objects.filter(instructor=request.user)
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
 
@@ -60,19 +60,32 @@ def student_signup(request):
         form = StudentSignupForm()
     return render(request, "signup.html", {"form": form})
 
+def instructor_login(request):
+    if request.method == "POST":
+        form = InstructorLoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+            password = form.cleaned_data["password"]
+
+            # Authenticate user
+            user = authenticate(request, username=email, password=password)
+            if user is not None:
+                login(request, user)  # Start session
+                return redirect("instructor_dashboard")
+            else:
+                messages.error(request, "Invalid email or password.")
+    else:
+        form = InstructorLoginForm()
+
+    return render(request, "login.html", {"form": form})
+
+
 def create_course(request):
     if request.method == "POST":
         form = CourseForm(request.POST)
         if form.is_valid():
             course = form.save(commit=False)
-            
-            dummy_instructor = User.objects.first()
-            if dummy_instructor:
-                course.instructor = dummy_instructor
-            else:
-                dummy_instructor = User.objects.create(username="test_instructor")
-                course.instructor = dummy_instructor
-
+            course.instructor = request.user
             course.save()
             messages.success(request, "Course created successfully!")
             return redirect("instructor_dashboard")
@@ -81,13 +94,7 @@ def create_course(request):
     return render(request, "course_form.html", {"form": form, "action": "Create"})
 
 def edit_course(request, pk):
-    # Pick dummy instructor if no login system yet
-    dummy_instructor = User.objects.first()
-    if not dummy_instructor:
-        dummy_instructor = User.objects.create(username="test_instructor")
-
-    course = get_object_or_404(Course, pk=pk, instructor=dummy_instructor)
-
+    course = get_object_or_404(Course, pk=pk, instructor=request.user)
     if request.method == "POST":
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
@@ -115,10 +122,10 @@ def delete_course(request, pk):
 
 #@login_required
 def student_dashboard(request):
-    # Use a dummy student until login is ready
-    dummy_student, created = User.objects.get_or_create(username="test_student")
-    enrolled = dummy_student.courses_enroling.all()
-    return render(request, "student_dashboard.html", {"courses": enrolled, "student": dummy_student})
+    student = request.user
+    enrolled = student.courses_enroling.all()  # Assuming ManyToManyField 'students'
+    return render(request, "student_dashboard.html", {"courses": enrolled, "student": student})
+
 
 def enrolment_page(request):
     dummy_student, created = User.objects.get_or_create(username="test_student")
