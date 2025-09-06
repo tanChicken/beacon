@@ -36,44 +36,12 @@ def instructor_dashboard(request):
     courses = Course.objects.filter(instructor=request.user)
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
-@login_required
-def create_course(request):
-    if request.method == "POST":
-        form = CourseForm(request.POST)
-        if form.is_valid():
-            course = form.save(commit=False)
-            course.instructor = request.user
-            course.save()
-            messages.success(request, "Course created successfully!")
-            return redirect("instructor_dashboard")
-    else:
-        form = CourseForm()
-    return render(request, "course_form.html", {"form": form, "action": "Create"})
 
-@login_required
-def edit_course(request, pk):
-    course = get_object_or_404(Course, pk=pk, instructor=request.user)
-    if request.method == "POST":
-        form = CourseForm(request.POST, instance=course)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Course updated successfully!")
-            return redirect("instructor_dashboard")
-    else:
-        form = CourseForm(instance=course)
-
-    return render(request, "course_form.html", {"form": form, "action": "Update"})
-
-@login_required
-def delete_course(request, pk):
-    course = get_object_or_404(Course, pk=pk, instructor=request.user)
-    if request.method == "POST":
-        course.delete()
-        messages.success(request, "Course deleted successfully!")
-        return redirect("instructor_dashboard")
-    return render(request, "course_confirm_delete.html", {"course": course})
-
-# Student
+# Mock user data
+MOCK_USERS = [
+    {"email": "test", "password": "1234"},
+    {"email": "hi", "password": "abcd"}
+]
 
 def student_login(request):
     if request.method == "POST":
