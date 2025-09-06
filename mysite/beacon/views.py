@@ -90,3 +90,7 @@ def enrol_course(request, course_id):
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
 
+def course_detail(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    return render(request, "course_details.html", {"course": course})
+
