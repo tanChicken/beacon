@@ -85,14 +85,7 @@ def create_course(request):
         form = CourseForm(request.POST)
         if form.is_valid():
             course = form.save(commit=False)
-            
-            dummy_instructor = User.objects.first()
-            if dummy_instructor:
-                course.instructor = dummy_instructor
-            else:
-                dummy_instructor = User.objects.create(username="test_instructor")
-                course.instructor = dummy_instructor
-
+            course.instructor = request.user
             course.save()
             messages.success(request, "Course created successfully!")
             return redirect("instructor_dashboard")
@@ -101,13 +94,7 @@ def create_course(request):
     return render(request, "course_form.html", {"form": form, "action": "Create"})
 
 def edit_course(request, pk):
-    # Pick dummy instructor if no login system yet
-    dummy_instructor = User.objects.first()
-    if not dummy_instructor:
-        dummy_instructor = User.objects.create(username="test_instructor")
-
-    course = get_object_or_404(Course, pk=pk, instructor=dummy_instructor)
-
+    course = get_object_or_404(Course, pk=pk, instructor=request.user)
     if request.method == "POST":
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
