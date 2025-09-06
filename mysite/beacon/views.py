@@ -107,17 +107,11 @@ def edit_course(request, pk):
     return render(request, "course_form.html", {"form": form, "action": "Update"})
 
 def delete_course(request, pk):
-    dummy_instructor = User.objects.first()
-    if not dummy_instructor:
-        dummy_instructor = User.objects.create(username="test_instructor")
-
-    course = get_object_or_404(Course, pk=pk, instructor=dummy_instructor)
-
+    course = get_object_or_404(Course, pk=pk, instructor=request.user)
     if request.method == "POST":
         course.delete()
         messages.success(request, "Course deleted successfully!")
         return redirect("instructor_dashboard")
-
     return render(request, "course_confirm_delete.html", {"course": course})
 
 #@login_required
