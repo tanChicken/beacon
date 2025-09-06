@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Course
-from .forms import CourseForm, StudentLoginForm
+from .forms import CourseForm, StudentLoginForm, StudentSignupForm
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
@@ -45,6 +45,20 @@ def student_login(request):
         form = StudentLoginForm()
 
     return render(request, "login.html", {"form": form})
+
+def student_signup(request):
+    if request.method == "POST":
+        form = StudentSignupForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.username = form.cleaned_data['email']  # use email as username
+            user.set_password(form.cleaned_data['password'])  # hash password
+            user.save()
+            messages.success(request, "Signup successful! Please log in.")
+            return redirect("login")  # redirect to your login page
+    else:
+        form = StudentSignupForm()
+    return render(request, "signup.html", {"form": form})
 
 def create_course(request):
     if request.method == "POST":
