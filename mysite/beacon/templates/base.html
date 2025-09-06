@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Django App{% endblock %}</title>
+    <title>{% block title %}Beacon{% endblock %}</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
     <style>
       body {
@@ -51,10 +51,12 @@
   </head>
   <body>
     <div class="sidebar">
-      <h2>My Django App</h2>
-      <a href="{% url 'home' %}">🏠 Home</a>
-      <a href="{% url 'instructor_dashboard' %}">📊 Dashboard</a>
-      <a href="{% url 'enrolment_page' %}"> Enrolment</a>
+      <h2>Beacon</h2>
+      <a href="{% url 'instructor_dashboard' %}">🏠 Courses</a>
+      <a href="{% url 'instructor_dashboard' %}">📊 Classrooms</a>
+      <a href="{% url 'enrolment_page' %}"> Students</a>
+      <a href="{% url 'enrolment_page' %}"> Reports</a>
+      <a href="{% url 'enrolment_page' %}"> Students</a>
 
       <hr>
       <h6 class="text-muted">📚 My Courses</h6>

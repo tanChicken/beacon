@@ -1,4 +1,81 @@
 {% extends  "base.html" %} {% block title %} SIgn Up Page{% endblock %}
 {% block content %} 
-<P>this is the sign up page</P>
-{% endblock %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .signup-box {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      width: 300px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #42c9f7;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #00a4db;
+    }
+    p {
+      text-align: center;
+      margin-top: 15px;
+    }
+    a {
+      color: #0077cc;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-box">
+    <h2>Create Account</h2>
+    <form action="dashboard.html" method="post">
+      <input type="text" placeholder="Full Name" required>
+      <input type="email" placeholder="Email Address" required>
+      <input type="password" placeholder="Password" required>
+      <input type="password" placeholder="Confirm Password" required>
+      <input type="hidden" name="role" id="role" value="">
+      <button type="submit">Sign Up</button>
+    </form>
+    <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
+  </div>
+
+  <script>
+    // Capture role from query string and set hidden input
+    const params = new URLSearchParams(window.location.search);
+    const role = params.get("role");
+    if(role){
+      document.getElementById("role").value = role;
+    }
+  </script>
+</body>
+</html>
+{% endblock %}
