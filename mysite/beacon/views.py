@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Course
-from .forms import CourseForm, StudentLoginForm, StudentSignupForm
+from .forms import CourseForm, InstructorLoginForm, StudentLoginForm, StudentSignupForm
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
@@ -59,6 +59,26 @@ def student_signup(request):
     else:
         form = StudentSignupForm()
     return render(request, "signup.html", {"form": form})
+
+def instructor_login(request):
+    if request.method == "POST":
+        form = InstructorLoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+            password = form.cleaned_data["password"]
+
+            # Authenticate user
+            user = authenticate(request, username=email, password=password)
+            if user is not None:
+                login(request, user)  # Start session
+                return redirect("instructor_dashboard")
+            else:
+                messages.error(request, "Invalid email or password.")
+    else:
+        form = InstructorLoginForm()
+
+    return render(request, "login.html", {"form": form})
+
 
 def create_course(request):
     if request.method == "POST":
