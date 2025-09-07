@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db.models.signals import post_save 
 from django.dispatch import receiver
+from django.utils import timezone
 
 # Create your models here.
 
@@ -17,12 +18,14 @@ class Course(models.Model):
     status = models.CharField(
         max_length=20,
         choices=[
-            ("draft", "Draft"),
             ("active", "Active"),
-            ("archived", "Archived"),
+            ("inactive", "Inactive"),
         ],
-        default="draft"
+        default="active"
     )
+    credit_points = 30
+    created_at = models.DateTimeField(default=timezone.now)  # when course is first created
+    updated_at = models.DateTimeField(auto_now=True)      # automatically updated on save
     instructor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="courses_teaching")
     students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="courses_enroling", blank=True)
 
