@@ -3,7 +3,6 @@
 {% block content %} 
 <h1>Welcome to BEACON!</h1>
 <P>this is the home page</P>
-<!-- <a href="{% url 'login' %}" class="btn btn-primary">Go to Instructor Dashboard</a> -->
-<a href="{% url 'instructor_dashboard' %}" class="btn btn-primary">Go to Instructor Dashboard</a>
-<a href="{% url 'student_dashboard' %}" class="btn btn-primary">Go to Student Dashboard</a>
+<a href="{% url 'instructor_login' %}" class="btn btn-primary">Go to Instructor Dashboard</a>
+<a href="{% url 'login' %}" class="btn btn-primary">Go to Student Dashboard</a>
 {% endblock %}
