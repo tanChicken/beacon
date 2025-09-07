@@ -3,13 +3,14 @@ from . import views
 
 urlpatterns = [
     path("", views.home, name='home'),
-    path("login/", views.login, name="login"),
-    path("sign_up/", views.sign_up, name="sign_up"),
-    path("instructor/", views.instructor_dashboard, name="instructor_dashboard"),
+    path("i_login/", views.instructor_login, name="instructor_login"),
+    path("login/", views.student_login, name="login"), # got problem
+    path("sign_up/", views.student_signup, name="sign_up"), 
+    path("instructor/", views.instructor_dashboard, name="instructor_dashboard"), #got problem need create course
     path('course/add/', views.create_course, name='create_course'),
     path("course/<int:pk>/edit/", views.edit_course, name="edit_course"),
     path("course/<int:pk>/delete/", views.delete_course, name="delete_course"),
-    path("student/", views.student_dashboard, name="student_dashboard"),
+    path("student/", views.student_dashboard, name="student_dashboard"), 
     path("enrollment/", views.enrolment_page, name="enrolment_page"),
     path("enroll/<int:course_id>/", views.enrol_course, name="enrol_course"),
     path('course/<int:pk>/', views.course_detail, name='course_detail'),

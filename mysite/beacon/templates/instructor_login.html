@@ -1,10 +1,10 @@
-{% extends  "base.html" %} {% block title %} SIgn Up Page{% endblock %}
+{% extends  "base.html" %} {% block title %} Instructor Login Page{% endblock %}
 {% block content %} 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign Up</title>
+  <title>Login</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@
       align-items: center;
       height: 100vh;
     }
-    .signup-box {
+    .login-box {
       background: #fff;
       padding: 30px;
       border-radius: 12px;
@@ -35,14 +35,14 @@
     button {
       width: 100%;
       padding: 10px;
-      background: #42c9f7;
+      background: #f7c942;
       border: none;
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
     }
     button:hover {
-      background: #00a4db;
+      background: #f5b700;
     }
     p {
       text-align: center;
@@ -55,27 +55,15 @@
   </style>
 </head>
 <body>
-  <div class="signup-box">
-    <h2>Create Account</h2>
-    <form action="{% url 'sign_up' %}" method="post">
+  <div class="login-box">
+    <h2>Instructor Login</h2>
+    <form action="{% url 'instructor_login' %}" method="post" novalidate>
       {% csrf_token %}
-      <input type="text"     name="full_name"        placeholder="Full Name" required>
-      <input type="email"    name="email"            placeholder="Email Address" required>
-      <input type="password" name="password"         placeholder="Password" required>
-      <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-      <button type="submit">Sign Up</button>
+      <input type="email"    name="email"    placeholder="Email Address" required autocomplete="email">
+      <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+      <button type="submit">Login as Instructor</button>
     </form>
-    <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
   </div>
-
-  <script>
-    // Capture role from query string and set hidden input
-    const params = new URLSearchParams(window.location.search);
-    const role = params.get("role");
-    if(role){
-      document.getElementById("role").value = role;
-    }
-  </script>
 </body>
 </html>
 {% endblock %}
