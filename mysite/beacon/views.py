@@ -203,6 +203,7 @@ def delete_course(request, pk):
         return redirect("instructor_dashboard")
     return render(request, "course_confirm_delete.html", {"course": course})
 
+@login_required
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     return render(request,"course_details.html", {"course":course})
