@@ -46,13 +46,13 @@
   right: 20px;
   }
   .dropdown-toggle::after {
-    content: "▲";
+    content: "▼";
     border: none;
     position: relative;
     top: 0.2em;  
   }
   .dropdown.show .dropdown-toggle::after {
-    content: "▼"; /* changes when dropdown is open */
+    content: "▲"; /* changes when dropdown is open */
   }
   .custom-course-card {
     border: 2px solid #f5d0a9; 
@@ -79,27 +79,22 @@
     <button id="cardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
   </div>
 
-  <div id="listView">
-    <ul class="list-group mt-3">
-      {% for course in courses %}
-        <li class="list-group-item course-card" data-course-id="{{ course.pk }}">
-          <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-            <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-            <div class="small text-muted">Instructor: {{ course.instructor.username }}</div>
-          </a>
-        </li>
-      {% empty %}
-        <li class="list-group-item text-muted">No courses created yet.</li>
-      {% endfor %}
-    </ul>
-  </div>
-
   <div id="cardView" class="row d-none">
     {% for course in courses %}
       <div class="col-md-4 mb-4">
-        <div class="card custom-course-card course-card" data-course-id="{{ course.pk }}">
-          <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;"></a>
+        <div class="card custom-course-card course-card position-relative" data-course-id="{{ course.pk }}">
           
+          <!-- Actions Dropdown at top-right -->
+          <div class="dropdown position-absolute" style="top:10px; right:10px;">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="actionsMenu{{ course.pk }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Actions
+            </button>
+            <div class="dropdown-menu" aria-labelledby="actionsMenu{{ course.pk }}">
+              <a class="dropdown-item" href="{% url 'edit_course' course.pk %}">Edit</a>
+              <a class="dropdown-item" href="{% url 'delete_course' course.pk %}">Delete</a>
+            </div>
+          </div>
+
           <div class="card-body">
             <div class="course-meta">{{ course.course_id }}</div>
             <h5 class="card-title">{{ course.title }}</h5>
@@ -112,7 +107,6 @@
               Last Updated: {{ course.updated_at|date:"j/n/Y" }}
             </p>
           </div>
-
         </div>
       </div>
     {% empty %}
@@ -120,17 +114,36 @@
     {% endfor %}
   </div>
 
-  <div class="d-flex justify-content-end">
-    <div class="dropdown mb-3">
-      <button class="btn btn-primary dropdown-toggle" type="button" id="actionsMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        ACTIONS
-      </button>
-      <div class="dropdown-menu" aria-labelledby="actionsMenu">
-        <a class="dropdown-item" href="{% url 'create_course' %}">Create Course</a>
-        <a class="dropdown-item" href="#" id="edit-course-action">Edit Course</a>
-        <a class="dropdown-item" href="#" id="delete-course-action">Delete Course</a>
-      </div>
-    </div>
+  <!-- List View version -->
+  <div id="listView">
+    <ul class="list-group mt-3">
+      {% for course in courses %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <a href="{% url 'course_detail' course.pk %}" class="text-dark" style="text-decoration:none;">
+              <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
+              <div class="small text-muted">Instructor: {{ course.instructor.username }}</div>
+            </a>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="actionsMenuList{{ course.pk }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Actions
+            </button>
+            <div class="dropdown-menu" aria-labelledby="actionsMenuList{{ course.pk }}">
+              <a class="dropdown-item" href="{% url 'edit_course' course.pk %}">Edit</a>
+              <a class="dropdown-item" href="{% url 'delete_course' course.pk %}">Delete</a>
+            </div>
+          </div>
+        </li>
+      {% empty %}
+        <li class="list-group-item text-muted">No courses created yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- Fixed Create Button at Bottom -->
+  <div class="fixed-bottom mb-3 d-flex justify-content-center">
+    <a href="{% url 'create_course' %}" class="btn btn-primary btn-lg">Create Course</a>
   </div>
 
   <script>
@@ -175,5 +188,6 @@
       });
     });
   </script>
+
 </div>
-{% endblock %}
+{% endblock %}

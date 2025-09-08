@@ -6,8 +6,58 @@
     <form method="POST">
       {% csrf_token %}
       {{ form.as_p }}
+
+    <hr>
+    <!-- Lesson Section -->
+    <div class="mt-4">
+      <h3>Lessons</h3>
+      <a href=# class="btn btn-success">+ Create Lesson</a>
+      <!-- Later: you can loop lessons here -->
+      <!-- {# Example: 
+      <ul>
+        {% for lesson in course.lessons.all %}
+          <li>{{ lesson.title }}</li>
+        {% empty %}
+          <li>No lessons yet.</li>
+        {% endfor %}
+      </ul>
+      #} -->
+    </div>
+
+    <!-- Student Section -->
+    <div class="mt-4">
+      <h3>Students</h3>
+      <a href=# class="btn btn-success">+ Add Student</a>
+      <!-- {# Example:
+      <ul>
+        {% for student in course.students.all %}
+          <li>{{ student.name }}</li>
+        {% empty %}
+          <li>No students enrolled yet.</li>
+        {% endfor %}
+      </ul>
+      #} -->
+    </div>
+
+    <!-- Classroom Section -->
+    <div class="mt-4">
+      <h3>Classrooms</h3>
+      <a href=# class="btn btn-success">+ Create Classroom</a>
+      <!-- {# Example:
+      <ul>
+        {% for classroom in course.classrooms.all %}
+          <li>{{ classroom.name }}</li>
+        {% empty %}
+          <li>No classrooms assigned yet.</li>
+        {% endfor %}
+      </ul>
+      #} -->
+    </div>
+
+    <div class="mt-5">
       <button type="submit" class="btn btn-primary">{{ action }}</button>
       <a href="{% url 'instructor_dashboard' %}" class="btn btn-secondary">Cancel</a>
+    </div>
     </form>
   </div>
 {% endblock %}
