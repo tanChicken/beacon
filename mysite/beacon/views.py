@@ -3,13 +3,12 @@ from .models import Course
 from .forms import CourseForm, InstructorLoginForm, StudentLoginForm, StudentSignupForm
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
-from django.contrib.auth import get_user_model
-from .permissions import instrcutor_required, student_required
+from .permissions import instructor_required, student_required, InstructorRequiredMixin, StudentRequiredMixin
+from django.views.generic import TemplateView
 
 from .models import Course, Student, StudentProfile  # note: import Student & StudentProfile
 
@@ -210,3 +209,9 @@ def delete_course(request, pk):
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     return render(request,"course_details.html", {"course":course})
+
+class InstructorHomeView(InstructorRequiredMixinrRequiredMixin, TemplateView):
+    template_name = "teacher/home.html"
+
+class StudentHomeView(StudentRequiredMixin, TemplateView):
+    template_name = "student/home.html"
