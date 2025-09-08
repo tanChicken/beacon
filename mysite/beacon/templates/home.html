@@ -1,8 +1,120 @@
-{% extends  "base.html" %} 
-{% block title %} Home Page {% endblock %}
-{% block content %} 
-<h1>Welcome to BEACON!</h1>
-<P>this is the home page</P>
-<a href="{% url 'instructor_dashboard' %}" class="btn btn-primary">Go to Instructor Dashboard</a>
-<a href="{% url 'student_dashboard' %}" class="btn btn-primary">Go to Student Dashboard</a>
-{% endblock %}
+{% extends "base.html" %}
+{% block title %} Home - Beacon {% endblock %}
+{% block content %}
+<div class="container">
+  <!-- Company Branding -->
+  <div class="brand-header">
+    <div class="logo">B</div>
+    <h1>Beacon</h1>
+  </div>
+  
+  <h2>Which one describes you?</h2>
+  <div class="role-cards">
+    <a href="{% url 'login' %}?role=student" class="card student">
+      <div class="card-icon">👨‍🎓</div>
+      <p>I'm a STUDENT.</p>
+    </a>
+    <a href="{% url 'login' %}?role=instructor" class="card teacher">
+      <div class="card-icon">👨‍🏫</div>
+      <p>I'm a TEACHER.</p>
+    </a>
+  </div>
+  <p class="note">Or <a href="{% url 'sign_up' %}">create an account</a></p>
+</div>
+
+<style>
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    text-align: center;
+  }
+  
+  .brand-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 40px;
+    gap: 15px;
+  }
+  
+  .brand-header .logo {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    color: #e67e22;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    border: 2px solid #e67e22;
+  }
+  
+  .brand-header h1 {
+    color: #e67e22;
+    font-size: 32px;
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  h2 {
+    margin-bottom: 30px;
+    color: #333;
+  }
+  
+  .role-cards {
+    display: flex;
+    gap: 30px;
+  }
+  
+  .card {
+    border: 2px solid #ccc;
+    padding: 30px;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 180px;
+    transition: 0.3s;
+    text-decoration: none;
+    color: black;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .card:hover {
+    transform: scale(1.05);
+    border-color: #e67e22;
+    text-decoration: none;
+    color: black;
+  }
+  
+  .card-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+  }
+  
+  .student {
+    background: #aef1f1;
+  }
+  
+  .teacher {
+    background: #f8d9a5;
+  }
+  
+  .note {
+    margin-top: 20px;
+  }
+  
+  .note a {
+    color: #e67e22;
+    text-decoration: none;
+  }
+  
+  .note a:hover {
+    text-decoration: underline;
+  }
+</style>
+{% endblock %}

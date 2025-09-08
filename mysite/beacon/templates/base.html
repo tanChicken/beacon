@@ -20,11 +20,14 @@
         top: 0;
         left: 0;
         width: 240px;
+        display: flex;
+        flex-direction: column;
       }
       .sidebar h2 {
         color: #e67e22;
-        font-size: 20px;
+        font-size: 22px;
         margin-bottom: 20px;
+        text-align: center;
       }
       .sidebar a {
         display: block;
@@ -38,6 +41,19 @@
         background-color: #e67e22;
         color: white;
       }
+      .logo {
+        width: 80px;
+        height: 80px;
+        background: #fff;
+        color: #e67e22;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0 auto 10px auto;
+      }
       .main-content {
         margin-left: 260px; /* leave space for sidebar */
         padding: 20px;
@@ -50,24 +66,46 @@
     </style>
   </head>
   <body>
+
+    {% comment %}
+      Sidebar should only be visible if user is authenticated 
+      AND not on home/login/signup pages
+    {% endcomment %}
+    {% if user.is_authenticated and request.resolver_match.url_name not in 'home login sign_up' %}
     <div class="sidebar">
+      <!-- Branding -->
+      <div class="logo">B</div>
       <h2>Beacon</h2>
-      <a href="{% url 'instructor_dashboard' %}">🏠 Courses</a>
-      <a href="{% url 'instructor_dashboard' %}">📊 Classrooms</a>
-      <a href="{% url 'enrolment_page' %}"> Students</a>
-      <a href="{% url 'enrolment_page' %}"> Reports</a>
-      <a href="{% url 'enrolment_page' %}"> Students</a>
+
+      <!-- Role-based links -->
+      {% if user.profile.role == "instructor" %}
+        <a href="{% url 'instructor_dashboard' %}">🏠 Courses</a>
+        <a href="{% url 'instructor_dashboard' %}">📊 Classroom</a>
+        <a href="{% url 'instructor_dashboard' %}">👨‍🎓 Students</a>
+        <a href="{% url 'instructor_dashboard' %}">📑 Reports</a>
+
+      {% elif user.profile.role == "student" %}
+        <a href="{% url 'student_dashboard' %}">📚 My Courses</a>
+        <a href="{% url 'enrolment_page' %}">📝 Enrollment</a>
+      {% endif %}
 
       <hr>
-      <h6 class="text-muted">📚 My Courses</h6>
-      {% if courses %}
-        {% for course in courses %}
-          <a href="{% url 'edit_course' course.pk %}">{{ course.course_id }} - {{ course.title }}</a>
-        {% endfor %}
-      {% else %}
-        <span class="text-muted small">No courses yet</span>
+
+      {% if user.profile.role == "student" %}
+        <!-- My Courses for students only -->
+        <h6 class="text-muted">📚 My Courses</h6>
+        {% if courses %}
+          {% for course in courses %}
+            <a href="{% url 'course_detail' course.pk %}">
+              {{ course.course_id }} - {{ course.title }}
+            </a>
+          {% endfor %}
+        {% else %}
+          <span class="text-muted small">No courses yet</span>
+        {% endif %}
       {% endif %}
     </div>
+    {% endif %}
 
     <div class="main-content">
       {% if messages %}
