@@ -210,7 +210,7 @@ def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     return render(request,"course_details.html", {"course":course})
 
-class InstructorHomeView(InstructorRequiredMixinrRequiredMixin, TemplateView):
+class InstructorHomeView(InstructorRequiredMixin, TemplateView):
     template_name = "teacher/home.html"
 
 class StudentHomeView(StudentRequiredMixin, TemplateView):
