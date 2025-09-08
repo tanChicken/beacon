@@ -9,6 +9,7 @@ from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from django.contrib.auth import get_user_model
+from .permissions import instrcutor_required, student_required
 
 from .models import Course, Student, StudentProfile  # note: import Student & StudentProfile
 
@@ -106,9 +107,10 @@ def student_signup(request):
         messages.success(request, "Signup successful! Please log in.")
         return redirect("home")
 
-    # GET → show the page
+    # GET -> show the page
     return render(request, "signup.html")
 
+@student_required
 @login_required(login_url="/login/")
 def student_dashboard(request):
     student = request.user
@@ -162,6 +164,7 @@ def instructor_login(request):
             messages.error(request, "This account is not an instructor. Please use the student login.")
     return render(request, "instructor_login.html")
 
+@instructor_required
 @login_required(login_url="/i_login/")
 def instructor_dashboard(request):
     courses = Course.objects.filter(instructor=request.user)

@@ -33,7 +33,7 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = "ADMIN", "Admin"
         STUDENT = "STUDENT", "Student"
-        TEACHER = "TEACHER", "Teacher"
+        INSTRUCTOR = "INSTRUCTOR", "Instructor"
 
     base_role = Role.ADMIN
 
@@ -70,31 +70,31 @@ class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     student_id = models.IntegerField(null=True, blank=True)
 
-class TeacherManager(models.Manager):
+class InstructorManager(models.Manager):
     def get_queryset(self, *args, **kwargs):
         results = super().get_queryset(*args, **kwargs)
-        return results.filter(role=User.Role.TEACHER)
+        return results.filter(role=User.Role.INSTRUCTOR)
 
-class Teacher(User):
-    base_role =  User.Role.TEACHER
+class Instructor(User):
+    base_role =  User.Role.INSTRUCTOR
 
-    teacher = TeacherManager()
+    instructor = InstructorManager()
 
     class Meta:
         proxy = True
 
     def welcome(self):
-        return "Only for teachers"       
+        return "Only for instructors"       
     
-class TeacherProfile(models.Model):
+class InstructorProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    teacher_id = models.IntegerField(null=True, blank=True)
+    instructor_id = models.IntegerField(null=True, blank=True)
 
 
-@receiver(post_save, sender=Teacher)
+@receiver(post_save, sender=Instructor)
 def create_user_profile(sender, instance, created, **kwargs):
-    if created and instance.role == "TEACHER":
-        TeacherProfile.objects.create(user=instance)
+    if created and instance.role == "INSTRUCTOR":
+        InstructorProfile.objects.create(user=instance)
     
 
 
