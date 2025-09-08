@@ -5,13 +5,19 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-# Create your models here.
 
 # demo
 class TodoItem(models.Model):
     title = models.CharField(max_length=200)
     completed = models.BooleanField(default=False)
 
+    def __str__(self):
+        return self.title
+
+
+# ------------------------
+# Course Model
+# ------------------------
 class Course(models.Model):
     course_id = models.CharField(max_length=20, unique=True)
     title = models.CharField(max_length=200)

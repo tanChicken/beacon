@@ -27,6 +27,7 @@
       .sidebar h2 {
         font-size: 20px;
         margin-bottom: 20px;
+        text-align: center;
       }
 
       .sidebar a {
@@ -80,7 +81,7 @@
         transition: margin-left 0.3s ease;
       }
 
-      /* 📱 Responsive for tablets & mobile */
+      /*  Responsive for tablets & mobile */
       @media (max-width: 991px) {
         .sidebar {
           width: 200px;
@@ -128,9 +129,10 @@
         <a href="#">Student</a>
         <a href="#">Report</a>
       {% else %}
-        <a href="{% url 'home' %}">🏠 Home</a>
+        <a href="{% url 'home' %}"> Home</a>
       {% endif %}
     </div>
+    {% endif %}
 
     <!-- Main Content -->
     <div class="main-content">

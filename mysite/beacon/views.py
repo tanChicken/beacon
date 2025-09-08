@@ -11,7 +11,6 @@ from django.contrib.auth import get_user_model
 from .models import Course, Student, StudentProfile, User  # note: import Student & StudentProfile
 
 
-# Create your views here.
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
 
@@ -324,7 +323,9 @@ def create_lesson(request, course_pk):
     else:
         form = LessonDetailForm()
 
-    return render(request, 'create_lesson.html', {
+    return render(
+        request, 'create_lesson.html',
+        {
         'form': form,
         'course': course,
         'action': 'Create'
