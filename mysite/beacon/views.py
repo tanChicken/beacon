@@ -9,7 +9,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from .permissions import instructor_required, student_required, InstructorRequiredMixin, StudentRequiredMixin
 from django.views.generic import TemplateView
-from django.http import HttpResponse
 
 from .models import Course, Student, StudentProfile  # note: import Student & StudentProfile
 
@@ -216,11 +215,3 @@ class InstructorHomeView(InstructorRequiredMixin, TemplateView):
 
 class StudentHomeView(StudentRequiredMixin, TemplateView):
     template_name = "student/home.html"
-
-@instructor_required
-def instructor_only(request):
-    return HttpResponse("Instructor page")
-
-@student_required
-def student_only(request):
-    return HttpResponse
