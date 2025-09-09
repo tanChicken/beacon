@@ -31,7 +31,7 @@ def student_login(request):
                 return redirect("student_dashboard")
             else:
                 messages.error(request, "This account is not a student. Please use the instructor login.")
-    return render(request, "login.html")
+    return render(request, "login.html"), {"hide_sidebar": True}
 
 def student_signup(request):
     if request.method == "POST":
@@ -172,7 +172,7 @@ def instructor_login(request):
                 login(request, user)
                 return redirect("instructor_dashboard")
             messages.error(request, "This account is not an instructor. Please use the student login.")
-    return render(request, "instructor_login.html")
+    return render(request, "instructor_login.html"), {"hide_sidebar": True}
 
 @login_required(login_url="/i_login/")
 def instructor_dashboard(request):
