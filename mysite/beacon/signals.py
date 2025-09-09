@@ -7,10 +7,9 @@ from django.apps import apps
 def create_default_groups(sender, **kwargs):
     if sender.name == "beacon":
         instructor_group, _ = Group.objects.get_or_create(name = "Instructors")
-        students_group, _ = Groups.objects.get_or_create(name = "Students")
+        students_group, _ = Group.objects.get_or_create(name = "Students")
 
         course_model = apps.get_model("beacon", "Course")
         perms = Permission.objects.filter(content_type__app_label = "beacon", content_type__model = "course")
         instructor_group.permissions.set(perms)
 
-        
