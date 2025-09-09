@@ -15,7 +15,14 @@ from .models import Course, Student, StudentProfile  # note: import Student & St
 
 # Create your views here.
 def home(request):
-    return render(request, "home.html")
+    return render(request, "home.html", {"hide_sidebar": True})
+
+
+# ------------------------
+# Login
+# ------------------------
+def login_view(request):
+    return render(request, "home.html", {"hide_sidebar": True})
 
 # def student_login(request):
 #     if request.method == "POST":
@@ -50,7 +57,7 @@ def student_login(request):
                 return redirect("student_dashboard")
             else:
                 messages.error(request, "This account is not a student. Please use the instructor login.")
-    return render(request, "login.html")
+    return render(request, "login.html", {"hide_sidebar": True})
 
 # def student_signup(request):
 #     if request.method == "POST":
@@ -106,10 +113,16 @@ def student_signup(request):
         messages.success(request, "Signup successful! Please log in.")
         return redirect("login")
 
-    # GET -> show the page
-    return render(request, "signup.html")
+    # GET → show the page
+    return render(request, "signup.html", {"hide_sidebar": True})
 
-@student_required
+
+# ------------------------
+# Instructor Signup
+# ------------------------
+def instructor_signup(request):
+    return render(request, "signup.html", {"hide_sidebar": True})
+
 @login_required(login_url="/login/")
 def student_dashboard(request):
     student = request.user
@@ -208,10 +221,4 @@ def delete_course(request, pk):
 @login_required
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
-    return render(request,"course_details.html", {"course":course})
-
-class InstructorHomeView(InstructorRequiredMixin, TemplateView):
-    template_name = "instructor/home.html"
-
-class StudentHomeView(StudentRequiredMixin, TemplateView):
-    template_name = "student/home.html"
+    return render(request,"course_details.html", {"course":course}, {"hide_sidebar": True})
