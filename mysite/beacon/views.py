@@ -3,12 +3,12 @@ from .models import Course
 from .forms import CourseForm, InstructorLoginForm, StudentLoginForm, StudentSignupForm
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
-from django.contrib.auth import get_user_model
+from .permissions import instructor_required, student_required, InstructorRequiredMixin, StudentRequiredMixin
+from django.views.generic import TemplateView
 
 from .models import Course, Student, StudentProfile  # note: import Student & StudentProfile
 
@@ -40,7 +40,7 @@ def student_login(request):
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
-        user = authenticate(request, username=email, password=password)
+        user = authenticate(request, email=email, password=password)
         if user is None:
             messages.error(request, "Invalid email or password.")
         else:
@@ -93,7 +93,7 @@ def student_signup(request):
         with transaction.atomic():
             # Create via Student proxy so role=STUDENT is set by your overridden save()
             # and the Student post_save signal can create StudentProfile.
-            user = Student(username=email, email=email, first_name=first, last_name=last)
+            user = Student(username=full_name, email=email, first_name=first, last_name=last)
             user.set_password(password)
             user.save()
 
@@ -106,9 +106,10 @@ def student_signup(request):
         messages.success(request, "Signup successful! Please log in.")
         return redirect("login")
 
-    # GET → show the page
+    # GET -> show the page
     return render(request, "signup.html")
 
+@student_required
 @login_required(login_url="/login/")
 def student_dashboard(request):
     student = request.user
@@ -152,16 +153,17 @@ def instructor_login(request):
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
-        user = authenticate(request, username=email, password=password)
+        user = authenticate(request, email=email, password=password)
         if user is None:
             messages.error(request, "Invalid email or password.")
         else:
-            if getattr(user, "role", None) == "TEACHER":
+            if getattr(user, "role", None) == "INSTRUCTOR":
                 login(request, user)
                 return redirect("instructor_dashboard")
             messages.error(request, "This account is not an instructor. Please use the student login.")
     return render(request, "instructor_login.html")
 
+@instructor_required
 @login_required(login_url="/i_login/")
 def instructor_dashboard(request):
     courses = Course.objects.filter(instructor=request.user)
@@ -207,3 +209,9 @@ def delete_course(request, pk):
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     return render(request,"course_details.html", {"course":course})
+
+class InstructorHomeView(InstructorRequiredMixin, TemplateView):
+    template_name = "instructor/home.html"
+
+class StudentHomeView(StudentRequiredMixin, TemplateView):
+    template_name = "student/home.html"
