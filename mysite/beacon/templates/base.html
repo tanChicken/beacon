@@ -8,12 +8,12 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
     <style>
       body {
-        background-color: #fdfaf6; 
+        background-color: #fdfaf6;
         font-family: Arial, sans-serif;
       }
       .sidebar {
         height: 100vh;
-        background-color: #fdf1e5; 
+        background-color: #fdf1e5;
         border-right: 1px solid #f5d0a9;
         padding: 20px;
         position: fixed;
@@ -55,7 +55,6 @@
         margin: 0 auto 10px auto;
       }
       .main-content {
-        margin-left: 260px; /* leave space for sidebar */
         padding: 20px;
       }
       .alert-info {
@@ -67,55 +66,65 @@
   </head>
   <body>
 
-    {% comment %}
-      Sidebar should only be visible if user is authenticated 
-      AND not on home/login/signup pages
-    {% endcomment %}
-    {% if user.is_authenticated and request.resolver_match.url_name not in 'home login sign_up' %}
-    <div class="sidebar">
-      <!-- Branding -->
-      <div class="logo">B</div>
-      <h2>Beacon</h2>
+    {# Sidebar hidden on home/login/signup. Show for other authenticated pages. #}
+    {% if user.is_authenticated and request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'sign_up' and request.resolver_match.url_name != 'home' %}
+      <div class="sidebar">
+        <div class="logo">B</div>
+        <h2>Beacon</h2>
 
-      <!-- Role-based links -->
-      {% if user.profile.role == "instructor" %}
-        <a href="{% url 'instructor_dashboard' %}">🏠 Courses</a>
-        <a href="{% url 'instructor_dashboard' %}">📊 Classroom</a>
-        <a href="{% url 'instructor_dashboard' %}">👨‍🎓 Students</a>
-        <a href="{% url 'instructor_dashboard' %}">📑 Reports</a>
+        {# Normalize role into 'role' variable #}
+        {% with user.profile.role|default:''|lower as role %}
+          <!-- Optional debug: uncomment to inspect role in page source -->
+          <!-- DEBUG role={{ role }} -->
 
-      {% elif user.profile.role == "student" %}
-        <a href="{% url 'student_dashboard' %}">📚 My Courses</a>
-        <a href="{% url 'enrolment_page' %}">📝 Enrollment</a>
-      {% endif %}
+          {# Instructor roles #}
+          {% if role == 'instructor' or role == 'teacher' or role == 'lecturer' %}
+            <a href="{% url 'instructor_dashboard' %}">🏠 Courses</a>
+            <a href="{% url 'instructor_classroom' %}">📊 Classroom</a>
+            <a href="{% url 'instructor_students' %}">👨‍🎓 Students</a>
+            <a href="{% url 'instructor_reports' %}">📑 Reports</a>
 
-      <hr>
+          {# Student roles #}
+          {% elif role == 'student' or role == 'learner' %}
+            <a href="{% url 'student_dashboard' %}">📚 My Courses</a>
+            <a href="{% url 'enrolment_page' %}">📝 Enrollment</a>
 
-      {% if user.profile.role == "student" %}
-        <!-- My Courses for students only -->
-        <h6 class="text-muted">📚 My Courses</h6>
-        {% if courses %}
-          {% for course in courses %}
-            <a href="{% url 'course_detail' course.pk %}">
-              {{ course.course_id }} - {{ course.title }}
-            </a>
-          {% endfor %}
-        {% else %}
-          <span class="text-muted small">No courses yet</span>
-        {% endif %}
-      {% endif %}
-    </div>
+          {# Fallback for unknown roles #}
+          {% else %}
+            <a href="{% url 'profile' %}">⚙️ Complete profile</a>
+            <span class="small text-muted">No role-specific links</span>
+          {% endif %}
+
+          <hr>
+
+          {# Show course list only to students #}
+          {% if role == 'student' or role == 'learner' %}
+            <h6 class="text-muted">📚 My Courses</h6>
+            {% if courses %}
+              {% for course in courses %}
+                <a href="{% url 'course_detail' course.pk %}">
+                  {{ course.course_id }} - {{ course.title }}
+                </a>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted small">No courses yet</span>
+            {% endif %}
+          {% endif %}
+
+        {% endwith %}
+      </div>
     {% endif %}
 
-    <div class="main-content">
-      {% if messages %}
-        {% for message in messages %}
-          <div class="alert alert-info">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
+    {# Main content: shift if sidebar present #}
+    {% if user.is_authenticated and request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'sign_up' and request.resolver_match.url_name != 'home' %}
+      <div class="main-content" style="margin-left:260px;">
+    {% else %}
+      <div class="main-content" style="margin-left:0;">
+    {% endif %}
 
-      {% block content %}{% endblock %}
-    </div>
+        {% block content %}{% endblock %}
+
+      </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>

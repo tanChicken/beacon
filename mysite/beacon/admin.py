@@ -1,32 +1,33 @@
 from django.contrib import admin
-from .models import TodoItem, User, Course
+from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from .models import TodoItem, Profile, Course
 
-
-# Register your models here.
+# Register TodoItem
 admin.site.register(TodoItem)
-@admin.register(User)
-class UserAdmin(DjangoUserAdmin):
-    # show custom field in the User admin
-    fieldsets = DjangoUserAdmin.fieldsets + (
-        ("Role", {"fields": ("role",)}),
-    )
-    add_fieldsets = DjangoUserAdmin.add_fieldsets + (
-        (None, {
-            "classes": ("wide",),
-            "fields": ("username", "password1", "password2", "role"),
-        }),
-    )
-    list_display = ("username", "email", "first_name", "last_name", "role", "is_staff")
-    list_filter = DjangoUserAdmin.list_filter + ("role",)
 
+# Register Profile and show role inline with User
+class ProfileInline(admin.StackedInline):
+    model = Profile
+    can_delete = False
+    verbose_name_plural = "Profile"
+
+class CustomUserAdmin(DjangoUserAdmin):
+    inlines = (ProfileInline,)
+    list_display = ("username", "email", "first_name", "last_name", "is_staff", "get_role")
+
+    def get_role(self, obj):
+        return obj.profile.role if hasattr(obj, "profile") else "-"
+    get_role.short_description = "Role"
+
+# Unregister the default User and re-register with Profile inline
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)
+
+# Register Course
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     list_display = ("course_id", "title", "status", "instructor")
     list_filter = ("status",)
     search_fields = ("course_id", "title")
-    filter_horizontal = ("students",)  # nicer M2M widget
-
-# @admin.register(TodoItem)
-# class TodoItemAdmin(admin.ModelAdmin):
-#     list_display = ("title", "completed")
+    filter_horizontal = ("students",)
