@@ -1,8 +1,118 @@
-{% extends  "base.html" %} 
-{% block title %} Home Page {% endblock %}
-{% block content %} 
-<h1>Welcome to BEACON!</h1>
-<P>this is the home page</P>
-<a href="{% url 'instructor_login' %}" class="btn btn-primary">Go to Instructor Dashboard</a>
-<a href="{% url 'login' %}" class="btn btn-primary">Go to Student Dashboard</a>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Page</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .container {
+      text-align: center;
+    }
+    
+    .question-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 60px;
+      letter-spacing: 2px;
+    }
+    
+    .role-cards {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+    }
+    
+    .role-card {
+      width: 200px;
+      height: 250px;
+      border: 3px solid #999;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .student-card {
+      background: #a8d8d8;
+    }
+    
+    .teacher-card {
+      background: #d8b8a8;
+    }
+    
+    .role-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    
+    .role-icon {
+      width: 90px;
+      height: 90px;
+      border: 2px solid #666;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 25px;
+      background: white;
+    }
+    
+    .student-icon {
+      font-size: 28px;
+    }
+    
+    .teacher-icon {
+      font-size: 24px;
+    }
+    
+    .role-text {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="question-title">WHICH ONE DESCRIBES YOU?</h1>
+    
+    <div class="role-cards">
+      <a href="{% url 'login' %}" class="role-card student-card">
+        <div class="role-icon">
+          <div class="student-icon">🎓</div>
+        </div>
+        <div class="role-text">I'm a student.</div>
+      </a>
+      
+      <a href="{% url 'instructor_login' %}" class="role-card teacher-card">
+        <div class="role-icon">
+          <div class="teacher-icon">👨‍🏫</div>
+        </div>
+        <div class="role-text">I'm a teacher.</div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

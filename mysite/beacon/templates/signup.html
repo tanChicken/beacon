@@ -1,71 +1,204 @@
-{% extends  "base.html" %} {% block title %} SIgn Up Page{% endblock %}
-{% block content %} 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign Up</title>
+  <title>Sign Up Page</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
       font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      background: #f0f0f0;
       height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .signup-box {
-      background: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      width: 300px;
+    
+    .signup-container {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      border: 2px solid #999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 450px;
     }
-    h2 {
+    
+    .signup-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
       text-align: center;
+    }
+    
+    .signup-subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .form-row {
+      display: flex;
+      gap: 20px;
       margin-bottom: 20px;
     }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+    
+    .form-group {
+      margin-bottom: 20px;
     }
-    button {
+    
+    .form-group.half {
+      flex: 1;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    
+    .form-input {
       width: 100%;
-      padding: 10px;
-      background: #42c9f7;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
+      padding: 12px;
+      border: 2px solid #999;
+      border-radius: 4px;
+      font-size: 14px;
+      background: #a8d8d8;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #666;
+      background: #95c8c8;
+    }
+    
+    .title-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .title-label {
+      font-size: 14px;
+      color: #333;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    
+    .title-option {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .title-radio {
+      width: 15px;
+      height: 15px;
+    }
+    
+    .title-text {
+      font-size: 14px;
+      color: #333;
+    }
+    
+    .signup-btn {
+      background: #a8d8d8;
+      border: 2px solid #999;
+      border-radius: 4px;
+      padding: 12px 30px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
       cursor: pointer;
+      width: 100%;
+      margin-top: 20px;
+      transition: all 0.3s ease;
     }
-    button:hover {
-      background: #00a4db;
+    
+    .signup-btn:hover {
+      background: #95c8c8;
+      transform: translateY(-1px);
     }
-    p {
+    
+    .login-link {
+      margin-top: 30px;
       text-align: center;
-      margin-top: 15px;
     }
-    a {
+    
+    .login-link a {
       color: #0077cc;
       text-decoration: none;
+      font-size: 14px;
+    }
+    
+    .login-link a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <div class="signup-box">
-    <h2>Create Account</h2>
+  <div class="signup-container">
+    <h1 class="signup-title">ACCOUNT SIGN UP</h1>
+    <p class="signup-subtitle">Please fill in all fields.</p>
+    
     <form action="{% url 'sign_up' %}" method="post">
       {% csrf_token %}
-      <input type="text"     name="full_name"        placeholder="Full Name" required>
-      <input type="email"    name="email"            placeholder="Email Address" required>
-      <input type="password" name="password"         placeholder="Password" required>
-      <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-      <button type="submit">Sign Up</button>
+      
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" name="email" class="form-input" required>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group half">
+          <label class="form-label">First Name</label>
+          <input type="text" name="first_name" class="form-input" required>
+        </div>
+        
+        <div class="form-group half">
+          <label class="form-label">Last Name</label>
+          <input type="text" name="last_name" class="form-input" required>
+        </div>
+      </div>
+      
+      <div class="title-group">
+        <span class="title-label">Title:</span>
+        <div class="title-option">
+          <input type="radio" name="title" value="Mr" id="mr" class="title-radio" checked>
+          <label for="mr" class="title-text">Mr</label>
+        </div>
+        <div class="title-option">
+          <input type="radio" name="title" value="Ms" id="ms" class="title-radio">
+          <label for="ms" class="title-text">Ms</label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-input" required>
+      </div>
+      
+      <!-- Hidden field to capture role from URL -->
+      <input type="hidden" name="role" id="role" value="">
+      
+      <button type="submit" class="signup-btn">SIGN UP</button>
     </form>
-    <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
+    
+    <div class="login-link">
+      <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
+    </div>
   </div>
 
   <script>
@@ -78,4 +211,3 @@
   </script>
 </body>
 </html>
-{% endblock %}
