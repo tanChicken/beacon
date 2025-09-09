@@ -104,7 +104,7 @@ def student_signup(request):
                 StudentProfile.objects.create(user=user)
 
         messages.success(request, "Signup successful! Please log in.")
-        return redirect("home")
+        return redirect("login")
 
     # GET -> show the page
     return render(request, "signup.html")
