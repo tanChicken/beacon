@@ -40,7 +40,7 @@ def student_login(request):
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
-        user = authenticate(request, username=email, password=password)
+        user = authenticate(request, email=email, password=password)
         if user is None:
             messages.error(request, "Invalid email or password.")
         else:
@@ -93,7 +93,7 @@ def student_signup(request):
         with transaction.atomic():
             # Create via Student proxy so role=STUDENT is set by your overridden save()
             # and the Student post_save signal can create StudentProfile.
-            user = Student(username=email, email=email, first_name=first, last_name=last)
+            user = Student(username=full_name, email=email, first_name=first, last_name=last)
             user.set_password(password)
             user.save()
 
@@ -153,7 +153,7 @@ def instructor_login(request):
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
-        user = authenticate(request, username=email, password=password)
+        user = authenticate(request, email=email, password=password)
         if user is None:
             messages.error(request, "Invalid email or password.")
         else:
