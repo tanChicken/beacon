@@ -6,7 +6,6 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.db import transaction
-from django.contrib.auth import get_user_model
 
 from .models import Course, Student, StudentProfile, User  # note: import Student & StudentProfile
 
@@ -23,12 +22,15 @@ def student_login(request):
         password = request.POST.get("password") or ""
 
         user = authenticate(request, username=email, password=password)
-        if user is None:
+
+        if not user:
             messages.error(request, "Invalid email or password.")
         else:
             if getattr(user, "role", None) == "STUDENT":
                 login(request, user)
                 return redirect("student_dashboard")
+            elif role == "INSTRUCTOR":
+                return redirect("instructor_dashboard")
             else:
                 messages.error(request, "This account is not a student. Please use the instructor login.")
     return render(request, "login.html"), {"hide_sidebar": True}
@@ -44,10 +46,6 @@ def student_signup(request):
 
         if not first_name or not last_name or not email or not password or not confirm or not title:
             messages.error(request, "Please fill in all fields.")
-            return render(request, "signup.html")
-
-        if password != confirm:
-            messages.error(request, "Passwords do not match.")
             return render(request, "signup.html")
 
         UserModel = get_user_model()
@@ -161,6 +159,8 @@ def lesson_detail(request, lesson_id):
 
 def instructor_login(request):
     if request.method == "POST":
+        first = (request.POST.get("first_name") or "").strip()
+        last = (request.POST.get("last_name") or "").strip()
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
@@ -174,11 +174,30 @@ def instructor_login(request):
             messages.error(request, "This account is not an instructor. Please use the student login.")
     return render(request, "instructor_login.html"), {"hide_sidebar": True}
 
-@login_required(login_url="/i_login/")
-def instructor_dashboard(request):
-    courses = Course.objects.filter(instructor=request.user)
-    return render(request, "instructor_dashboard.html", {"courses": courses})
 
+# ------------------------
+# Dashboards
+# ------------------------
+@login_required
+def student_dashboard(request):
+    if not request.user.is_authenticated:
+        return redirect("login")
+
+    courses = Course.objects.filter(students=request.user)
+
+    return render(request, "student_dashboard.html", {
+        "courses": courses,
+    })
+
+
+@login_required
+def instructor_dashboard(request):
+    return render(request, "instructor_dashboard.html")
+
+
+# ------------------------
+# Courses (Instructor only)
+# ------------------------
 @login_required
 def create_course(request):
     if request.method == "POST":
@@ -209,7 +228,7 @@ def edit_course(request, pk):
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
             form.save()
-            messages.success(request, "Course updated successfully!")
+            messages.success(request, "Course updated successfully.")
             return redirect("instructor_dashboard")
     else:
         form = CourseForm(instance=course)
