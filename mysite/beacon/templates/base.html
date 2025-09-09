@@ -8,12 +8,12 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
     <style>
       body {
-        background-color: #fdfaf6; 
+        background-color: #fdfaf6;
         font-family: Arial, sans-serif;
       }
       .sidebar {
         height: 100vh;
-        background-color: #fdf1e5; 
+        background-color: #fdf1e5;
         border-right: 1px solid #f5d0a9;
         padding: 20px;
         position: fixed;
@@ -39,7 +39,6 @@
         color: white;
       }
       .main-content {
-        margin-left: 260px; /* leave space for sidebar */
         padding: 20px;
       }
       .alert-info {
@@ -73,15 +72,16 @@
       </div>
     {% endif %}
 
-    <div class="main-content">
-      {% if messages %}
-        {% for message in messages %}
-          <div class="alert alert-info">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
+    {# Main content: shift if sidebar present #}
+    {% if user.is_authenticated and request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'sign_up' and request.resolver_match.url_name != 'home' %}
+      <div class="main-content" style="margin-left:260px;">
+    {% else %}
+      <div class="main-content" style="margin-left:0;">
+    {% endif %}
 
-      {% block content %}{% endblock %}
-    </div>
+        {% block content %}{% endblock %}
+
+      </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
