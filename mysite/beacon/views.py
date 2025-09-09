@@ -157,7 +157,7 @@ def instructor_login(request):
         if user is None:
             messages.error(request, "Invalid email or password.")
         else:
-            if getattr(user, "role", None) == "TEACHER":
+            if getattr(user, "role", None) == "INSTRUCTOR":
                 login(request, user)
                 return redirect("instructor_dashboard")
             messages.error(request, "This account is not an instructor. Please use the student login.")
@@ -211,7 +211,7 @@ def course_detail(request, pk):
     return render(request,"course_details.html", {"course":course})
 
 class InstructorHomeView(InstructorRequiredMixin, TemplateView):
-    template_name = "teacher/home.html"
+    template_name = "instructor/home.html"
 
 class StudentHomeView(StudentRequiredMixin, TemplateView):
     template_name = "student/home.html"
