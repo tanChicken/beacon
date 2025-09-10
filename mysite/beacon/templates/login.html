@@ -1,3 +1,5 @@
+<!-- {% block title %}Enrolment{% endblock %} -->
+{% block content %}
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -54,6 +56,13 @@
 </head>
 <body>
   <div class="login-box">
+    {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <div class="alert {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
     <h2>Account Login</h2>
     <form action="{% url 'login' %}" method="post">
       {% csrf_token %}
@@ -65,3 +74,4 @@
   </div>
 </body>
 </html>
+{% endblock %}
