@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.contrib.auth import get_user_model
 
 from .models import Course, Student, StudentProfile  # note: import Student & StudentProfile
@@ -76,12 +76,14 @@ def student_login(request):
 
 def student_signup(request):
     if request.method == "POST":
-        full_name = (request.POST.get("full_name") or "").strip()
+        first_name = (request.POST.get("first_name") or "").strip()
+        last_name = (request.POST.get("last_name") or "").strip()
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
         confirm = request.POST.get("confirm_password") or ""
+        title = request.POST.get("title") or ""  
 
-        if not full_name or not email or not password or not confirm:
+        if not first_name or not last_name or not email or not password or not confirm or not title:
             messages.error(request, "Please fill in all fields.")
             return render(request, "signup.html")
 
@@ -94,27 +96,29 @@ def student_signup(request):
             messages.error(request, "This email is already registered.")
             return render(request, "signup.html")
 
-        first, *rest = full_name.split()
-        last = " ".join(rest) if rest else ""
 
         with transaction.atomic():
-            # Create via Student proxy so role=STUDENT is set by your overridden save()
-            # and the Student post_save signal can create StudentProfile.
-            user = Student(username=email, email=email, first_name=first, last_name=last)
-            user.set_password(password)
+            user = UserModel.objects.create_user(
+                username=email,  # keep if your model still uses username
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                password=password,
+            )
+            # set role
+            user.role = "STUDENT"
             user.save()
 
-            # Safety net: ensure profile exists even if the signal didn't run.
-            try:
-                _ = user.studentprofile
-            except StudentProfile.DoesNotExist:
-                StudentProfile.objects.create(user=user)
+            # ensure profile exists, now set title
+            profile, created = StudentProfile.objects.get_or_create(user=user)
+            profile.title = title
+            profile.save()
 
         messages.success(request, "Signup successful! Please log in.")
         return redirect("login")
 
-    # GET → show the page
     return render(request, "signup.html")
+
 
 @login_required(login_url="/login/")
 def student_dashboard(request):
