@@ -5,20 +5,23 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
 # Register your models here.
 admin.site.register(TodoItem)
+
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
-    # show custom field in the User admin
-    fieldsets = DjangoUserAdmin.fieldsets + (
+    # CHANGE view (edit existing user)
+    fieldsets = (
+        *DjangoUserAdmin.fieldsets,
         ("Role", {"fields": ("role",)}),
     )
-    add_fieldsets = DjangoUserAdmin.add_fieldsets + (
+    # ADD view (create new user) — replace, don’t append
+    add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("username", "password1", "password2", "role"),
+            "fields": ("username", "email", "password1", "password2", "role"),
         }),
     )
     list_display = ("username", "email", "first_name", "last_name", "role", "is_staff")
-    list_filter = DjangoUserAdmin.list_filter + ("role",)
+    list_filter = (*DjangoUserAdmin.list_filter, "role")
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
