@@ -81,8 +81,8 @@
   </head>
   <body>
     <div class="sidebar 
-     {% if user.is_authenticated and user.role == 'TEACHER' %}instructor-sidebar{% endif %}
-     {% if user.is_authenticated and user.role == 'STUDENT' %}student-sidebar{% endif %}">
+      {% if user.is_authenticated and user.role == 'INSTRUCTOR' %}instructor-sidebar{% endif %}
+      {% if user.is_authenticated and user.role == 'STUDENT' %}student-sidebar{% endif %}">
       <h2 class="logo">
         <a href="{% url 'home' %}">Beacon</a>
       </h2>
@@ -90,7 +90,7 @@
       {% if user.is_authenticated %}
         {% if user.role == "STUDENT" %}
           <a href="{% url 'student_dashboard' %}">🎓 My Courses</a>
-        {% elif user.role == "TEACHER" %}
+        {% elif user.role == "INSTRUCTOR" %}
           <a href="{% url 'instructor_dashboard' %}">🏠 My Courses</a>
 
         {% endif %}
