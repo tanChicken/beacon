@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Course
 from .forms import CourseForm, InstructorLoginForm, StudentLoginForm, StudentSignupForm
 from django.contrib import messages
-from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
@@ -167,7 +166,7 @@ def instructor_login(request):
         if user is None:
             messages.error(request, "Invalid email or password.")
         else:
-            if getattr(user, "role", None) == "TEACHER":
+            if getattr(user, "role", None) == "INSTRUCTOR":
                 login(request, user)
                 return redirect("instructor_dashboard")
             messages.error(request, "This account is not an instructor. Please use the student login.")

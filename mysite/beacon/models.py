@@ -12,16 +12,6 @@ class TodoItem(models.Model):
     title = models.CharField(max_length=200)
     completed = models.BooleanField(default=False)
 
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def ensure_profiles(sender, instance, created, **kwargs):
-    if not created:
-        return
-    role = getattr(instance, "role", None)
-    if role in (getattr(User.Role, "STUDENT", "STUDENT"), "STUDENT"):
-        StudentProfile.objects.get_or_create(user=instance)
-    if role in (getattr(User.Role, "INSTRUCTOR", "INSTRUCTOR"), "INSTRUCTOR"):
-        InstructorProfile.objects.get_or_create(user=instance)
-
 class Course(models.Model):
     course_id = models.CharField(max_length=20, unique=True)
     title = models.CharField(max_length=200)
@@ -116,6 +106,12 @@ def create_user_profile(sender, instance, created, **kwargs):
     if created and instance.role == "INSTRUCTOR":
         InstructorProfile.objects.create(user=instance)
     
-
-
-    
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def ensure_profiles(sender, instance, created, **kwargs):
+    if not created:
+        return
+    role = getattr(instance, "role", None)
+    if role in (getattr(User.Role, "STUDENT", "STUDENT"), "STUDENT"):
+        StudentProfile.objects.get_or_create(user=instance)
+    if role in (getattr(User.Role, "INSTRUCTOR", "INSTRUCTOR"), "INSTRUCTOR"):
+        InstructorProfile.objects.get_or_create(user=instance)  

@@ -11,7 +11,7 @@
   }
   .list-group-item {
     background-color: #ffffff; 
-    border: 2px solid #f5d0a9; 
+    border: 2px solid #41ca7c; 
     border-radius: 5px;
     margin-bottom: 10px;
     padding: 15px;
@@ -55,7 +55,7 @@
     content: "▼"; /* changes when dropdown is open */
   }
   .custom-course-card {
-    border: 2px solid #f5d0a9; 
+    border: 2px solid #41ca7c; 
     border-radius: 5px;
     background-color: #ffffff; 
     height: 220px; /* fixed uniform height */
@@ -89,7 +89,8 @@
           </a>
         </li>
       {% empty %}
-        <li class="list-group-item text-muted">No courses created yet.</li>
+        <li class="list-group-item text-muted">No courses enrolled.</li>
+        <a href="{% url 'enrolment_page' %}">📚 Enrolment</a>
       {% endfor %}
     </ul>
   </div>
