@@ -36,6 +36,7 @@
     <hr class="mb-3">
     
     <!-- Lessons -->
+     
     <h4>Lessons</h4>
     <div class="list-group">
         {% for lesson in course.lessons.all %}
@@ -50,5 +51,19 @@
         <p class="text-muted">No lessons added yet.</p>
         {% endfor %}
     </div>
+
+    <hr class="mb-3">
+
+    <h4>Enrolled Students</h4>
+    <ul class="list-group">
+    {% for student in course.students.all %}
+        <li class="list-group-item">
+        {{ student.first_name }} {{ student.last_name }}
+        </li>
+    {% empty %}
+        <li class="list-group-item text-muted">No students enrolled yet.</li>
+    {% endfor %}
+    </ul>
+
 </div>
 {% endblock %}

@@ -8,13 +8,12 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
     <style>
       body {
-        background-color: #fdfaf6; 
+        background-color: #ffffff; /* always white */
         font-family: Arial, sans-serif;
       }
       .sidebar {
         height: 100vh;
-        background-color: #fdf1e5; 
-        border-right: 1px solid #f5d0a9;
+        border-right: 1px solid #ddd;
         padding: 20px;
         position: fixed;
         top: 0;
@@ -22,7 +21,6 @@
         width: 240px;
       }
       .sidebar h2 {
-        color: #e67e22;
         font-size: 20px;
         margin-bottom: 20px;
       }
@@ -35,39 +33,69 @@
         margin-bottom: 5px;
       }
       .sidebar a:hover {
-        background-color: #e67e22;
         color: white;
       }
+
+      /* Instructor (Orange Theme) */
+      .instructor-sidebar {
+        background-color: #fae3d3; /* very light orange */
+      }
+      .instructor-sidebar h2 a {
+        color: #e67e22;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .instructor-sidebar h2 a:hover {
+        color: #c75d00;
+      }
+      .instructor-sidebar a:hover {
+        background-color: #e67e22;
+      }
+
+      /* Student (Green Theme) */
+      .student-sidebar {
+        background-color: #d8fae6; /* very light green */
+      }
+      .student-sidebar h2 a {
+        color: #34a464;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .student-sidebar h2 a:hover {
+        color: #278c50;
+      }
+      .student-sidebar a:hover {
+        background-color: #34a464;
+      }
+
       .main-content {
         margin-left: 260px; /* leave space for sidebar */
         padding: 20px;
       }
       .alert-info {
-        background-color: #fde3c7;
-        border-color: #f5d0a9;
-        color: #7f3d00;
+        background-color: #f9f9f9;
+        border-color: #ddd;
+        color: #333;
       }
     </style>
   </head>
   <body>
-    <div class="sidebar">
-      <h2>Beacon</h2>
-      <a href="{% url 'instructor_dashboard' %}">🏠 Courses</a>
-      <a href="{% url 'instructor_dashboard' %}">📊 Classrooms</a>
-      <a href="{% url 'student_dashboard' %}">🎓 My Courses</a>
-      <a href="{% url 'enrolment_page' %}">Enrolment</a>
-      <a href=#> Students</a>
-      <a href=#> Reports</a>
-      <a href=#> Students</a>
+    <div class="sidebar 
+     {% if user.is_authenticated and user.role == 'TEACHER' %}instructor-sidebar{% endif %}
+     {% if user.is_authenticated and user.role == 'STUDENT' %}student-sidebar{% endif %}">
+      <h2 class="logo">
+        <a href="{% url 'home' %}">Beacon</a>
+      </h2>
 
-      <hr>
-      <h6 class="text-muted">📚 My Courses</h6>
-      {% if courses %}
-        {% for course in courses %}
-          <a href="{% url 'edit_course' course.pk %}">{{ course.course_id }} - {{ course.title }}</a>
-        {% endfor %}
+      {% if user.is_authenticated %}
+        {% if user.role == "STUDENT" %}
+          <a href="{% url 'student_dashboard' %}">🎓 My Courses</a>
+        {% elif user.role == "TEACHER" %}
+          <a href="{% url 'instructor_dashboard' %}">🏠 My Courses</a>
+
+        {% endif %}
       {% else %}
-        <span class="text-muted small">No courses yet</span>
+        <a href="{% url 'home' %}">🏠 Home</a>
       {% endif %}
     </div>
 
