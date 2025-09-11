@@ -97,9 +97,11 @@ class Instructor(User):
         return "Only for instructors"       
     
 class InstructorProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    instructor_id = models.IntegerField(null=True, blank=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructorprofile")
+    bio = models.TextField(blank=True, null=True)
 
+    def __str__(self):
+        return f"Instructor Profile: {self.user.username}"
 
 @receiver(post_save, sender=Instructor)
 def create_user_profile(sender, instance, created, **kwargs):
