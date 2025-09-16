@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Course
+from .models import Course, Lesson, StudentReadingListProgress
 from .forms import CourseForm, InstructorLoginForm, StudentLoginForm, StudentSignupForm
 from django.contrib import messages
 from django.contrib.auth import authenticate
@@ -23,24 +23,6 @@ def home(request):
 def login_view(request):
     return render(request, "home.html", {"hide_sidebar": True})
 
-# def student_login(request):
-#     if request.method == "POST":
-#         form = StudentLoginForm(request.POST)
-#         if form.is_valid():
-#             email = form.cleaned_data["email"]
-#             password = form.cleaned_data["password"]
-
-#             # Authenticate user
-#             user = authenticate(request, username=email, password=password)
-#             if user is not None:
-#                 login(request, user)  # Start session
-#                 return redirect("student_dashboard")
-#             else:
-#                 messages.error(request, "Invalid email or password.")
-#     else:
-#         form = StudentLoginForm()
-
-#     return render(request, "login.html", {"form": form})
 def student_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
@@ -57,21 +39,6 @@ def student_login(request):
             else:
                 messages.error(request, "This account is not a student. Please use the instructor login.")
     return render(request, "login.html")
-
-# def student_signup(request):
-#     if request.method == "POST":
-#         form = StudentSignupForm(request.POST)
-#         if form.is_valid():
-#             user = form.save(commit=False)
-#             user.username = form.cleaned_data['email']  # use email as username
-#             user.set_password(form.cleaned_data['password'])  # hash password
-#             user.save()
-#             messages.success(request, "Signup successful! Please log in.")
-#             return redirect("login")  # redirect to your login page
-#     else:
-#         form = StudentSignupForm()
-#     return render(request, "signup.html", {"form": form})
-
 
 def student_signup(request):
     if request.method == "POST":
@@ -150,24 +117,42 @@ def enrol_course(request, course_id):
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
 
-# def instructor_login(request):
-#     if request.method == "POST":
-#         form = InstructorLoginForm(request.POST)
-#         if form.is_valid():
-#             email = form.cleaned_data["email"]
-#             password = form.cleaned_data["password"]
+@login_required
+def student_lessons(request):
+    if not request.user.role == "STUDENT":
+        return render(request, "403.html")
 
-#             # Authenticate user
-#             user = authenticate(request, username=email, password=password)
-#             if user is not None:
-#                 login(request, user)  # Start session
-#                 return redirect("instructor_dashboard")
-#             else:
-#                 messages.error(request, "Invalid email or password.")
-#     else:
-#         form = InstructorLoginForm()
+    lessons = request.user.lessons.all()  # thanks to the ManyToManyField
 
-#     return render(request, "instructor_login.html", {"form": form})
+    return render(request, "student_lessons.html", {"lessons": lessons})
+
+@login_required
+def lesson_detail(request, lesson_id):
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    reading_items = lesson.reading_items.all()
+
+    if request.method == "POST" and request.user.is_authenticated:
+        for item in reading_items:
+            checkbox = str(item.id) in request.POST
+            progress, created = StudentReadingListProgress.objects.get_or_create(
+                student=request.user, item=item
+            )
+            progress.completed = checkbox
+            progress.save()
+        return redirect("lesson_detail", lesson_id=lesson.id)
+
+    completed_ids = list(
+    StudentReadingListProgress.objects
+        .filter(student=request.user, item__lesson=lesson, completed=True)
+        .values_list('item_id', flat=True)
+)
+
+    return render(request, "lesson_detail.html", {
+        "lesson": lesson,
+        "reading_items": reading_items,
+        "progress": completed_ids,
+    })
+
 def instructor_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
