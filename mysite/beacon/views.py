@@ -186,7 +186,7 @@ def create_course(request):
             course.instructor = request.user
             course.save()
             messages.success(request, "Course created successfully!")
-            return redirect("instructor_dashboard")
+            return redirect("course_detail", pk=course.pk)
     else:
         form = CourseForm()
     return render(request, "course_form.html", {"form": form, "action": "Create"})

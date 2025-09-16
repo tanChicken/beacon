@@ -15,25 +15,11 @@
         </div>
         <div>
         <p>Last updated: {{ course.updated_at|date:"M d, Y H:i" }}</p>
+        <p>Course Credit Point: {{ course.credit_points }}</p>
         </div>
     </div>
 
     <hr class="my-2">
-
-    <div class="d-flex justify-content-end">
-        <p>Course Credit Point: {{ course.credit_points }}</p>
-    </div>
-
-    <!-- Progress bar -->
-    <div class="progress my-3" style="height: 25px;">
-        <div class="progress-bar bg-success" role="progressbar" 
-            aria-valuenow="{{ course.progress }}" aria-valuemin="0" aria-valuemax="100">
-        {{ course.progress }}%
-        </div>
-    </div>
-    <p class="text-center">Your Progress In This Course</p>
-
-    <hr class="mb-3">
     
     <!-- Lessons -->
      
@@ -64,6 +50,17 @@
         <li class="list-group-item text-muted">No students enrolled yet.</li>
     {% endfor %}
     </ul>
+</div>
 
+<div style="position: fixed; bottom: 30px; right: 30px; z-index: 1000;">
+    <div class="btn-group dropup">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Actions
+        </button>
+        <div class="dropdown-menu dropdown-menu-right">
+            <a class="dropdown-item" href="{% url 'edit_course' course.pk %}">Edit</a>
+            <a class="dropdown-item text-danger" href="{% url 'delete_course' course.pk %}">Delete</a>
+        </div>
+    </div>
 </div>
 {% endblock %}
