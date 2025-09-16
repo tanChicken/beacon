@@ -117,3 +117,21 @@ def ensure_profiles(sender, instance, created, **kwargs):
         StudentProfile.objects.get_or_create(user=instance)
     if role in (getattr(User.Role, "INSTRUCTOR", "INSTRUCTOR"), "INSTRUCTOR"):
         InstructorProfile.objects.get_or_create(user=instance)  
+
+class Lesson(models.Model):
+    lesson_id = models.CharField(max_length=50, unique=True)
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    objective = models.TextField(blank=True, null=True)
+    reading_list = models.TextField(blank=True, null=True)
+    designer = models.ForeignKey(
+        Instructor, on_delete=models.SET_NULL, null=True, related_name="lessons"
+    )
+    effort_per_week = models.PositiveIntegerField(default=0)
+    credit_point = models.DecimalField(max_digits=4, decimal_places=1, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+    def __str__(self):
+        return f"{self.lesson_id} - {self.title}"
