@@ -3,6 +3,20 @@
 
 {% block content %}
 <div class="container mt-4">
+
+    <!-- Back Button -->
+    <div class="mb-3">
+        {% if user.role == "INSTRUCTOR" %}
+            <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">
+                &larr; Back to Dashboard
+            </a>
+        {% else %}
+            <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+                &larr; Back to Dashboard
+            </a>
+        {% endif %}
+    </div>
+
     <div class="text-center mb-4">
         <h2>{{ course.course_id }}</h2>
         <h2 class="mb-5">{{ course.title }}</h2>
@@ -10,27 +24,26 @@
 
     <div class="d-flex justify-content-between">
         <div>
-        <p>Course director: {{ course.instructor }}</p>
-        <p>Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}</p>
+            <p>Course director: {{ course.instructor.get_full_name }}</p>
+            <p>Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}</p>
         </div>
         <div>
-        <p>Last updated: {{ course.updated_at|date:"M d, Y H:i" }}</p>
-        <p>Course Credit Point: {{ course.credit_points }}</p>
+            <p>Last updated: {{ course.updated_at|date:"M d, Y H:i" }}</p>
+            <p>Course Credit Point: {{ course.credit_points }}</p>
         </div>
     </div>
 
     <hr class="my-2">
     
     <!-- Lessons -->
-     
     <h4>Lessons</h4>
     <div class="list-group">
         {% for lesson in course.lessons.all %}
         <div class="list-group-item">
             <strong>{{ lesson.lesson_id }}</strong> – {{ lesson.title }}
             <div class="d-flex justify-content-between mt-1">
-            <span>Status: {{ lesson.status }}</span>
-            <span>Credit Point: {{ lesson.credit_points }}</span>
+                <span>Status: {{ lesson.status }}</span>
+                <span>Credit Point: {{ lesson.credit_points }}</span>
             </div>
         </div>
         {% empty %}
@@ -42,16 +55,18 @@
 
     <h4>Enrolled Students</h4>
     <ul class="list-group">
-    {% for student in course.students.all %}
+        {% for student in course.students.all %}
         <li class="list-group-item">
-        {{ student.first_name }} {{ student.last_name }}
+            {{ student.first_name }} {{ student.last_name }}
         </li>
-    {% empty %}
+        {% empty %}
         <li class="list-group-item text-muted">No students enrolled yet.</li>
-    {% endfor %}
+        {% endfor %}
     </ul>
 </div>
 
+{% if user.role == "INSTRUCTOR" %}
+<!-- Action Dropdown for Instructor only -->
 <div style="position: fixed; bottom: 30px; right: 30px; z-index: 1000;">
     <div class="btn-group dropup">
         <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -63,4 +78,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
