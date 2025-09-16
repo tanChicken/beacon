@@ -1,0 +1,62 @@
+{% extends "base.html" %}  {# Inherit from the base template #}
+
+{% block content %}
+<div class="container mt-4">
+    {# Lesson header: ID and title #}
+    <h2>{{ lesson.lesson_id }} – {{ lesson.title }}</h2>
+    <p class="text-muted">
+        Created: {{ lesson.created_at|date:"j/n/Y" }} | 
+        Updated: {{ lesson.updated_at|date:"M d, Y H:i" }}
+    </p>
+
+    <hr>
+
+    {# Lesson description section #}
+    <h4>Description</h4>
+    <p>{{ lesson.description }}</p>
+
+    {# Lesson objective section #}
+    <h4>Objective</h4>
+    <p>{{ lesson.objective }}</p>
+
+    {# Reading list checklist form #}
+    <h4>Reading List</h4>
+    <form method="post">
+        {% csrf_token %}  {# CSRF token for security #}
+        <ul class="list-group">
+        {% for item in reading_items %}
+            <li class="list-group-item">
+                {# Checkbox for each reading item, checked if completed #}
+                <input type="checkbox" name="{{ item.id }}" {% if item.id in progress %}checked{% endif %}>
+                <label for="reading-{{ item.id }}">{{ item.title }}</label>
+            </li>
+        {% empty %}
+            {# Message if there are no reading items #}
+            <li class="list-group-item text-muted">No reading list provided.</li>
+        {% endfor %}
+        </ul>
+        <button type="submit" class="btn btn-primary mt-2">Save Progress</button>
+    </form>
+
+    {# Lesson info section: effort, credit, designer #}
+    <h4>Lesson Info</h4>
+    <ul>
+        <li>Effort per week: {{ lesson.effort_per_week }} hrs</li>
+        <li>Credit point: {{ lesson.credit_points }}</li>
+        <li>Designer: {{ lesson.designer.username }}</li>
+    </ul>
+
+    {# Assignments section #}
+    <h4>Assignments</h4>
+    {% if lesson.assignments.all %}
+        <ul>
+        {% for assignment in lesson.assignments.all %}
+            <li>{{ assignment.title }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        {# Message if there are no assignments #}
+        <p class="text-muted">No assignments yet.</p>
+    {% endif %}
+</div>
+{% endblock %}
