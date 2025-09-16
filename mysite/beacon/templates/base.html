@@ -89,11 +89,13 @@
 
       {% if user.is_authenticated %}
         {% if user.role == "STUDENT" %}
-          <a href="{% url 'student_dashboard' %}">🎓 My Courses</a>
+          <a href="{% url 'student_dashboard' %}">Courses</a>
         {% elif user.role == "INSTRUCTOR" %}
-          <a href="{% url 'instructor_dashboard' %}">🏠 My Courses</a>
-
+          <a href="{% url 'instructor_dashboard' %}">Courses</a>
         {% endif %}
+        <a href=#>Classroom</a>
+        <a href=#>Student</a>
+        <a href=#>Report</a>
       {% else %}
         <a href="{% url 'home' %}">🏠 Home</a>
       {% endif %}

@@ -7,22 +7,23 @@
       {% csrf_token %}
       {{ form.as_p }}
 
+    <div class="form-group">
+      <label>Credit Points: </label>
+      <span>{{ course.credit_points|default:30 }}</span>        </div>
     <hr>
+
     <!-- Lesson Section -->
     <div class="mt-4">
       <h3>Lessons</h3>
-      <a href=# class="btn btn-success">+ Create Lesson</a>
-      <!-- Later: you can loop lessons here -->
-      <!-- {# Example: 
-      <ul>
-        {% for lesson in course.lessons.all %}
-          <li>{{ lesson.title }}</li>
-        {% empty %}
-          <li>No lessons yet.</li>
+      <div id="lessons">
+        {{ lesson_formset.management_form }}
+        {% for form in lesson_formset %}
+          <div class="lesson-form mb-3 p-2 border rounded">
+            {{ form.as_p }}
+          </div>
         {% endfor %}
-      </ul>
-      #} -->
-    </div>
+      </div>
+      <button type="button" class="btn btn-sm btn-success" onclick="addLesson()">+ Add Lesson</button>
 
     <!-- Student Section -->
     <div class="mt-4">
@@ -60,4 +61,5 @@
     </div>
     </form>
   </div>
+
 {% endblock %}

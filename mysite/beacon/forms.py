@@ -37,7 +37,24 @@ class InstructorLoginForm(forms.Form):
     email = forms.EmailField()
     password = forms.CharField(widget=forms.PasswordInput)
 
+from .models import Instructor
 class CourseForm(forms.ModelForm):
+    instructor = forms.ModelChoiceField(
+        queryset=Instructor.instructor.all(),
+        required=True,
+        label="Course Director",
+        empty_label="Select Instructor"
+    )
+
     class Meta:
         model = Course
-        fields = ["course_id", "title", "status"]
+        fields = ["course_id", "title", "status", "instructor"]
+
+from django.forms import formset_factory
+
+class LessonForm(forms.Form):
+    title = forms.CharField(max_length=200)
+    credit_points = forms.IntegerField(initial=0, min_value=0)
+    status = forms.ChoiceField(choices=[("active","Active"),("inactive","Inactive")])
+
+LessonFormSet = formset_factory(LessonForm, extra=1)

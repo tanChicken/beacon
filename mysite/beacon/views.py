@@ -118,13 +118,24 @@ def student_signup(request):
 
     return render(request, "signup.html")
 
-
-@login_required(login_url="/login/")
+# @login_required(login_url="/login/")
+# def student_dashboard(request):
+#     student = request.user
+#     enrolled = student.courses_enroling.all()  # Assuming ManyToManyField 'students'
+#     return render(request, "student_dashboard.html", {"courses": enrolled, "student": student})
 def student_dashboard(request):
     student = request.user
-    enrolled = student.courses_enroling.all()  # Assuming ManyToManyField 'students'
-    return render(request, "student_dashboard.html", {"courses": enrolled, "student": student})
-
+    enrolled = student.courses_enroling.all()
+    
+    # Get courses not yet enrolled by this student
+    available_courses = Course.objects.filter(status="active").exclude(students=student)
+    
+    return render(request, "student_dashboard.html", {
+        "courses": enrolled,
+        "available_courses": available_courses,
+        "student": student
+    })
+    
 @login_required
 def enrolment_page(request):
     student = request.user
@@ -186,7 +197,7 @@ def create_course(request):
             course.instructor = request.user
             course.save()
             messages.success(request, "Course created successfully!")
-            return redirect("instructor_dashboard")
+            return redirect("course_detail", pk=course.pk)
     else:
         form = CourseForm()
     return render(request, "course_form.html", {"form": form, "action": "Create"})
