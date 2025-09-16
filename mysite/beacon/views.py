@@ -115,6 +115,33 @@ def student_lessons(request):
 
     return render(request, "student_lessons.html", {"lessons": lessons})
 
+@login_required
+def lesson_detail(request, lesson_id):
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    reading_items = lesson.reading_items.all()
+
+    if request.method == "POST" and request.user.is_authenticated:
+        for item in reading_items:
+            checkbox = str(item.id) in request.POST
+            progress, created = StudentReadingListProgress.objects.get_or_create(
+                student=request.user, item=item
+            )
+            progress.completed = checkbox
+            progress.save()
+        return redirect("lesson_detail", lesson_id=lesson.id)
+
+    completed_ids = list(
+    StudentReadingListProgress.objects
+        .filter(student=request.user, item__lesson=lesson, completed=True)
+        .values_list('item_id', flat=True)
+)
+
+    return render(request, "lesson_detail.html", {
+        "lesson": lesson,
+        "reading_items": reading_items,
+        "progress": completed_ids,
+    })
+
 def instructor_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
