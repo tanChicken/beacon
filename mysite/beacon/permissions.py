@@ -26,7 +26,7 @@ def student_required(view_func):
 
 class InstructorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.role == User.Role.TEACHER
+        return self.request.user.is_authenticated and self.request.user.role == User.Role.INSTRUCTOR
     
 class StudentRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
