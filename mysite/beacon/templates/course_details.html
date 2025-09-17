@@ -8,11 +8,11 @@
     <div class="mb-3">
         {% if user.role == "INSTRUCTOR" %}
             <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">
-                &larr; Back to Dashboard
+                &larr; Back
             </a>
         {% else %}
             <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
-                &larr; Back to Dashboard
+                &larr; Back
             </a>
         {% endif %}
     </div>
@@ -40,7 +40,7 @@
     <div class="list-group">
         {% for lesson in course.lessons.all %}
         <a href=# class="list-group-item list-group-item-action">
-            <strong>{{ lesson.id }}</strong> – {{ lesson.title }}
+            <strong>{{ lesson.lesson_id }}</strong> – {{ lesson.title }}
         </a>
         {% empty %}
         <p class="text-muted">No lessons added yet.</p>

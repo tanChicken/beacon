@@ -1,26 +1,127 @@
 {% extends "base.html" %}  {# Inherit from the base template #}
+{% block title %}Lesson Details{% endblock %}
 
 {% block content %}
+<style>
+    .lesson-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .task-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    }
+
+    .task-table th, .task-table td {
+    border: 1px solid #000;
+    padding: 15px;
+    text-align: left;
+    }
+
+    .task-table th {
+    background-color: #f2f2f2;
+    text-align: center;
+    }
+
+    .big-box {
+    border: 1px solid #000;
+    height: 120px;
+    padding: 10px;
+    margin-bottom: 20px;
+    }
+    
+    .section {
+      margin-bottom: 20px;
+    }
+    .section h3 {
+      margin-bottom: 10px;
+    }
+
+    .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+    }
+
+    .check-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    }
+
+    .check-item .desc-box {
+    flex: 1;
+    margin-right: 10px;
+    border: 1px solid #000;
+    padding: 8px;
+    }
+
+    input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    accent-color: #41ca7c;
+    }
+</style>
+
 <div class="container mt-4">
-    {# Lesson header: ID and title #}
-    <h2>{{ lesson.lesson_id }} – {{ lesson.title }}</h2>
-    <p class="text-muted">
-        Created: {{ lesson.created_at|date:"j/n/Y" }} | 
-        Updated: {{ lesson.updated_at|date:"M d, Y H:i" }}
-    </p>
 
-    <hr>
+    <div class="lesson-header">
+        <h2>{{ lesson.lesson_id }}</h2>
+        <h2 class="mb-5">{{ lesson.title }}</h2>
+    </div>
 
+    <div class="d-flex justify-content-between">
+        <div>
+            <p>Status: {{ lesson.status }}</p>
+            <p>Designed by: {{ lesson.designer.username }} on {{ lesson.created_at|date:"j/n/Y" }}</p>
+        </div>
+        <div>
+            <p>Credit Point: {{ lesson.credit_point }}</p>
+            <p>Last updated: {{ lesson.updated_at|date:"M d, Y H:i" }}</p>
+        </div>
+    </div>
+
+    <hr class="my-2">
+
+    <table class="task-table">
+    <thead>
+        <tr>
+        <th>Tasks</th>
+        <th>Estimated Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+        <td>Task 1 description goes here</td>
+        <td>2 hours</td>
+        </tr>
+        <tr>
+        <td>Task 2 description goes here</td>
+        <td>1.5 hours</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2" class="text-muted">No tasks available.</td></tr>
+      {% endfor %}
+    </tbody>
+    </table>
+    
     {# Lesson description section #}
-    <h4>Description</h4>
-    <p>{{ lesson.description }}</p>
+    <div class="section">
+    <h3>Lesson Description</h3>
+    <div class="big-box">{{ lesson.description }}</div>
+    </div>
 
     {# Lesson objective section #}
-    <h4>Objective</h4>
-    <p>{{ lesson.objective }}</p>
+    <div class="section">
+    <h3>Lesson Objective</h3>
+    <div class="big-box">{{ lesson.objective }}</div>
+    </div>
 
     {# Reading list checklist form #}
-    <h4>Reading List</h4>
+    <h3>Reading List</h3>
     <form method="post">
         {% csrf_token %}  {# CSRF token for security #}
         <ul class="list-group">
@@ -39,7 +140,7 @@
     </form>
 
     {# Lesson info section: effort, credit, designer #}
-    <h4>Lesson Info</h4>
+    <h3>Lesson Info</h3>
     <ul>
         <li>Effort per week: {{ lesson.effort_per_week }} hrs</li>
         <li>Credit point: {{ lesson.credit_points }}</li>
@@ -47,11 +148,14 @@
     </ul>
 
     {# Assignments section #}
-    <h4>Assignments</h4>
+    <h3>Assignments</h3>
     {% if lesson.assignments.all %}
         <ul>
         {% for assignment in lesson.assignments.all %}
-            <li>{{ assignment.title }}</li>
+            <div class="check-item">
+                <div class="desc-box">{{ assignment.title }}</div>
+                <input type="checkbox" name="assignment-{{ assignment.id }}">
+            </div>
         {% endfor %}
         </ul>
     {% else %}
