@@ -121,13 +121,14 @@ def ensure_profiles(sender, instance, created, **kwargs):
 import uuid
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
-    lesson_id = models.CharField(max_length=10, unique=False, editable=False)  
+    lesson_id = models.CharField(max_length=10, unique=False, editable=False)
     title = models.CharField(max_length=200)
     description = models.TextField()
     objective = models.TextField(blank=True, null=True)
     designer = models.ForeignKey(
         Instructor, on_delete=models.SET_NULL, null=True, related_name="lessons"
     )
+    enrolled_students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="enrolled_lessons", blank=True)
     effort_per_week = models.PositiveIntegerField(default=0)
     credit_point = models.DecimalField(max_digits=4, decimal_places=1, default=0)
     created_at = models.DateTimeField(auto_now_add=True)

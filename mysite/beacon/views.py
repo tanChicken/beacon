@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction, IntegrityError
 from django.contrib.auth import get_user_model
 
-from .models import Course, Student, StudentProfile  # note: import Student & StudentProfile
+from .models import Course, Student, StudentProfile, User  # note: import Student & StudentProfile
 
 
 # Create your views here.
@@ -131,26 +131,50 @@ def lesson_detail(request, lesson_id):
     lesson = get_object_or_404(Lesson, id=lesson_id)
     reading_items = lesson.reading_items.all()
 
+    # Check if student is enrolled in this lesson
+    is_enrolled = request.user in lesson.enrolled_students.all()
+
+    # Check if student is enrolled in the course (prerequisite for lesson enrollment)
+    can_enroll = False
+    if lesson.course and request.user.role == "STUDENT":
+        can_enroll = request.user in lesson.course.students.all()
+
     if request.method == "POST" and request.user.is_authenticated:
-        for item in reading_items:
-            checkbox = str(item.id) in request.POST
-            progress, created = StudentReadingListProgress.objects.get_or_create(
-                student=request.user, item=item
-            )
-            progress.completed = checkbox
-            progress.save()
-        return redirect("lesson_detail", lesson_id=lesson.id)
+        # Handle lesson enrollment
+        if 'enroll_lesson' in request.POST and can_enroll and not is_enrolled:
+            lesson.enrolled_students.add(request.user)
+            messages.success(request, f"You have enrolled in {lesson.title}!")
+            return redirect("lesson_detail", lesson_id=lesson.id)
+
+        # Handle lesson unenrollment
+        elif 'unenroll_lesson' in request.POST and is_enrolled:
+            lesson.enrolled_students.remove(request.user)
+            messages.success(request, f"You have unenrolled from {lesson.title}!")
+            return redirect("lesson_detail", lesson_id=lesson.id)
+
+        # Handle reading list progress (only if enrolled)
+        elif is_enrolled:
+            for item in reading_items:
+                checkbox = str(item.id) in request.POST
+                progress, created = StudentReadingListProgress.objects.get_or_create(
+                    student=request.user, item=item
+                )
+                progress.completed = checkbox
+                progress.save()
+            return redirect("lesson_detail", lesson_id=lesson.id)
 
     completed_ids = list(
-    StudentReadingListProgress.objects
-        .filter(student=request.user, item__lesson=lesson, completed=True)
-        .values_list('item_id', flat=True)
-)
+        StudentReadingListProgress.objects
+            .filter(student=request.user, item__lesson=lesson, completed=True)
+            .values_list('item_id', flat=True)
+    )
 
     return render(request, "lesson_detail.html", {
         "lesson": lesson,
         "reading_items": reading_items,
         "progress": completed_ids,
+        "is_enrolled": is_enrolled,
+        "can_enroll": can_enroll,
     })
 
 def instructor_login(request):
@@ -259,27 +283,52 @@ from .forms import LessonDetailForm, ReadingItemForm
 @login_required
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk, course__instructor=request.user)
-    
+
     # Lesson main form
     lesson_form = LessonDetailForm(request.POST or None, instance=lesson)
-    
+
     # Reading list formset
     ReadingFormSet = inlineformset_factory(
         Lesson, StudentReadingListItem, form=ReadingItemForm, extra=1, can_delete=True
     )
     reading_formset = ReadingFormSet(request.POST or None, instance=lesson)
-    
+
+    # Get students enrolled in the course for enrollment options
+    course_students = lesson.course.students.all() if lesson.course else []
+    enrolled_students = lesson.enrolled_students.all()
+
     if request.method == "POST":
-        if lesson_form.is_valid() and reading_formset.is_valid():
+        # Handle student enrollment
+        if 'enroll_student' in request.POST:
+            student_id = request.POST.get('student_id')
+            if student_id:
+                student = get_object_or_404(User, id=student_id)
+                lesson.enrolled_students.add(student)
+                messages.success(request, f"{student.username} enrolled in lesson successfully!")
+                return redirect("lesson_detail_edit", pk=lesson.pk)
+
+        # Handle student unenrollment
+        elif 'unenroll_student' in request.POST:
+            student_id = request.POST.get('student_id')
+            if student_id:
+                student = get_object_or_404(User, id=student_id)
+                lesson.enrolled_students.remove(student)
+                messages.success(request, f"{student.username} unenrolled from lesson successfully!")
+                return redirect("lesson_detail_edit", pk=lesson.pk)
+
+        # Handle lesson form and reading list updates
+        elif lesson_form.is_valid() and reading_formset.is_valid():
             lesson_form.save()
             reading_formset.save()
             messages.success(request, "Lesson updated successfully!")
             return redirect("lesson_detail_edit", pk=lesson.pk)
-    
+
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
         "lesson_form": lesson_form,
         "reading_formset": reading_formset,
+        "enrolled_students": enrolled_students,
+        "course_students": course_students,
     })
 
 @login_required
