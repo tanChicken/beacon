@@ -71,6 +71,33 @@
     <div class="lesson-header">
         <h2>{{ lesson.lesson_id }}</h2>
         <h2 class="mb-5">{{ lesson.title }}</h2>
+
+        <!-- Student Enrollment Status and Actions -->
+        {% if user.role == "STUDENT" %}
+        <div class="enrollment-status mb-3">
+            {% if is_enrolled %}
+                <div class="alert alert-success" role="alert">
+                    ✅ You are enrolled in this lesson
+                </div>
+                <form method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" name="unenroll_lesson" class="btn btn-outline-danger">Unenroll from Lesson</button>
+                </form>
+            {% elif can_enroll %}
+                <div class="alert alert-info" role="alert">
+                    You can enroll in this lesson
+                </div>
+                <form method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" name="enroll_lesson" class="btn btn-primary">Enroll in Lesson</button>
+                </form>
+            {% else %}
+                <div class="alert alert-warning" role="alert">
+                    You must be enrolled in the course to access this lesson
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="d-flex justify-content-between">
@@ -98,6 +125,10 @@
         <td>Task 1 description goes here</td>
         <td>2 hours</td>
         </tr>
+        <tr>
+        <td>Task 2 description goes here</td>
+        <td>1.5 hours</td>
+        </tr>
     </tbody>
     </table>
     
@@ -115,6 +146,7 @@
 
     {# Reading list checklist form #}
     <h3>Reading List</h3>
+    {% if is_enrolled or user.role == "INSTRUCTOR" %}
     <form method="post">
         {% csrf_token %}  {# CSRF token for security #}
         <ul class="list-group">
@@ -129,8 +161,15 @@
             <li class="list-group-item text-muted">No reading list provided.</li>
         {% endfor %}
         </ul>
+        {% if user.role == "STUDENT" %}
         <button type="submit" class="btn btn-primary mt-2">Save Progress</button>
+        {% endif %}
     </form>
+    {% else %}
+    <div class="alert alert-warning">
+        You must be enrolled in this lesson to access the reading list.
+    </div>
+    {% endif %}
 
     {# Lesson info section: effort, credit, designer #}
     <h3>Lesson Info</h3>

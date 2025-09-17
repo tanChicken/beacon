@@ -60,6 +60,44 @@
         {{ lesson_form.effort_per_week }}
     </div>
 
+        <!-- Student Enrolled list -->
+        <h4>Students Enrolled</h4>
+        <ul class="list-group mb-3">
+            {% for student in enrolled_students %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ student.username }} ({{ student.email }})
+                <form method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                    <button type="submit" name="unenroll_student" class="btn btn-sm btn-outline-danger">Remove</button>
+                </form>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">No students enrolled yet.</li>
+            {% endfor %}
+        </ul>
+
+        <!-- Add Student to Lesson -->
+        <h5>Add Student to Lesson</h5>
+        <form method="POST" class="mb-3">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-8">
+                    <select name="student_id" class="form-select" required>
+                        <option value="">Select a student from course...</option>
+                        {% for student in course_students %}
+                            {% if student not in enrolled_students %}
+                            <option value="{{ student.id }}">{{ student.username }} ({{ student.email }})</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" name="enroll_student" class="btn btn-primary">Enroll Student</button>
+                </div>
+            </div>
+        </form>
+
     <!-- Assignment -->
     <div class="mb-3">
         <label for="{{ lesson_form.assignment.id_for_label }}" class="form-label fw-semibold">Assignment Details</label>
