@@ -39,9 +39,9 @@
     <h4>Lessons</h4>
     <div class="list-group">
         {% for lesson in course.lessons.all %}
-        <div class="list-group-item">
-            <strong>{{ lesson.lesson_id }}</strong> – {{ lesson.title }}
-        </div>
+        <a href=# class="list-group-item list-group-item-action">
+            <strong>{{ lesson.id }}</strong> – {{ lesson.title }}
+        </a>
         {% empty %}
         <p class="text-muted">No lessons added yet.</p>
         {% endfor %}

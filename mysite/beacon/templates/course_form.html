@@ -20,7 +20,7 @@
         {% for lesson in lessons %}
           <div class="lesson-form mb-2">
             <label>Lesson Title:</label>
-            <span>{{ lesson.title }}</span>
+            <span><strong>{{ lesson.lesson_id }}</strong> – {{ lesson.title }}</span>
           </div>
         {% empty %}
           <p class="text-muted">No lessons added.</p>
