@@ -48,7 +48,7 @@ class CourseForm(forms.ModelForm):
 
     class Meta:
         model = Course
-        fields = ["course_id", "title", "status", "instructor"]
+        fields = ["course_id", "title", "status"]
 
 from django.forms import formset_factory
 
