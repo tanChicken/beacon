@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course
+from .models import Course, StudentReadingListItem
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
@@ -68,3 +68,13 @@ class LessonForm(forms.ModelForm):
 LessonFormSet = inlineformset_factory(
     Course, Lesson, form=LessonForm, extra=1, can_delete=False
 )
+
+class LessonDetailForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ["title", "objective", "description", "effort_per_week", "credit_point"]
+
+class ReadingItemForm(forms.ModelForm):
+    class Meta:
+        model = StudentReadingListItem
+        fields = ["title"]

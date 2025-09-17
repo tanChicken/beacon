@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Course, Lesson, StudentReadingListProgress
-from .forms import CourseForm, InstructorLoginForm, StudentLoginForm, StudentSignupForm
+from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm
 from django.contrib import messages
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
@@ -252,3 +252,43 @@ def create_course(request):
         form = CourseForm()
 
     return render(request, "course_form.html", {"form": form, "action": "Create"})
+
+from .models import Lesson, StudentReadingListItem
+from .forms import LessonDetailForm, ReadingItemForm
+
+@login_required
+def lesson_detail_edit(request, pk):
+    lesson = get_object_or_404(Lesson, pk=pk, course__instructor=request.user)
+    
+    # Lesson main form
+    lesson_form = LessonDetailForm(request.POST or None, instance=lesson)
+    
+    # Reading list formset
+    ReadingFormSet = inlineformset_factory(
+        Lesson, StudentReadingListItem, form=ReadingItemForm, extra=1, can_delete=True
+    )
+    reading_formset = ReadingFormSet(request.POST or None, instance=lesson)
+    
+    if request.method == "POST":
+        if lesson_form.is_valid() and reading_formset.is_valid():
+            lesson_form.save()
+            reading_formset.save()
+            messages.success(request, "Lesson updated successfully!")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
+    
+    return render(request, "lesson_detail_edit.html", {
+        "lesson": lesson,
+        "lesson_form": lesson_form,
+        "reading_formset": reading_formset,
+    })
+
+@login_required
+def add_lessons(request, pk):
+    if request.method == "POST" and request.user.role == "INSTRUCTOR":
+        course = get_object_or_404(Course, pk=pk, instructor=request.user)
+        lesson_titles = request.POST.getlist("lesson_title")
+        for title in lesson_titles:
+            if title.strip():
+                Lesson.objects.create(course=course, designer=request.user, title=title)
+        messages.success(request, f"{len(lesson_titles)} lesson(s) added successfully!")
+        return redirect("course_detail", pk=course.id)
