@@ -1,65 +1,58 @@
 {% extends "base.html" %}
 {% block title %}{{ action }} Course{% endblock %}
 {% block content %}
-  <div class="container">
-    <h2>{{ action }} Course</h2>
-    <form method="POST">
-      {% csrf_token %}
-      {{ form.as_p }}
+<div class="container">
+  <h2>{{ action }} Course</h2>
+  <form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
 
+    <!-- Fixed credit points -->
     <div class="form-group">
-      <label>Credit Points: </label>
-      <span>{{ course.credit_points|default:30 }}</span>        </div>
+      <label>Credit Points:</label>
+      <span>30</span>
+    </div>
+
     <hr>
-
-    <!-- Lesson Section -->
-    <div class="mt-4">
-      <h3>Lessons</h3>
-      <div id="lessons">
-        {{ lesson_formset.management_form }}
-        {% for form in lesson_formset %}
-          <div class="lesson-form mb-3 p-2 border rounded">
-            {{ form.as_p }}
+    <h4>Lessons</h4>
+    <div id="lessons">
+      {% if read_only_lessons %}
+        {% for lesson in lessons %}
+          <div class="lesson-form mb-2">
+            <label>Lesson Title:</label>
+            <span><strong>{{ lesson.lesson_id }}</strong> – {{ lesson.title }}</span>
           </div>
-        {% endfor %}
-      </div>
-      <button type="button" class="btn btn-sm btn-success" onclick="addLesson()">+ Add Lesson</button>
-
-    <!-- Student Section -->
-    <div class="mt-4">
-      <h3>Students</h3>
-      <a href=# class="btn btn-success">+ Add Student</a>
-      <!-- {# Example:
-      <ul>
-        {% for student in course.students.all %}
-          <li>{{ student.name }}</li>
         {% empty %}
-          <li>No students enrolled yet.</li>
+          <p class="text-muted">No lessons added.</p>
         {% endfor %}
-      </ul>
-      #} -->
+      {% else %}
+        <!-- Create mode: allow adding lessons -->
+        <div class="lesson-form mb-2">
+          <label>Lesson Title</label>
+          <input type="text" name="lesson_title" class="form-control">
+        </div>
+      {% endif %}
     </div>
 
-    <!-- Classroom Section -->
-    <div class="mt-4">
-      <h3>Classrooms</h3>
-      <a href=# class="btn btn-success">+ Create Classroom</a>
-      <!-- {# Example:
-      <ul>
-        {% for classroom in course.classrooms.all %}
-          <li>{{ classroom.name }}</li>
-        {% empty %}
-          <li>No classrooms assigned yet.</li>
-        {% endfor %}
-      </ul>
-      #} -->
-    </div>
+    {% if not read_only_lessons %}
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLesson()">+ Add Lesson</button>
+    {% endif %}
 
-    <div class="mt-5">
-      <button type="submit" class="btn btn-primary">{{ action }}</button>
+    <div class="mt-4">
+      <button type="submit" class="btn btn-primary">{{ action }} Course</button>
       <a href="{% url 'instructor_dashboard' %}" class="btn btn-secondary">Cancel</a>
     </div>
-    </form>
-  </div>
+  </form>
+</div>
 
+{% if not read_only_lessons %}
+<script>
+function addLesson() {
+  const div = document.createElement('div');
+  div.classList.add("lesson-form", "mb-2");
+  div.innerHTML = '<label>Lesson Title</label><input type="text" name="lesson_title" class="form-control">';
+  document.getElementById('lessons').appendChild(div);
+}
+</script>
+{% endif %}
 {% endblock %}
