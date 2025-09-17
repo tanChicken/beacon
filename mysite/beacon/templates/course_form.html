@@ -3,83 +3,56 @@
 {% block content %}
 <div class="container">
   <h2>{{ action }} Course</h2>
-
   <form method="POST">
     {% csrf_token %}
     {{ form.as_p }}
 
+    <!-- Fixed credit points -->
     <div class="form-group">
       <label>Credit Points:</label>
       <span>30</span>
     </div>
+
     <hr>
-
-    <!-- LESSONS SECTION -->
-    <div class="mt-4">
-      <h3>Lessons</h3>
-
-      <div id="lessons-container">
-        {# Prepopulate existing lessons (edit) #}
-        {% for l in lessons %}
-          <div class="lesson-row mb-2 d-flex align-items-center" data-index="{{ forloop.counter0 }}">
-            <!-- existing lesson id -->
-            <input type="hidden" name="lesson_id" value="{{ l.id }}">
-            <input type="text" name="lesson_title" class="form-control mr-2" style="width:80%;" value="{{ l.title }}" placeholder="Lesson title">
-            <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeRow(this)">Remove</button>
+    <h4>Lessons</h4>
+    <div id="lessons">
+      {% if read_only_lessons %}
+        {% for lesson in lessons %}
+          <div class="lesson-form mb-2">
+            <label>Lesson Title:</label>
+            <span>{{ lesson.title }}</span>
           </div>
+        {% empty %}
+          <p class="text-muted">No lessons added.</p>
         {% endfor %}
-      </div>
-
-      <!-- no prefilled lessons? optionally show nothing; user clicks Add Lesson to add -->
-      <div class="mt-2">
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLessonRow()">+ Create Lesson</button>
-      </div>
+      {% else %}
+        <!-- Create mode: allow adding lessons -->
+        <div class="lesson-form mb-2">
+          <label>Lesson Title</label>
+          <input type="text" name="lesson_title" class="form-control">
+        </div>
+      {% endif %}
     </div>
 
-    <div class="mt-5">
+    {% if not read_only_lessons %}
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLesson()">+ Add Lesson</button>
+    {% endif %}
+
+    <div class="mt-4">
       <button type="submit" class="btn btn-primary">{{ action }} Course</button>
       <a href="{% url 'instructor_dashboard' %}" class="btn btn-secondary">Cancel</a>
     </div>
   </form>
 </div>
 
+{% if not read_only_lessons %}
 <script>
-// Adds a new empty lesson row (no id => server treats as new)
-function addLessonRow() {
-  const container = document.getElementById('lessons-container');
+function addLesson() {
   const div = document.createElement('div');
-  div.className = 'lesson-row mb-2 d-flex align-items-center';
-
-  // hidden id (empty)
-  const hid = document.createElement('input');
-  hid.type = 'hidden';
-  hid.name = 'lesson_id';
-  hid.value = '';  // empty means new lesson
-
-  const inp = document.createElement('input');
-  inp.type = 'text';
-  inp.name = 'lesson_title';
-  inp.placeholder = 'Lesson title';
-  inp.className = 'form-control mr-2';
-  inp.style.width = '80%';
-
-  const removeBtn = document.createElement('button');
-  removeBtn.type = 'button';
-  removeBtn.className = 'btn btn-sm btn-outline-danger ms-2';
-  removeBtn.textContent = 'Remove';
-  removeBtn.onclick = function () { removeRow(removeBtn); };
-
-  div.appendChild(hid);
-  div.appendChild(inp);
-  div.appendChild(removeBtn);
-
-  container.appendChild(div);
-}
-
-// Removes the row from DOM
-function removeRow(btn) {
-  const row = btn.closest('.lesson-row');
-  if (row) row.remove();
+  div.classList.add("lesson-form", "mb-2");
+  div.innerHTML = '<label>Lesson Title</label><input type="text" name="lesson_title" class="form-control">';
+  document.getElementById('lessons').appendChild(div);
 }
 </script>
+{% endif %}
 {% endblock %}
