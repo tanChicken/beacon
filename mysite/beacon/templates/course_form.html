@@ -1,65 +1,85 @@
 {% extends "base.html" %}
 {% block title %}{{ action }} Course{% endblock %}
 {% block content %}
-  <div class="container">
-    <h2>{{ action }} Course</h2>
-    <form method="POST">
-      {% csrf_token %}
-      {{ form.as_p }}
+<div class="container">
+  <h2>{{ action }} Course</h2>
+
+  <form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
 
     <div class="form-group">
-      <label>Credit Points: </label>
-      <span>{{ course.credit_points|default:30 }}</span>        </div>
+      <label>Credit Points:</label>
+      <span>30</span>
+    </div>
     <hr>
 
-    <!-- Lesson Section -->
+    <!-- LESSONS SECTION -->
     <div class="mt-4">
       <h3>Lessons</h3>
-      <div id="lessons">
-        {{ lesson_formset.management_form }}
-        {% for form in lesson_formset %}
-          <div class="lesson-form mb-3 p-2 border rounded">
-            {{ form.as_p }}
+
+      <div id="lessons-container">
+        {# Prepopulate existing lessons (edit) #}
+        {% for l in lessons %}
+          <div class="lesson-row mb-2 d-flex align-items-center" data-index="{{ forloop.counter0 }}">
+            <!-- existing lesson id -->
+            <input type="hidden" name="lesson_id" value="{{ l.id }}">
+            <input type="text" name="lesson_title" class="form-control mr-2" style="width:80%;" value="{{ l.title }}" placeholder="Lesson title">
+            <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeRow(this)">Remove</button>
           </div>
         {% endfor %}
       </div>
-      <button type="button" class="btn btn-sm btn-success" onclick="addLesson()">+ Add Lesson</button>
 
-    <!-- Student Section -->
-    <div class="mt-4">
-      <h3>Students</h3>
-      <a href=# class="btn btn-success">+ Add Student</a>
-      <!-- {# Example:
-      <ul>
-        {% for student in course.students.all %}
-          <li>{{ student.name }}</li>
-        {% empty %}
-          <li>No students enrolled yet.</li>
-        {% endfor %}
-      </ul>
-      #} -->
-    </div>
-
-    <!-- Classroom Section -->
-    <div class="mt-4">
-      <h3>Classrooms</h3>
-      <a href=# class="btn btn-success">+ Create Classroom</a>
-      <!-- {# Example:
-      <ul>
-        {% for classroom in course.classrooms.all %}
-          <li>{{ classroom.name }}</li>
-        {% empty %}
-          <li>No classrooms assigned yet.</li>
-        {% endfor %}
-      </ul>
-      #} -->
+      <!-- no prefilled lessons? optionally show nothing; user clicks Add Lesson to add -->
+      <div class="mt-2">
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLessonRow()">+ Create Lesson</button>
+      </div>
     </div>
 
     <div class="mt-5">
-      <button type="submit" class="btn btn-primary">{{ action }}</button>
+      <button type="submit" class="btn btn-primary">{{ action }} Course</button>
       <a href="{% url 'instructor_dashboard' %}" class="btn btn-secondary">Cancel</a>
     </div>
-    </form>
-  </div>
+  </form>
+</div>
 
+<script>
+// Adds a new empty lesson row (no id => server treats as new)
+function addLessonRow() {
+  const container = document.getElementById('lessons-container');
+  const div = document.createElement('div');
+  div.className = 'lesson-row mb-2 d-flex align-items-center';
+
+  // hidden id (empty)
+  const hid = document.createElement('input');
+  hid.type = 'hidden';
+  hid.name = 'lesson_id';
+  hid.value = '';  // empty means new lesson
+
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.name = 'lesson_title';
+  inp.placeholder = 'Lesson title';
+  inp.className = 'form-control mr-2';
+  inp.style.width = '80%';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'btn btn-sm btn-outline-danger ms-2';
+  removeBtn.textContent = 'Remove';
+  removeBtn.onclick = function () { removeRow(removeBtn); };
+
+  div.appendChild(hid);
+  div.appendChild(inp);
+  div.appendChild(removeBtn);
+
+  container.appendChild(div);
+}
+
+// Removes the row from DOM
+function removeRow(btn) {
+  const row = btn.closest('.lesson-row');
+  if (row) row.remove();
+}
+</script>
 {% endblock %}

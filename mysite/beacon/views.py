@@ -173,32 +173,34 @@ def instructor_dashboard(request):
     courses = Course.objects.filter(instructor=request.user)
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
+from django.forms import inlineformset_factory
+from .forms import CourseForm, LessonForm
 @login_required
-def create_course(request):
-    if request.method == "POST":
-        form = CourseForm(request.POST)
-        if form.is_valid():
-            course = form.save(commit=False)
-            course.instructor = request.user
-            course.save()
-            messages.success(request, "Course created successfully!")
-            return redirect("course_detail", pk=course.pk)
-    else:
-        form = CourseForm()
-    return render(request, "course_form.html", {"form": form, "action": "Create"})
+# def create_course(request):
+#     if request.method == "POST":
+#         form = CourseForm(request.POST)
+#         if form.is_valid():
+#             course = form.save(commit=False)
+#             course.instructor = request.user
+#             course.save()
+#             messages.success(request, "Course created successfully!")
+#             return redirect("course_detail", pk=course.pk)
+#     else:
+#         form = CourseForm()
+#     return render(request, "course_form.html", {"form": form, "action": "Create"})
 
-@login_required
-def edit_course(request, pk):
-    course = get_object_or_404(Course, pk=pk, instructor=request.user)
-    if request.method == "POST":
-        form = CourseForm(request.POST, instance=course)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Course updated successfully!")
-            return redirect("instructor_dashboard")
-    else:
-        form = CourseForm(instance=course)
-    return render(request, "course_form.html", {"form": form, "action": "Update"})
+# @login_required
+# def edit_course(request, pk):
+#     course = get_object_or_404(Course, pk=pk, instructor=request.user)
+#     if request.method == "POST":
+#         form = CourseForm(request.POST, instance=course)
+#         if form.is_valid():
+#             form.save()
+#             messages.success(request, "Course updated successfully!")
+#             return redirect("instructor_dashboard")
+#     else:
+#         form = CourseForm(instance=course)
+#     return render(request, "course_form.html", {"form": form, "action": "Update"})
 
 @login_required
 def delete_course(request, pk):
@@ -213,3 +215,118 @@ def delete_course(request, pk):
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     return render(request,"course_details.html", {"course":course})
+
+LessonFormSet = inlineformset_factory(
+    Course, Lesson, form=LessonForm, extra=1, can_delete=True
+)
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.db import transaction
+from .models import Course, Lesson
+from .forms import CourseForm
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def create_course(request):
+    if request.method == "POST":
+        form = CourseForm(request.POST)
+        # read repeated fields
+        lesson_ids = request.POST.getlist("lesson_id")       # empty for new rows
+        lesson_titles = request.POST.getlist("lesson_title")
+        if form.is_valid():
+            with transaction.atomic():
+                course = form.save(commit=False)
+                # if you want course director chosen from form remove next line;
+                # here we assign the logged-in user as instructor (you can keep/change)
+                course.instructor = request.user
+                course.save()
+
+                # create lessons coming from posted rows
+                for lid, ltitle in zip(lesson_ids, lesson_titles):
+                    title = (ltitle or "").strip()
+                    if title:
+                        # create new lesson (lid is blank for new)
+                        lesson = Lesson.objects.create(
+                            course=course,
+                            title=title,
+                            designer=request.user  # auto-assign instructor as designer
+                        )
+                messages.success(request, "Course and lessons created successfully!")
+                return redirect("course_detail", pk=course.pk)
+        else:
+            messages.error(request, "Please fix errors in the form.")
+    else:
+        form = CourseForm()
+    # When GET — render an empty template with no lesson rows by default
+    return render(request, "course_form.html", {
+        "form": form,
+        "action": "Create",
+        "lessons": [],    # template uses this to pre-populate rows on edit
+    })
+
+
+@login_required
+def edit_course(request, pk):
+    # restrict edit to course instructor (change if you want other rules)
+    course = get_object_or_404(Course, pk=pk, instructor=request.user)
+
+    if request.method == "POST":
+        form = CourseForm(request.POST, instance=course)
+        lesson_ids = request.POST.getlist("lesson_id")
+        lesson_titles = request.POST.getlist("lesson_title")
+
+        if form.is_valid():
+            with transaction.atomic():
+                form.save()
+
+                submitted_ids = set()
+                # update existing lessons or create new ones
+                for lid, ltitle in zip(lesson_ids, lesson_titles):
+                    title = (ltitle or "").strip()
+                    if lid:  # existing lesson -> update or delete if blank title
+                        submitted_ids.add(lid)
+                        try:
+                            lesson = Lesson.objects.get(pk=lid, course=course)
+                        except Lesson.DoesNotExist:
+                            continue
+                        if title:
+                            lesson.title = title
+                            lesson.save()
+                        else:
+                            # empty title -> delete the lesson
+                            lesson.delete()
+                    else:
+                        # new lesson (no id) -> create if non-empty title
+                        if title:
+                            Lesson.objects.create(
+                                course=course,
+                                title=title,
+                                designer=request.user
+                            )
+
+                # delete lessons that existed before but weren't submitted
+                existing_ids = set(str(l.id) for l in course.lessons.all())
+                to_delete = existing_ids - submitted_ids
+                # remove any where id not in submitted list
+                for did in to_delete:
+                    try:
+                        Lesson.objects.get(pk=did, course=course).delete()
+                    except Lesson.DoesNotExist:
+                        pass
+
+                messages.success(request, "Course updated successfully!")
+                return redirect("course_detail", pk=course.pk)
+        else:
+            messages.error(request, "Please fix errors in the form.")
+    else:
+        form = CourseForm(instance=course)
+
+    # prepare lessons list (id + title) to prefill the template
+    lesson_rows = list(course.lessons.all().values("id", "title"))
+    return render(request, "course_form.html", {
+        "form": form,
+        "action": "Edit",
+        "course": course,
+        "lessons": lesson_rows,
+    })

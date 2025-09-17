@@ -41,10 +41,6 @@
         {% for lesson in course.lessons.all %}
         <div class="list-group-item">
             <strong>{{ lesson.lesson_id }}</strong> – {{ lesson.title }}
-            <div class="d-flex justify-content-between mt-1">
-                <span>Status: {{ lesson.status }}</span>
-                <span>Credit Point: {{ lesson.credit_points }}</span>
-            </div>
         </div>
         {% empty %}
         <p class="text-muted">No lessons added yet.</p>
