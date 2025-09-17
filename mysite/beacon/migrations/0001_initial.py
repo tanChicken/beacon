@@ -17,6 +17,20 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
+            name='Lesson',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('lesson_id', models.CharField(max_length=50, unique=True)),
+                ('title', models.CharField(max_length=200)),
+                ('description', models.TextField()),
+                ('objective', models.TextField(blank=True, null=True)),
+                ('effort_per_week', models.PositiveIntegerField(default=0)),
+                ('credit_point', models.DecimalField(decimal_places=1, default=0, max_digits=4)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+            ],
+        ),
+        migrations.CreateModel(
             name='TodoItem',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
