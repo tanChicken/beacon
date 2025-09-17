@@ -1,15 +1,26 @@
 {% extends "base.html" %}  {# Inherit from the base template #}
+{% block title %}Lesson Details{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    {# Lesson header: ID and title #}
-    <h2>{{ lesson.lesson_id }} – {{ lesson.title }}</h2>
-    <p class="text-muted">
-        Created: {{ lesson.created_at|date:"j/n/Y" }} | 
-        Updated: {{ lesson.updated_at|date:"M d, Y H:i" }}
-    </p>
 
-    <hr>
+    <div class="text-center mb-4">
+        <h2>{{ lesson.lesson_id }}</h2>
+        <h2 class="mb-5">{{ lesson.title }}</h2>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <div>
+            <p>Status: {{ lesson.status }}</p>
+            <p>Designed by: {{ lesson.designer.username }} on {{ lesson.created_at|date:"j/n/Y" }}</p>
+        </div>
+        <div>
+            <p>Credit Point: {{ lesson.credit_point }}</p>
+            <p>Last updated: {{ lesson.updated_at|date:"M d, Y H:i" }}</p>
+        </div>
+    </div>
+
+    <hr class="my-2">
 
     {# Lesson description section #}
     <h4>Description</h4>
