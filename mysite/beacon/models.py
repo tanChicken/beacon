@@ -23,7 +23,7 @@ class Course(models.Model):
         ],
         default="active"
     )
-    credit_points = 30
+    credit_points = models.IntegerField(default=30, editable=False)
     created_at = models.DateTimeField(default=timezone.now)  # when course is first created
     updated_at = models.DateTimeField(auto_now=True)      # automatically updated on save
     instructor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="courses_teaching")
@@ -118,8 +118,10 @@ def ensure_profiles(sender, instance, created, **kwargs):
     if role in (getattr(User.Role, "INSTRUCTOR", "INSTRUCTOR"), "INSTRUCTOR"):
         InstructorProfile.objects.get_or_create(user=instance)  
 
+import uuid
 class Lesson(models.Model):
-    lesson_id = models.CharField(max_length=50, unique=True)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
+    lesson_id = models.CharField(max_length=10, unique=False, editable=False)  
     title = models.CharField(max_length=200)
     description = models.TextField()
     objective = models.TextField(blank=True, null=True)
@@ -131,6 +133,11 @@ class Lesson(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        if not self.lesson_id:
+            count = Lesson.objects.filter(course=self.course).count() + 1
+            self.lesson_id = f"L{count:03d}"   
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.lesson_id} - {self.title}"

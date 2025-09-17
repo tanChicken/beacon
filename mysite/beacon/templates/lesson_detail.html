@@ -98,6 +98,13 @@
         <td>Task 1 description goes here</td>
         <td>2 hours</td>
         </tr>
+        <tr>
+        <td>Task 2 description goes here</td>
+        <td>1.5 hours</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2" class="text-muted">No tasks available.</td></tr>
+      {% endfor %}
     </tbody>
     </table>
     
