@@ -38,14 +38,75 @@
     <hr class="my-2">
 
     <!-- Lessons -->
-    <h4>Lessons</h4>
-    <div id="lessonList" class="list-group mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Lessons</h4>
+        <div>
+            <button id="lessonsListViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+            <button id="lessonsCardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+        </div>
+    </div>
+
+    <!-- Lessons List View -->
+    <div id="lessonsListView" class="list-group mb-3">
         {% for lesson in course.lessons.all %}
+        {% if user.role == "INSTRUCTOR" %}
         <a href="{% url 'lesson_detail_edit' lesson.id %}" class="list-group-item list-group-item-action">
-            {{ lesson.title }}
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ lesson.title }}</strong>
+                    <div class="small text-muted">{{ lesson.lesson_id }} | {{ lesson.effort_per_week }} hrs/week</div>
+                </div>
+                <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
+            </div>
         </a>
+        {% else %}
+        <a href="{% url 'lesson_detail' lesson.id %}" class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ lesson.title }}</strong>
+                    <div class="small text-muted">{{ lesson.lesson_id }} | {{ lesson.effort_per_week }} hrs/week</div>
+                </div>
+                <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
+            </div>
+        </a>
+        {% endif %}
         {% empty %}
         <p class="text-muted">No lessons added yet.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Lessons Card View -->
+    <div id="lessonsCardView" class="row mb-3 d-none">
+        {% for lesson in course.lessons.all %}
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+            {% if user.role == "INSTRUCTOR" %}
+            <a href="{% url 'lesson_detail_edit' lesson.id %}" style="text-decoration: none;">
+            {% else %}
+            <a href="{% url 'lesson_detail' lesson.id %}" style="text-decoration: none;">
+            {% endif %}
+                <div class="card" style="border: 2px solid #17a2b8; border-radius: 10px; background-color: #ffffff; height: 180px; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="text-info font-weight-bold small">{{ lesson.lesson_id }}</div>
+                            <h6 class="card-title font-weight-bold text-dark">{{ lesson.title }}</h6>
+                        </div>
+                        <div>
+                            <p class="card-text small text-muted mb-1">
+                                <strong>Effort:</strong> {{ lesson.effort_per_week }} hrs/week
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
+                                <small class="text-muted">{{ lesson.updated_at|date:"M d" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-muted">No lessons added yet.</p>
+        </div>
         {% endfor %}
     </div>
 
@@ -88,16 +149,52 @@
     <hr class="mb-3">
 
     <!-- Enrolled Students -->
-    <h4>Enrolled Students</h4>
-    <ul class="list-group">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Enrolled Students</h4>
+        <div>
+            <button id="studentsListViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+            <button id="studentsCardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+        </div>
+    </div>
+
+    <!-- Students List View -->
+    <div id="studentsListView">
+        <ul class="list-group">
+            {% for student in course.students.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                    <div class="small text-muted">{{ student.email }} | Student ID: {{ student.studentprofile.student_id|default:"N/A" }}</div>
+                </div>
+                <span class="badge badge-primary">{{ student.role|title }}</span>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">No students enrolled yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Students Card View -->
+    <div id="studentsCardView" class="row d-none">
         {% for student in course.students.all %}
-        <li class="list-group-item">
-            {{ student.first_name }} {{ student.last_name }}
-        </li>
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="card" style="border: 2px solid #28a745; border-radius: 10px; background-color: #ffffff; height: 150px;">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h6 class="card-title font-weight-bold">{{ student.first_name }} {{ student.last_name }}</h6>
+                        <p class="card-text small">{{ student.email }}</p>
+                    </div>
+                    <div>
+                        <p class="card-text small"><strong>ID:</strong> {{ student.studentprofile.student_id|default:"N/A" }}</p>
+                        <span class="badge badge-success">{{ student.role|title }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
         {% empty %}
-        <li class="list-group-item text-muted">No students enrolled yet.</li>
+        <p class="text-muted">No students enrolled yet.</p>
         {% endfor %}
-    </ul>
+    </div>
 </div>
 
 {% if user.role == "INSTRUCTOR" %}
@@ -114,5 +211,84 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+// Wait for DOM to be fully loaded
+document.addEventListener("DOMContentLoaded", function() {
+    // Lessons view toggle functionality
+    const lessonsListBtn = document.getElementById("lessonsListViewBtn");
+    const lessonsCardBtn = document.getElementById("lessonsCardViewBtn");
+    const lessonsListView = document.getElementById("lessonsListView");
+    const lessonsCardView = document.getElementById("lessonsCardView");
+
+    if (lessonsListBtn && lessonsCardBtn && lessonsListView && lessonsCardView) {
+        lessonsListBtn.addEventListener("click", function() {
+            lessonsListView.classList.remove("d-none");
+            lessonsCardView.classList.add("d-none");
+            this.classList.add("btn-primary");
+            this.classList.remove("btn-outline-primary");
+            lessonsCardBtn.classList.add("btn-outline-primary");
+            lessonsCardBtn.classList.remove("btn-primary");
+        });
+
+        lessonsCardBtn.addEventListener("click", function() {
+            lessonsCardView.classList.remove("d-none");
+            lessonsListView.classList.add("d-none");
+            this.classList.add("btn-primary");
+            this.classList.remove("btn-outline-primary");
+            lessonsListBtn.classList.add("btn-outline-primary");
+            lessonsListBtn.classList.remove("btn-primary");
+        });
+
+        // Set default view to list view for lessons
+        lessonsListBtn.click();
+    }
+});
+
+// Add hover effect for lesson cards (after DOM is loaded)
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll("#lessonsCardView .card").forEach(function(card) {
+        card.addEventListener("mouseenter", function() {
+            this.style.transform = "translateY(-5px)";
+            this.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
+        });
+        card.addEventListener("mouseleave", function() {
+            this.style.transform = "";
+            this.style.boxShadow = "";
+        });
+    });
+});
+
+// Students view toggle functionality
+document.addEventListener("DOMContentLoaded", function() {
+    const studentsListBtn = document.getElementById("studentsListViewBtn");
+    const studentsCardBtn = document.getElementById("studentsCardViewBtn");
+    const studentsListView = document.getElementById("studentsListView");
+    const studentsCardView = document.getElementById("studentsCardView");
+
+    if (studentsListBtn && studentsCardBtn && studentsListView && studentsCardView) {
+        studentsListBtn.addEventListener("click", function() {
+            studentsListView.classList.remove("d-none");
+            studentsCardView.classList.add("d-none");
+            this.classList.add("btn-primary");
+            this.classList.remove("btn-outline-primary");
+            studentsCardBtn.classList.add("btn-outline-primary");
+            studentsCardBtn.classList.remove("btn-primary");
+        });
+
+        studentsCardBtn.addEventListener("click", function() {
+            studentsCardView.classList.remove("d-none");
+            studentsListView.classList.add("d-none");
+            this.classList.add("btn-primary");
+            this.classList.remove("btn-outline-primary");
+            studentsListBtn.classList.add("btn-outline-primary");
+            studentsListBtn.classList.remove("btn-primary");
+        });
+
+        // Set default view to list view
+        studentsListBtn.click();
+    }
+});
+</script>
 
 {% endblock %}

@@ -55,13 +55,20 @@
     content: "▲"; /* changes when dropdown is open */
   }
   .custom-course-card {
-    border: 2px solid #f5d0a9; 
-    border-radius: 5px;
-    background-color: #ffffff; 
-    height: 220px; /* fixed uniform height */
+    border: 2px solid #f5d0a9;
+    border-radius: 10px;
+    background-color: #ffffff;
+    height: 250px; /* fixed uniform height */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+  }
+  .custom-course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   }
   .card-title,
   .course-meta {
@@ -96,15 +103,19 @@
           </div>
 
           <div class="card-body">
-            <div class="course-meta">{{ course.course_id }}</div>
-            <h5 class="card-title">{{ course.title }}</h5>
-            <p class="course-meta">Status: {{ course.status }}</p>
-            <hr>
+            <div class="course-meta text-primary font-weight-bold">{{ course.course_id }}</div>
+            <h5 class="card-title font-weight-bold">{{ course.title }}</h5>
             <p class="course-meta">
-              Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}
+              <span class="badge badge-{% if course.status == 'active' %}success{% else %}secondary{% endif %}">
+                {{ course.status|title }}
+              </span>
             </p>
-            <p class="course-meta">
-              Last Updated: {{ course.updated_at|date:"j/n/Y" }}
+            <hr class="my-2">
+            <p class="course-meta small">
+              <strong>Created By:</strong> {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}
+            </p>
+            <p class="course-meta small">
+              <strong>Last Update:</strong> {{ course.updated_at|date:"j/n/Y" }}
             </p>
           </div>
         </div>
@@ -160,30 +171,17 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      let selectedAction = null;
-
-      // Handle dropdown selections
-      document.getElementById("edit-course-action").addEventListener("click", function () {
-        selectedAction = "edit";
-      });
-
-      document.getElementById("delete-course-action").addEventListener("click", function () {
-        selectedAction = "delete";
-      });
-
       // Handle clicking a course card
       document.querySelectorAll(".course-card").forEach(function (card) {
-        card.addEventListener("click", function () {
-          const courseId = this.dataset.courseId;
-
-          if (selectedAction === "edit") {
-            window.location.href = `/course/${courseId}/edit/`;
-          } else if (selectedAction === "delete") {
-            window.location.href = `/course/${courseId}/delete/`;
-          } else {
-            // Normal click = view course details
-            //window.location.href = `/course/${courseId}/`;
+        card.addEventListener("click", function (e) {
+          // Don't navigate if clicking on dropdown or its children
+          if (e.target.closest('.dropdown')) {
+            return;
           }
+
+          const courseId = this.dataset.courseId;
+          // Normal click = view course details
+          window.location.href = `/course/${courseId}/`;
         });
       });
     });

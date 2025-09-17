@@ -24,13 +24,19 @@
   }
 
   .custom-course-card {
-    border: 2px solid #41ca7c; 
-    border-radius: 5px;
-    background-color: #ffffff; 
-    height: 220px; 
+    border: 2px solid #41ca7c;
+    border-radius: 10px;
+    background-color: #ffffff;
+    height: 250px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .custom-course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   }
 
   .card-title,
@@ -72,18 +78,19 @@
         <div class="card custom-course-card course-card" data-course-id="{{ course.pk }}">
           <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;"></a>
           <div class="card-body">
-            <div class="course-meta">{{ course.course_id }}</div>
-            <h5 class="card-title">{{ course.title }}</h5>
-            <p class="course-meta">Status: {{ course.status }}</p>
-            <hr>
+            <div class="course-meta text-success font-weight-bold">{{ course.course_id }}</div>
+            <h5 class="card-title font-weight-bold">{{ course.title }}</h5>
             <p class="course-meta">
-              Instructor: {{ course.instructor.get_full_name }}
+              <span class="badge badge-{% if course.status == 'active' %}success{% else %}secondary{% endif %}">
+                {{ course.status|title }}
+              </span>
             </p>
-            <p class="course-meta">
-              Created: {{ course.created_at|date:"j/n/Y" }}
+            <hr class="my-2">
+            <p class="course-meta small">
+              <strong>Created By:</strong> {{ course.instructor.username|default:course.instructor.get_full_name }} on {{ course.created_at|date:"j/n/Y" }}
             </p>
-            <p class="course-meta">
-              Last Updated: {{ course.updated_at|date:"j/n/Y" }}
+            <p class="course-meta small">
+              <strong>Last Update:</strong> {{ course.updated_at|date:"j/n/Y" }}
             </p>
           </div>
         </div>
