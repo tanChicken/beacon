@@ -65,20 +65,18 @@ def student_signup(request):
 
         with transaction.atomic():
             user = UserModel.objects.create_user(
-                username=email,  # keep if your model still uses username
                 email=email,
+                password=password,
+                role="STUDENT",
+            )
+
+            StudentProfile.objects.create(
+                user=user,
+                title=title,
                 first_name=first_name,
                 last_name=last_name,
-                password=password,
+                student_id="TEMP"
             )
-            # set role
-            user.role = "STUDENT"
-            user.save()
-
-            # ensure profile exists, now set title
-            profile, created = StudentProfile.objects.get_or_create(user=user)
-            profile.title = title
-            profile.save()
 
         messages.success(request, "Signup successful! Please log in.")
         return redirect("login")
