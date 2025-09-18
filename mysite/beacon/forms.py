@@ -13,6 +13,8 @@ class StudentSignupForm(forms.ModelForm):
     confirm_password = forms.CharField(widget=forms.PasswordInput, min_length=8)
     first_name = forms.CharField(max_length=30, label="First Name")
     last_name = forms.CharField(max_length=30, label="Last Name")
+    first_name = forms.CharField(max_length=30, label="First Name")
+    last_name = forms.CharField(max_length=30, label="Last Name")
 
 
     class Meta:
