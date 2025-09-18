@@ -170,7 +170,7 @@ class StudentReadingListItem(models.Model):
     title = models.CharField(max_length=255)
 
     def __str__(self):
-        return f"{self.lesson.title} – {self.title}"
+        return f"{self.lesson.title} - {self.title}"
 
 class StudentReadingListProgress(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -181,4 +181,4 @@ class StudentReadingListProgress(models.Model):
         unique_together = ("student", "item")
 
     def __str__(self):
-        return f"{self.student.email} – {self.item.title}: {'Done' if self.completed else 'Not Done'}"
+        return f"{self.student.email} - {self.item.title}: {'Done' if self.completed else 'Not Done'}"
