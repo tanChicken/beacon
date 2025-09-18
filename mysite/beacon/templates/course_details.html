@@ -7,73 +7,74 @@
   <!-- Back Button -->
   <div class="mb-3">
     {% if user.role == "INSTRUCTOR" %}
-      <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">
-        &larr; Back
-      </a>
+      <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
     {% else %}
-      <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
-        &larr; Back
-      </a>
+      <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
     {% endif %}
   </div>
 
-  <h2><strong>Edit Course</strong></h2>
-
   <form method="POST">
-  {% csrf_token %}
-  
-  <!-- Course Fields -->
-  {{ form.as_p }}
+    {% csrf_token %}
 
-  <hr>
-  <h4>Lessons</h4>
-  {{ formset.management_form }}
-  <div class="list-group mb-3" id="lesson-list">
-  {% for f in formset %}
-    <div class="list-group-item d-flex align-items-center justify-content-between">
-      <div class="flex-grow-1 me-3">
-        {{ f.title }}   
-        {{ f.id }}     
-      </div>
-      <div>
-        {{ f.DELETE }} <label>Delete</label>  
-      </div>
+    <!-- Course Fields -->
+    {{ form.as_p }}
+
+    <hr>
+    <h4>Lessons</h4>
+    {{ formset.management_form }}
+    <div class="list-group mb-3" id="lesson-list">
+        {% for f in formset %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div class="flex-grow-1 me-3">
+            {% if f.instance.pk %}
+                <!-- Existing lesson: clickable -->
+                <a href="{% url 'lesson_detail_edit' f.instance.pk %}">
+                {{ f.instance.title }}
+                </a>
+            {% else %}
+                <!-- New lesson: show text input -->
+                {{ f.title }}
+            {% endif %}
+            </div>
+
+            <!-- Delete tick for formset -->
+            <div>
+            {{ f.DELETE }} <label>Delete</label>
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+        
+    <div class="mb-3">
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="addForm()">+ Add Lesson</button>
     </div>
-  {% endfor %}
-</div>
-  <div class="mb-3">
-    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addForm(this)">
-        + Add Lesson
-    </button>
-  </div>
 
-  <div class="d-flex justify-content-between">
-    <button type="submit" class="btn btn-primary">Save Changes</button>
-    <a href="{% url 'delete_course' course.pk %}" class="btn btn-danger">Delete</a>
-</div>
-</form>
+    <div class="d-flex justify-content-between">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{% url 'delete_course' course.pk %}" class="btn btn-danger">Delete Course</a>
+    </div>
+  </form>
 
 </div>
 
-<!-- JS to dynamically clone lesson form -->
 <script>
-function addForm(btn) {
+function addForm() {
   const totalForms = document.getElementById('id_form-TOTAL_FORMS');
   const currentCount = parseInt(totalForms.value);
-  const formList = document.getElementById('lesson-forms');
-  const newForm = formList.firstElementChild.cloneNode(true);
+  const list = document.getElementById('lesson-list');
+  const firstForm = list.firstElementChild.cloneNode(true);
 
-  // Clear input values
-  newForm.querySelectorAll('input, textarea').forEach(input => {
-    if (input.type === "text" || input.tagName === "TEXTAREA") input.value = "";
-    if (input.type === "checkbox") input.checked = false;
-    if (input.type === "hidden") input.value = "";
+  // Reset input values
+  firstForm.querySelectorAll('input').forEach(input => {
+    if (input.type === 'text') input.value = '';
+    if (input.type === 'checkbox') input.checked = false;
+    if (input.type === 'hidden') input.value = '';
   });
 
-  // Fix form index
-  newForm.innerHTML = newForm.innerHTML.replace(/form-(\d+)-/g, `form-${currentCount}-`);
+  // Update index
+  firstForm.innerHTML = firstForm.innerHTML.replace(/form-(\d+)-/g, `form-${currentCount}-`);
 
-  formList.appendChild(newForm);
+  list.appendChild(firstForm);
   totalForms.value = currentCount + 1;
 }
 </script>

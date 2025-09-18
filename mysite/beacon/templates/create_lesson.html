@@ -4,6 +4,11 @@
 
 {% block content %}
 <div class="container mt-4">
+    <div class="mb-3">
+      <a href="{% url 'course_detail' course.pk %}" class="btn btn-outline-secondary">
+        &larr; Back
+    </a>
+    </div>
     <h2>Create Lesson for {{ course.title }}</h2>
 
     <form method="POST">
