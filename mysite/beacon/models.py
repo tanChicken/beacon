@@ -63,11 +63,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=50, choices=Role.choices)
 
-    is_staff = models.BooleanField(default="False")
+    is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["role"]
+    REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
 
@@ -124,7 +124,7 @@ class InstructorProfile(models.Model):
     bio = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Instructor Profile: {self.user.username}"
+        return f"Instructor Profile: {self.user.email}"
 
 @receiver(post_save, sender=Instructor)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -181,4 +181,4 @@ class StudentReadingListProgress(models.Model):
         unique_together = ("student", "item")
 
     def __str__(self):
-        return f"{self.student.username} – {self.item.title}: {'Done' if self.completed else 'Not Done'}"
+        return f"{self.student.email} – {self.item.title}: {'Done' if self.completed else 'Not Done'}"
