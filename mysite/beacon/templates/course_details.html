@@ -4,115 +4,77 @@
 {% block content %}
 <div class="container mt-4">
 
-    <!-- Back Button -->
-    <div class="mb-3">
-        {% if user.role == "INSTRUCTOR" %}
-            <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">
-                &larr; Back
-            </a>
-        {% else %}
-            <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
-                &larr; Back
-            </a>
-        {% endif %}
-    </div>
-
-    <!-- Course Header -->
-    <div class="text-center mb-4">
-        <h2>{{ course.course_id }}</h2>
-        <h2 class="mb-5">{{ course.title }}</h2>
-    </div>
-
-    <!-- Course Info -->
-    <div class="d-flex justify-content-between">
-        <div>
-            <p>Course director: {{ course.instructor.get_full_name }}</p>
-            <p>Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}</p>
-        </div>
-        <div>
-            <p>Last updated: {{ course.updated_at|date:"M d, Y H:i" }}</p>
-            <p>Course Credit Point: {{ course.credit_points }}</p>
-        </div>
-    </div>
-
-    <hr class="my-2">
-
-    <!-- Lessons -->
-    <h4>Lessons</h4>
-    <div id="lessonList" class="list-group mb-3">
-        {% for lesson in course.lessons.all %}
-        <a href="{% url 'lesson_detail_edit' lesson.id %}" class="list-group-item list-group-item-action">
-            {{ lesson.title }}
-        </a>
-        {% empty %}
-        <p class="text-muted">No lessons added yet.</p>
-        {% endfor %}
-    </div>
-
-    <!-- Add Lessons (Instructor Only) -->
+  <!-- Back Button -->
+  <div class="mb-3">
     {% if user.role == "INSTRUCTOR" %}
-    <div class="mb-2">
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLessonPlaceholder()">
-            + Add Lesson
-        </button>
-    </div>
-
-    <form id="newLessonForm" method="POST" action="{% url 'add_lessons' course.id %}">
-        {% csrf_token %}
-        <input type="hidden" name="course_id" value="{{ course.id }}">
-        <div id="newLessonContainer"></div>
-        <button type="submit" class="btn btn-success mt-2">Save All Lessons</button>
-    </form>
-
-    <script>
-    function addLessonPlaceholder() {
-        const container = document.getElementById('newLessonContainer');
-        const div = document.createElement('div');
-        div.classList.add('mb-2', 'd-flex');
-
-        // Create input for lesson title
-        div.innerHTML = `
-            <input type="text" name="lesson_titles[]" class="form-control me-2" placeholder="Lesson title" required>
-            <button type="button" class="btn btn-outline-danger" onclick="removeLessonPlaceholder(this)">✖</button>
-        `;
-
-        container.appendChild(div);
-    }
-
-    function removeLessonPlaceholder(btn) {
-        btn.parentElement.remove();
-    }
-    </script>
+      <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">
+        &larr; Back
+      </a>
+    {% else %}
+      <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+        &larr; Back
+      </a>
     {% endif %}
+  </div>
 
-    <hr class="mb-3">
+  <h2><strong>Edit Course</strong></h2>
 
-    <!-- Enrolled Students -->
-    <h4>Enrolled Students</h4>
-    <ul class="list-group">
-        {% for student in course.students.all %}
-        <li class="list-group-item">
-            {{ student.first_name }} {{ student.last_name }}
-        </li>
-        {% empty %}
-        <li class="list-group-item text-muted">No students enrolled yet.</li>
-        {% endfor %}
-    </ul>
-</div>
+  <form method="POST">
+  {% csrf_token %}
+  
+  <!-- Course Fields -->
+  {{ form.as_p }}
 
-{% if user.role == "INSTRUCTOR" %}
-<!-- Action Dropdown for Instructor only -->
-<div style="position: fixed; bottom: 30px; right: 30px; z-index: 1000;">
-    <div class="btn-group dropup">
-        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Actions
-        </button>
-        <div class="dropdown-menu dropdown-menu-right">
-            <a class="dropdown-item" href="{% url 'edit_course' course.pk %}">Edit</a>
-            <a class="dropdown-item text-danger" href="{% url 'delete_course' course.pk %}">Delete</a>
-        </div>
+  <hr>
+  <h4>Lessons</h4>
+  {{ formset.management_form }}
+  <div class="list-group mb-3" id="lesson-list">
+  {% for f in formset %}
+    <div class="list-group-item d-flex align-items-center justify-content-between">
+      <div class="flex-grow-1 me-3">
+        {{ f.title }}   
+        {{ f.id }}     
+      </div>
+      <div>
+        {{ f.DELETE }} <label>Delete</label>  
+      </div>
     </div>
+  {% endfor %}
 </div>
-{% endif %}
+  <div class="mb-3">
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addForm(this)">
+        + Add Lesson
+    </button>
+  </div>
 
+  <div class="d-flex justify-content-between">
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a href="{% url 'delete_course' course.pk %}" class="btn btn-danger">Delete</a>
+</div>
+</form>
+
+</div>
+
+<!-- JS to dynamically clone lesson form -->
+<script>
+function addForm(btn) {
+  const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+  const currentCount = parseInt(totalForms.value);
+  const formList = document.getElementById('lesson-forms');
+  const newForm = formList.firstElementChild.cloneNode(true);
+
+  // Clear input values
+  newForm.querySelectorAll('input, textarea').forEach(input => {
+    if (input.type === "text" || input.tagName === "TEXTAREA") input.value = "";
+    if (input.type === "checkbox") input.checked = false;
+    if (input.type === "hidden") input.value = "";
+  });
+
+  // Fix form index
+  newForm.innerHTML = newForm.innerHTML.replace(/form-(\d+)-/g, `form-${currentCount}-`);
+
+  formList.appendChild(newForm);
+  totalForms.value = currentCount + 1;
+}
+</script>
 {% endblock %}

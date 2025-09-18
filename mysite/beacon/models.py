@@ -118,7 +118,6 @@ def ensure_profiles(sender, instance, created, **kwargs):
     if role in (getattr(User.Role, "INSTRUCTOR", "INSTRUCTOR"), "INSTRUCTOR"):
         InstructorProfile.objects.get_or_create(user=instance)  
 
-import uuid
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
     lesson_id = models.CharField(max_length=10, unique=False, editable=False)  
