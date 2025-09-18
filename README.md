@@ -34,6 +34,7 @@ If you need to test new accounts, create separate ones instead.
 5. to interact with databases, use python manage.py shell to test it out
 6. creating user: User.objects.create(email="<email>", password="<password>", role="STUDENT"/"INSTRUCTOR") (no <> needed)
 7. create student objects from sign up also can
+8. Try running server and use your created accounts to login (use the ones above also can)
 
 - Check settings.py first to see which database are you on, local or shared
 - After switching, do python manage.py migrate
