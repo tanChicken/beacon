@@ -35,4 +35,8 @@ If you need to test new accounts, create separate ones instead.
 6. creating user: User.objects.create(email="<email>", password="<password>", role="STUDENT"/"INSTRUCTOR") (no <> needed)
 7. create student objects from sign up also can
 
+- Check settings.py first to see which database are you on, local or shared
+- After switching, do python manage.py migrate
+- When finished with work, please comment out the local dataabase code and change it back to shared for convenience
+
 - Three test accounts with details are currently provided above, please refer and log in using the details.
