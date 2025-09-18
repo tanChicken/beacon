@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import TodoItem, Course, StudentProfile, InstructorProfile
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from .models import TodoItem, Profile, Course
 
 
 # Register your models here.
@@ -57,8 +58,4 @@ class CourseAdmin(admin.ModelAdmin):
     list_display = ("course_id", "title", "status", "instructor")
     list_filter = ("status",)
     search_fields = ("course_id", "title")
-    filter_horizontal = ("students",)  # nicer M2M widget
-
-# @admin.register(TodoItem)
-# class TodoItemAdmin(admin.ModelAdmin):
-#     list_display = ("title", "completed")
+    filter_horizontal = ("students",)

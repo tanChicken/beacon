@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
@@ -68,6 +68,28 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
+            name='Course',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('course_id', models.CharField(max_length=20, unique=True)),
+                ('title', models.CharField(max_length=200)),
+                ('status', models.CharField(choices=[('active', 'Active'), ('inactive', 'Inactive')], default='active', max_length=20)),
+                ('credit_points', models.IntegerField(default=30)),
+                ('created_at', models.DateTimeField(default=django.utils.timezone.now)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('instructor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='courses_teaching', to=settings.AUTH_USER_MODEL)),
+                ('students', models.ManyToManyField(blank=True, related_name='courses_enrolling', to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Profile',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('role', models.CharField(choices=[('admin', 'Admin'), ('student', 'Student'), ('instructor', 'Instructor')], default='student', max_length=20)),
+                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
+        migrations.CreateModel(
             name='Instructor',
             fields=[
             ],
@@ -98,7 +120,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Course',
+            name='TeacherProfile',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('course_id', models.CharField(max_length=20, unique=True)),
