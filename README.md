@@ -56,4 +56,8 @@ If you need to test new accounts, create separate ones instead.
 - After switching, do python manage.py migrate
 - When finished with work, please comment out the local dataabase code and change it back to shared for convenience
 
+- Check settings.py first to see which database are you on, local or shared
+- After switching, do python manage.py migrate
+- When finished with work, please comment out the local dataabase code and change it back to shared for convenience
+
 - Three test accounts with details are currently provided above, please refer and log in using the details.
