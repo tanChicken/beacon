@@ -70,13 +70,11 @@ def student_signup(request):
                 role="STUDENT",
             )
 
-            StudentProfile.objects.create(
-                user=user,
-                title=title,
-                first_name=first_name,
-                last_name=last_name,
-                student_id="TEMP"
-            )
+            profile = user.studentprofile
+            profile.title = title
+            profile.first_name = first_name
+            profile.last_name = last_name
+            profile.save()
 
         messages.success(request, "Signup successful! Please log in.")
         return redirect("login")
