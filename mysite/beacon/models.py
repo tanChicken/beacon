@@ -97,6 +97,8 @@ def create_user_profile(sender, instance, created, **kwargs):
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     student_id = models.IntegerField(null=True, blank=True)
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
     title = models.CharField(
         max_length=10,
         choices=[("Mr", "Mr"), ("Ms", "Ms"), ("Mrs", "Mrs"), ("Dr", "Dr")],
