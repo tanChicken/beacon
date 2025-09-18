@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course
+from .models import Course, StudentReadingListItem
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
@@ -50,11 +50,31 @@ class CourseForm(forms.ModelForm):
         model = Course
         fields = ["course_id", "title", "status", "instructor"]
 
-from django.forms import formset_factory
+# from django.forms import formset_factory
 
-class LessonForm(forms.Form):
-    title = forms.CharField(max_length=200)
-    credit_points = forms.IntegerField(initial=0, min_value=0)
-    status = forms.ChoiceField(choices=[("active","Active"),("inactive","Inactive")])
+# class LessonForm(forms.Form):
+#     title = forms.CharField(max_length=200)
+#     credit_points = forms.IntegerField(initial=0, min_value=0)
+#     status = forms.ChoiceField(choices=[("active","Active"),("inactive","Inactive")])
 
-LessonFormSet = formset_factory(LessonForm, extra=1)
+# LessonFormSet = formset_factory(LessonForm, extra=1)
+from .models import Lesson
+from django.forms import inlineformset_factory
+class LessonForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ["title"]
+
+LessonFormSet = inlineformset_factory(
+    Course, Lesson, form=LessonForm, extra=1, can_delete=False
+)
+
+class LessonDetailForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ["title", "objective", "description", "effort_per_week", "credit_point"]
+
+class ReadingItemForm(forms.ModelForm):
+    class Meta:
+        model = StudentReadingListItem
+        fields = ["title"]
