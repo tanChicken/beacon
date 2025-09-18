@@ -4,19 +4,36 @@ These accounts are already created in the shared Render PostgreSQL DB.
 Everyone can use them to log in (both locally and on the deployed site).
 
 ## Admin
-- **Username:** admin01  
-- **Email:** admin01@gmail.com
-- **Password:** admin1234  
+- **Email:** meow@gmail.com
+- **Password:** meow1
+
+** please create your own superuser account as well! **
 
 ## Instructor
-- **Username:** instructor01 
-- **Email:** instructor01@gmail.com 
+- **Email:** instructor1@gmail.com 
 - **Password:** instructor1234  
 
-## Student
-- **Username:** student01  
-- **Email:** student01@gmail.com 
+## Student 
+- **Email:** student1@gmail.com 
 - **Password:** student1234  
+
+
+## post merge
+
+## Admin
+- **Email:** superuser1@gmail.com
+- **Password:** superuser1
+
+** please create your own superuser account as well! **
+
+## Instructor
+- **Email:** kbinstructor@gmail.com 
+- **Password:** kbinstructor  
+
+## Student 
+- **Email:** kbstudent@gmail.com 
+- **Password:** kbstudent  
+** feel free to do testing and create dummy accounts on the database, it would be deleted afterwards as well **
 
 Note: Do not delete or change these accounts.  
 If you need to test new accounts, create separate ones instead.
@@ -31,5 +48,12 @@ If you need to test new accounts, create separate ones instead.
 3. install dependencies (pip install -r requirements.txt) (use pip list to ensure everything needed is downloaded)
 4. run migrations (migrate)
 5. to interact with databases, use python manage.py shell to test it out
+6. creating user: User.objects.create(email="<email>", password="<password>", role="STUDENT"/"INSTRUCTOR") (no <> needed)
+7. create student objects from sign up also can
+8. Try running server and use your created accounts to login (use the ones above also can)
+
+- Check settings.py first to see which database are you on, local or shared
+- After switching, do python manage.py migrate
+- When finished with work, please comment out the local dataabase code and change it back to shared for convenience
 
 - Three test accounts with details are currently provided above, please refer and log in using the details.
