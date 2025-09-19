@@ -72,8 +72,13 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ["title", "objective", "description", "effort_per_week", "credit_point"]
-
+        fields = ['title', 'description', 'objective', 'effort_per_week', 'assignment']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'objective': forms.Textarea(attrs={'rows': 3}),
+            'assignment': forms.Textarea(attrs={'rows': 3}),
+        }
+        
 class ReadingItemForm(forms.ModelForm):
     class Meta:
         model = StudentReadingListItem
