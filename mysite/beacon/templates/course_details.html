@@ -3,19 +3,13 @@
 
 {% block content %}
 <div class="container mt-4">
-
-    <!-- Back Button -->
-    <div class="mb-3">
-        {% if user.role == "INSTRUCTOR" %}
-            <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">
-                &larr; Back
-            </a>
-        {% else %}
-            <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
-                &larr; Back
-            </a>
-        {% endif %}
-    </div>
+  <div class="mb-3">
+    {% if user.role == "INSTRUCTOR" %}
+      <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
+    {% else %}
+      <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
+    {% endif %}
+  </div>
 
     <!-- Course Header -->
     <div class="text-center mb-4">
@@ -115,7 +109,7 @@
     <div class="mb-2">
         <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLessonPlaceholder()">
             + Add Lesson
-        </button>
+        </a>
     </div>
 
     <form id="newLessonForm" method="POST" action="{% url 'add_lessons' course.id %}">
@@ -209,6 +203,7 @@
             <a class="dropdown-item text-danger" href="{% url 'delete_course' course.pk %}">Delete</a>
         </div>
     </div>
+  </form>
 </div>
 {% endif %}
 

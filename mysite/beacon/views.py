@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction, IntegrityError
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -19,6 +20,9 @@ def home(request):
 def login_view(request):
     return render(request, "home.html", {"hide_sidebar": True})
 
+# ------------------------
+# Student
+# ------------------------
 def student_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
@@ -248,83 +252,8 @@ def instructor_dashboard(request):
 
 from django.forms import inlineformset_factory
 from .forms import CourseForm, LessonForm
-@login_required
-def create_course(request):
-    if request.method == "POST":
-        form = CourseForm(request.POST)
-        if form.is_valid():
-            course = form.save(commit=False)
-            course.instructor = request.user
-            course.save()
-            messages.success(request, "Course created successfully.")
-            return redirect("instructor_dashboard")
-    else:
-        form = CourseForm()
-    return render(request, "create_course.html", {"form": form})
-
 
 @login_required
-def edit_course(request, pk):
-    course = get_object_or_404(Course, pk=pk, instructor=request.user)
-    if request.method == "POST":
-        form = CourseForm(request.POST, instance=course)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Course updated successfully.")
-            return redirect("instructor_dashboard")
-    else:
-        form = CourseForm(instance=course)
-
-    # Pass lessons to template for read-only display
-    lessons = course.lessons.all()
-
-    return render(request, "course_form.html", {
-        "form": form,
-        "action": "Update",
-        "lessons": lessons,
-        "read_only_lessons": True,  # flag for template
-    })
-
-@login_required
-def delete_course(request, pk):
-    course = get_object_or_404(Course, pk=pk, instructor=request.user)
-    if request.method == "POST":
-        course.delete()
-        messages.success(request, "Course deleted.")
-        return redirect("instructor_dashboard")
-    return render(request, "delete_course.html", {"course": course})
-
-
-# ------------------------
-# Enrollment (Students)
-# ------------------------
-@login_required
-def enrolment_page(request):
-    courses = Course.objects.filter(status="active")
-    return render(request, "enrolment.html", {"available_courses": courses})
-
-
-@login_required
-def enrol_course(request, course_id):
-    course = get_object_or_404(Course, id=course_id, status="active")
-    if not hasattr(request.user, "profile") or request.user.profile.role.upper() != "STUDENT":
-        messages.error(request, "Only students can enroll in courses.")
-        return redirect("home")
-
-    course.students.add(request.user)
-    messages.success(request, f"You have enrolled in {course.title}.")
-    return redirect("student_dashboard")
-
-
-@login_required
-def course_detail(request, pk):
-    course = get_object_or_404(Course, pk=pk)
-    lessons = course.lessons.all()
-    return render(request, "course_details.html", {"course": course, "lessons": lessons})
-
-LessonFormSet = inlineformset_factory(
-    Course, Lesson, form=LessonForm, extra=1, can_delete=True
-)
 def create_course(request):
     if request.method == "POST":
         form = CourseForm(request.POST)
@@ -348,6 +277,62 @@ def create_course(request):
         form = CourseForm()
 
     return render(request, "course_form.html", {"form": form, "action": "Create"})
+
+@login_required
+def edit_course(request, pk):
+    course = get_object_or_404(Course, pk=pk, instructor=request.user)
+    if request.method == "POST":
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Course updated successfully!")
+            return redirect("instructor_dashboard")
+    else:
+        form = CourseForm(instance=course)
+
+    lessons = course.lessons.all()
+    return render(request, "course_form.html", {
+        "form": form,
+        "action": "Update",
+        "lessons": lessons,
+        "read_only_lessons": True,
+    })
+
+
+@login_required
+def delete_course(request, pk):
+    course = get_object_or_404(Course, pk=pk, instructor=request.user)
+    course.delete()
+    messages.success(request, "Course deleted successfully!")
+    return redirect("instructor_dashboard")
+
+@login_required
+def course_detail(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+
+    if request.method == "POST":
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Course updated successfully!")
+            return redirect("instructor_dashboard")
+        else:
+            messages.error(request, "Please fix the errors below.")
+    else:
+        form = CourseForm(instance=course)
+
+    lessons = course.lessons.all()
+
+    return render(request, "course_details.html", {
+        "course": course,
+        "form": form,
+        "lessons": lessons,
+    })
+
+
+
+from .models import Lesson, StudentReadingListItem
+from .forms import LessonDetailForm, ReadingItemForm
 
 @login_required
 def lesson_detail_edit(request, pk):
@@ -401,12 +386,11 @@ def lesson_detail_edit(request, pk):
     })
 
 @login_required
-def add_lessons(request, pk):
-    if request.method == "POST" and request.user.role == "INSTRUCTOR":
-        course = get_object_or_404(Course, pk=pk, instructor=request.user)
-        lesson_titles = request.POST.getlist("lesson_title")
-        for title in lesson_titles:
-            if title.strip():
-                Lesson.objects.create(course=course, designer=request.user, title=title)
-        messages.success(request, f"{len(lesson_titles)} lesson(s) added successfully!")
-        return redirect("course_detail", pk=course.id)
+def delete_lesson(request, pk):
+    lesson = get_object_or_404(Lesson, pk=pk, designer=request.user)
+    course_pk = lesson.course.pk
+
+    # Delete immediately
+    lesson.delete()
+    messages.success(request, "Lesson deleted successfully!")
+    return redirect("course_detail", pk=course_pk)

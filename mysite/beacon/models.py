@@ -70,6 +70,32 @@ class Course(models.Model):
     def __str__(self):
         return f"{self.course_id} - {self.title}"
     
+class Classroom(models.Model):
+    DURATION_CHOICES = [
+        (2, "2 weeks"),
+        (3, "3 weeks"),
+        (4, "4 weeks"),
+    ]
+    classroom_id = models.CharField(max_length=20)
+    course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
+    duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
+    supervisor = models.CharField(max_length=100)
+
+    # Location attributes
+    building = models.CharField(max_length=100, blank=True, null=True)
+    room = models.CharField(max_length=50, blank=True, null=True)
+    online_link = models.URLField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Classroom {self.id} for {self.course.course_code} ({self.duration_weeks} weeks)"
+
+    def location_display(self):
+        if self.online_link:
+            return f"Online class link: {self.online_link}"
+        elif self.building and self.room:
+            return f"{self.building}, Room {self.room}"
+        return "TBA"
+    
 class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = "ADMIN", "Admin"
@@ -154,10 +180,10 @@ def ensure_profiles(sender, instance, created, **kwargs):
     if role in (getattr(User.Role, "INSTRUCTOR", "INSTRUCTOR"), "INSTRUCTOR"):
         InstructorProfile.objects.get_or_create(user=instance)  
 
-import uuid
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
-    lesson_id = models.CharField(max_length=10, unique=False, editable=False)
+    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name="lessons")
+    lesson_id = models.CharField(max_length=10, unique=False, editable=False)  
     title = models.CharField(max_length=200)
     description = models.TextField()
     objective = models.TextField(blank=True, null=True)
@@ -169,6 +195,7 @@ class Lesson(models.Model):
     credit_point = models.DecimalField(max_digits=4, decimal_places=1, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    assignment = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.lesson_id:
@@ -196,3 +223,4 @@ class StudentReadingListProgress(models.Model):
 
     def __str__(self):
         return f"{self.student.username} – {self.item.title}: {'Done' if self.completed else 'Not Done'}"
+    
