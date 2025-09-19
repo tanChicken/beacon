@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, TeacherProfile
+from .models import Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile
 from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm
 from django.contrib import messages
 from django.contrib.auth import authenticate
@@ -217,8 +217,8 @@ def instructor_login(request):
                 user.profile.role = "instructor"
                 user.profile.save()
 
-            # Create TeacherProfile
-            TeacherProfile.objects.create(user=user)
+            # Create InstructorProfile
+            InstructorProfile.objects.create(user=user)
 
         messages.success(request, "Instructor signup successful! Please log in.")
         return redirect("login")

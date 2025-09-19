@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('beacon', '0003_remove_instructorprofile_instructor_id_and_more'),
+        ('beacon', '0001_initial'),
     ]
 
     operations = [
