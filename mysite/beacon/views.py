@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from .models import Course, Lesson, StudentReadingListItem, StudentReadingListProgress, StudentProfile
 from .forms import CourseForm, LessonDetailForm
 from django.contrib import messages
 from django.contrib.auth import authenticate
@@ -6,7 +7,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.db import transaction
 from django.contrib.auth import get_user_model
-from .models import Course, StudentProfile, Lesson, StudentReadingListItem, StudentReadingListProgress
 
 # Create your views here.
 def home(request):

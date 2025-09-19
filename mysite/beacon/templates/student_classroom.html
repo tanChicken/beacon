@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Classrooms{% endblock %}
+
+{% block content %}
+<style>
+  h1, h3 { font-weight: bold; }
+  h3 { margin-top: 20px; }
+
+  .list-group-item {
+    background-color: #ffffff; 
+    border: 2px solid #41ca7c; 
+    border-radius: 5px;
+    margin-bottom: 10px;
+    padding: 15px;
+  }
+
+  .btn-primary {
+    background-color: #e67e22;
+    border-color: #e67e22;
+  }
+  .btn-primary:hover {
+    background-color: #cf711f;
+    border-color: #cf711f;
+  }
+
+  .custom-classroom-card {
+    border: 2px solid #41ca7c; 
+    border-radius: 5px;
+    background-color: #ffffff; 
+    height: 280px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .card-title,
+  .meta-info {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lesson-list {
+    font-size: 0.9em;
+    margin-top: 10px;
+  }
+</style>
+
+<div class="container mt-4">
+  <h1>CLASSROOMS</h1>
+
+  <div class="d-flex justify-content-end mb-3">
+    <button id="listViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+    <button id="cardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+  </div>
+
+  <!-- List View -->
+  <div id="listView">
+    <ul class="list-group mt-3">
+      {% for classroom in classrooms %}
+        <li class="list-group-item">
+          <strong>Classroom {{ classroom.classroom_id }}</strong> – {{ classroom.course_id.course_id }}
+          <div class="small text-muted">
+            Supervisor: {{ classroom.supervisor }} | Duration: {{ classroom.get_duration_weeks_display }}
+          </div>
+        </li>
+      {% empty %}
+        <li class="list-group-item text-muted">No classrooms created yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- Card View -->
+  <div id="cardView" class="row d-none">
+    {% for classroom in classrooms %}
+      <div class="col-md-4 mb-4">
+        <div class="card custom-classroom-card">
+          <div class="card-body">
+            <h5 class="card-title">Classroom {{ classroom.classroom_id }}</h5>
+            <p class="meta-info">Course: {{ classroom.course_id.course_id }}</p>
+            <p class="meta-info">Supervisor: {{ classroom.supervisor }}</p>
+            <p class="meta-info">Duration: {{ classroom.get_duration_weeks_display }}</p>
+            <hr>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No classrooms created yet.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  document.getElementById("listViewBtn").addEventListener("click", function() {
+    document.getElementById("listView").classList.remove("d-none");
+    document.getElementById("cardView").classList.add("d-none");
+  });
+
+  document.getElementById("cardViewBtn").addEventListener("click", function() {
+    document.getElementById("cardView").classList.remove("d-none");
+    document.getElementById("listView").classList.add("d-none");
+  });
+</script>
+{% endblock %}
