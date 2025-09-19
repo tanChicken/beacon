@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Course, Lesson, StudentReadingListProgress
+from .models import Classroom, Course, Lesson, StudentReadingListProgress
 from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm
 from django.contrib import messages
 from django.contrib.auth import authenticate
@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction, IntegrityError
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 
 from .models import Course, Student, StudentProfile  # note: import Student & StudentProfile
 
@@ -23,6 +24,9 @@ def home(request):
 def login_view(request):
     return render(request, "home.html", {"hide_sidebar": True})
 
+# ------------------------
+# Student
+# ------------------------
 def student_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
@@ -153,6 +157,14 @@ def lesson_detail(request, lesson_id):
         "progress": completed_ids,
     })
 
+@login_required
+def student_classroom(request):
+    classrooms = Classroom.objects.prefetch_related("lessons").all()
+    return render(request, "student_classroom.html", {"classrooms": classrooms})
+
+# ------------------------
+# Instructor
+# ------------------------
 def instructor_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
