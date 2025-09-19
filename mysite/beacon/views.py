@@ -176,18 +176,29 @@ def instructor_dashboard(request):
 from django.forms import inlineformset_factory
 from .forms import CourseForm, LessonForm
 @login_required
-# def create_course(request):
-#     if request.method == "POST":
-#         form = CourseForm(request.POST)
-#         if form.is_valid():
-#             course = form.save(commit=False)
-#             course.instructor = request.user
-#             course.save()
-#             messages.success(request, "Course created successfully!")
-#             return redirect("course_detail", pk=course.pk)
-#     else:
-#         form = CourseForm()
-#     return render(request, "course_form.html", {"form": form, "action": "Create"})
+def create_course(request):
+    if request.method == "POST":
+        form = CourseForm(request.POST)
+        lesson_titles = request.POST.getlist("lesson_title")  # grab all lessons
+
+        if form.is_valid():
+            with transaction.atomic():
+                course = form.save(commit=False)
+                course.instructor = request.user
+                course.credit_points = 30  # fixed
+                course.save()
+
+                # save each lesson
+                for title in lesson_titles:
+                    if title.strip():
+                        Lesson.objects.create(course=course, designer=request.user, title=title)
+
+            messages.success(request, "Course created successfully!")
+            return redirect("course_detail", pk=course.pk)
+    else:
+        form = CourseForm()
+
+    return render(request, "course_form.html", {"form": form, "action": "Create"})
 
 @login_required
 def edit_course(request, pk):
@@ -213,72 +224,34 @@ def edit_course(request, pk):
 @login_required
 def delete_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
-    if request.method == "POST":
-        course.delete()
-        messages.success(request, "Course deleted successfully!")
-        return redirect("instructor_dashboard")
-    return render(request, "course_confirm_delete.html", {"course": course})
+    course.delete()
+    messages.success(request, "Course deleted successfully!")
+    return redirect("instructor_dashboard")
 
 @login_required
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
-    lessons = course.lessons.all()
-    LessonFormSet = inlineformset_factory(
-        Course, Lesson,
-        form=LessonForm,
-        fields=['title', 'description', 'objective', 'effort_per_week', 'assignment'], 
-        extra=1,
-        can_delete=True
-    )
 
     if request.method == "POST":
         form = CourseForm(request.POST, instance=course)
-        formset = LessonFormSet(request.POST, instance=course)
-
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid():
             form.save()
-            lessons = formset.save(commit=False)
-            for lesson in lessons:
-                if not lesson.designer:
-                    lesson.designer = request.user
-                lesson.save()
-            formset.save_m2m()
-            messages.success(request, "Course and lessons updated!")
+            messages.success(request, "Course updated successfully!")
             return redirect("instructor_dashboard")
+        else:
+            messages.error(request, "Please fix the errors below.")
     else:
         form = CourseForm(instance=course)
-        formset = LessonFormSet(instance=course)
+
+    lessons = course.lessons.all()
 
     return render(request, "course_details.html", {
         "course": course,
         "form": form,
-        "formset": formset,
+        "lessons": lessons,
     })
 
 
-def create_course(request):
-    if request.method == "POST":
-        form = CourseForm(request.POST)
-        lesson_titles = request.POST.getlist("lesson_title")  # grab all lessons
-
-        if form.is_valid():
-            with transaction.atomic():
-                course = form.save(commit=False)
-                course.instructor = request.user
-                course.credit_points = 30  # fixed
-                course.save()
-
-                # save each lesson
-                for title in lesson_titles:
-                    if title.strip():
-                        Lesson.objects.create(course=course, designer=request.user, title=title)
-
-            messages.success(request, "Course created successfully!")
-            return redirect("course_detail", pk=course.pk)
-    else:
-        form = CourseForm()
-
-    return render(request, "course_form.html", {"form": form, "action": "Create"})
 
 from .models import Lesson, StudentReadingListItem
 from .forms import LessonDetailForm, ReadingItemForm
@@ -317,7 +290,6 @@ def lesson_detail_edit(request, pk):
         "lesson_form": form
     })
 
-
 @login_required
 def create_lesson(request, course_pk):
     course = get_object_or_404(Course, pk=course_pk, instructor=request.user)
@@ -339,3 +311,13 @@ def create_lesson(request, course_pk):
         'course': course,
         'action': 'Create'
     })
+
+@login_required
+def delete_lesson(request, pk):
+    lesson = get_object_or_404(Lesson, pk=pk, designer=request.user)
+    course_pk = lesson.course.pk
+
+    # Delete immediately
+    lesson.delete()
+    messages.success(request, "Lesson deleted successfully!")
+    return redirect("course_detail", pk=course_pk)
