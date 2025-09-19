@@ -26,20 +26,20 @@ class Profile(models.Model):
         ('instructor', 'Instructor'),
     ]
     
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     
     def __str__(self):
         return f"{self.user.username} - {self.role}"
 
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender='beacon.User')
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
 
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender='beacon.User')
 def save_user_profile(sender, instance, **kwargs):
     if hasattr(instance, 'profile'):
         instance.profile.save()
@@ -185,7 +185,7 @@ class Instructor(User):
         return "Only for instructors"       
     
 class InstructorProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructorprofile")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="instructorprofile")
     bio = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -196,7 +196,7 @@ def create_instructor_profile(sender, instance, created, **kwargs):
     if created and instance.role == "INSTRUCTOR":
         InstructorProfile.objects.create(user=instance)
     
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+@receiver(post_save, sender='beacon.User')
 def ensure_profiles(sender, instance, created, **kwargs):
     if not created:
         return
