@@ -93,11 +93,13 @@
         {% elif user.role == "INSTRUCTOR" %}
           <a href="{% url 'instructor_dashboard' %}">Courses</a>
         {% endif %}
+        
         {% if user.role == "STUDENT" %}
-          <a href="{% url 'student_classroom' %}">Classroom</a>
+          <a href=#>Classroom</a>
         {% elif user.role == "INSTRUCTOR" %}
           <a href=#>Classroom</a>
         {% endif %}
+        
         <a href=#>Student</a>
         <a href=#>Report</a>
       {% else %}

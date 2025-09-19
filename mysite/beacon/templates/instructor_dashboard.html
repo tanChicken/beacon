@@ -1,26 +1,23 @@
 {% extends "base.html" %}
-{% block title %} Home Page {% endblock %}
+{% block title %}Instructor Dashboard{% endblock %}
 
 {% block content %}
 <style>
-  h1, h3 {
-    font-weight: bold;
-  }
-  h3 {
-    margin-top: 20px;
-  }
+  h1, h3 { font-weight: bold; }
+  h3 { margin-top: 20px; }
+
+  /* Theme: Orange/Beige for Instructor */
   .list-group-item {
-    background-color: #ffffff; 
-    border: 2px solid #f5d0a9; 
+    background-color: #ffffff;
+    border: 2px solid #f5d0a9;
     border-radius: 5px;
     margin-bottom: 10px;
     padding: 15px;
-    cursor: pointer; 
+    cursor: pointer;
     transition: background-color 0.2s ease;
   }
-  .list-group-item:hover {
-    background-color: #fdf2e9;
-  }
+  .list-group-item:hover { background-color: #fdf2e9; }
+
   .btn-primary {
     background-color: #e67e22;
     border-color: #e67e22;
@@ -29,24 +26,17 @@
     background-color: #cf711f;
     border-color: #cf711f;
   }
-  .btn-danger {
-    background-color: #e74c3c;
-    border-color: #e74c3c;
-  }
-  .btn-danger:hover {
-    background-color: #c0392b;
-    border-color: #c0392b;
-  }
+
   .custom-course-card {
-    border: 2px solid #f5d0a9; 
+    border: 2px solid #f5d0a9;
     border-radius: 5px;
-    background-color: #ffffff; 
-    height: 220px;
+    background-color: #ffffff;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    cursor: pointer; 
+    cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
   }
   .custom-course-card:hover {
     transform: translateY(-4px);
@@ -58,6 +48,22 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .btn-primary {
+  background-color: #ea730b;
+  border-color: #ea730b;
+  }
+  .btn-primary:hover {
+    background-color: #cf711f;
+    border-color: #cf711f;
+  }
+  .btn-outline-primary {
+    color: #ea730b;
+    border-color: #ea730b;
+  }
+  .btn-outline-primary:hover {
+    background-color: #e67e22;
+    color: #fff;
+  }
 </style>
 
 <div class="container mt-4">
@@ -68,22 +74,37 @@
     <button id="cardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
   </div>
 
+  <!-- List View -->
+  <div id="listView">
+    <ul class="list-group mt-3">
+      {% for course in courses %}
+        <li class="list-group-item course-card" data-course-id="{{ course.pk }}">
+          <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+            <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
+            <div class="small text-muted">Instructor: {{ course.instructor.username }}</div>
+          </a>
+        </li>
+      {% empty %}
+        <li class="list-group-item text-muted">No courses created yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
   <!-- Card View -->
   <div id="cardView" class="row d-none">
     {% for course in courses %}
       <div class="col-md-4 mb-4">
-        <div class="card custom-course-card course-card" data-course-id="{{ course.pk }}">
+        <div class="card custom-course-card">
           <div class="card-body">
-            <div class="course-meta">{{ course.course_id }}</div>
-            <h5 class="card-title">{{ course.title }}</h5>
-            <p class="course-meta">Status: {{ course.status }}</p>
-            <hr>
-            <p class="course-meta">
-              Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}
-            </p>
-            <p class="course-meta">
-              Last Updated: {{ course.updated_at|date:"j/n/Y" }}
-            </p>
+            <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+              <div class="course-meta">{{ course.course_id }}</div>
+              <h5 class="card-title">{{ course.title }}</h5>
+              <p class="course-meta">Status: {{ course.status }}</p>
+              <hr>
+              <p class="course-meta">Instructor: {{ course.instructor.username }}</p>
+              <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
+              <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+            </a>
           </div>
         </div>
       </div>
@@ -92,26 +113,13 @@
     {% endfor %}
   </div>
 
-  <!-- List View -->
-  <div id="listView">
-    <ul class="list-group mt-3">
-      {% for course in courses %}
-        <li class="list-group-item course-list-item" data-course-id="{{ course.pk }}">
-          <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-          <div class="small text-muted">Instructor: {{ course.instructor.username }}</div>
-        </li>
-      {% empty %}
-        <li class="list-group-item text-muted">No courses created yet.</li>
-      {% endfor %}
-    </ul>
-  </div>
-
   <!-- Fixed Create Button -->
   <div class="fixed-bottom mb-3 d-flex justify-content-center">
-    <a href="{% url 'create_course' %}" class="btn btn-primary btn-lg">Create Course</a>
+    <a href="{% url 'create_course' %}" class="btn btn-primary btn-lg">➕ Create Course</a>
   </div>
+</div>
+
 <script>
-  // Toggle views
   document.getElementById("listViewBtn").addEventListener("click", function() {
     document.getElementById("listView").classList.remove("d-none");
     document.getElementById("cardView").classList.add("d-none");
@@ -120,23 +128,5 @@
     document.getElementById("cardView").classList.remove("d-none");
     document.getElementById("listView").classList.add("d-none");
   });
-
-  // Clickable course cards
-  document.querySelectorAll(".course-card").forEach(function (card) {
-    card.addEventListener("click", function () {
-      const courseId = this.dataset.courseId;
-      window.location.href = `/course/${courseId}/`; // ✅ link to detail
-    });
-  });
-
-  // Clickable list items
-  document.querySelectorAll(".course-list-item").forEach(function (item) {
-    item.addEventListener("click", function () {
-      const courseId = this.dataset.courseId;
-      window.location.href = `/course/${courseId}/`; // ✅ link to detail
-    });
-  });
 </script>
-
-</div>
-{% endblock %}
+{% endblock %}
