@@ -1,7 +1,8 @@
 from django import forms
-from .models import Course, StudentReadingListItem
+from .models import Course, StudentReadingListItem, Instructor, Lesson
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.forms import inlineformset_factory
 
 class StudentSignupForm(forms.ModelForm):
     title_choices = [
@@ -37,7 +38,6 @@ class InstructorLoginForm(forms.Form):
     email = forms.EmailField()
     password = forms.CharField(widget=forms.PasswordInput)
 
-from .models import Instructor
 class CourseForm(forms.ModelForm):
     instructor = forms.ModelChoiceField(
         queryset=Instructor.instructor.all(),
@@ -50,16 +50,6 @@ class CourseForm(forms.ModelForm):
         model = Course
         fields = ["course_id", "title", "status", "instructor"]
 
-# from django.forms import formset_factory
-
-# class LessonForm(forms.Form):
-#     title = forms.CharField(max_length=200)
-#     credit_points = forms.IntegerField(initial=0, min_value=0)
-#     status = forms.ChoiceField(choices=[("active","Active"),("inactive","Inactive")])
-
-# LessonFormSet = formset_factory(LessonForm, extra=1)
-from .models import Lesson
-from django.forms import inlineformset_factory
 class LessonForm(forms.ModelForm):
     class Meta:
         model = Lesson

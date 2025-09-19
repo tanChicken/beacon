@@ -4,9 +4,9 @@ from . import views
 urlpatterns = [
     path("", views.home, name='home'),
     path("i_login/", views.instructor_login, name="instructor_login"),
-    path("login/", views.student_login, name="login"), # got problem
+    path("login/", views.student_login, name="login"), 
     path("sign_up/", views.student_signup, name="sign_up"), 
-    path("instructor/", views.instructor_dashboard, name="instructor_dashboard"), #got problem need create course
+    path("instructor/", views.instructor_dashboard, name="instructor_dashboard"), 
     path('course/add/', views.create_course, name='create_course'),
     path("course/<int:pk>/edit/", views.edit_course, name="edit_course"),
     path("course/<int:pk>/delete/", views.delete_course, name="delete_course"),
