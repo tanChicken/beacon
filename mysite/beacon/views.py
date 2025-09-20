@@ -92,7 +92,15 @@ def enrolment_page(request):
 @login_required
 def enrol_course(request, course_id):
     student = request.user
-    course = get_object_or_404(Course, id=course_id)
+
+    # Only allow enrollment in active courses that the student isn't already enrolled in
+    course = get_object_or_404(Course, id=course_id, status="active")
+
+    # Check if student is already enrolled
+    if student in course.students.all():
+        messages.warning(request, f"You are already enrolled in {course.title}!")
+        return redirect("student_dashboard")
+
     course.students.add(student)
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
@@ -159,14 +167,24 @@ def lesson_detail(request, lesson_id):
 
 def instructor_login(request):
     if request.method == "POST":
-        first = (request.POST.get("first_name") or "").strip()
-        last = (request.POST.get("last_name") or "").strip()
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
+        # Try authenticating with email as username first
         user = authenticate(request, username=email, password=password)
+
+        # If that fails, try finding user by email and authenticate with username
+        if user is None:
+            try:
+                User = get_user_model()
+                user_obj = User.objects.get(email=email)
+                user = authenticate(request, username=user_obj.username, password=password)
+            except:
+                pass
+
         if user is None:
             messages.error(request, "Invalid email or password.")
+            return render(request, "instructor_login.html", {"hide_sidebar": True})
         else:
             if getattr(user, "role", None) == "INSTRUCTOR":
                 login(request, user)
@@ -178,14 +196,13 @@ def instructor_login(request):
 # ------------------------
 # Dashboards
 # ------------------------
+
+
 @login_required
-def student_dashboard(request):
-    if not request.user.is_authenticated:
-        return redirect("login")
-
-    courses = Course.objects.filter(students=request.user)
-
-    return render(request, "student_dashboard.html", {
+def instructor_dashboard(request):
+    # Get courses created by this instructor
+    courses = Course.objects.filter(instructor=request.user)
+    return render(request, "instructor_dashboard.html", {
         "courses": courses,
     })
 
@@ -359,3 +376,36 @@ def delete_lesson(request, pk):
     lesson.delete()
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
+
+@login_required
+def delete_classroom(request, pk):
+    from .models import Classroom
+
+    # Get classroom and ensure instructor owns the related course
+    classroom = get_object_or_404(Classroom, pk=pk, course_id__instructor=request.user)
+
+    if request.method == "POST":
+        # Count affected lessons before deletion
+        affected_lessons = classroom.lessons.all()
+        lesson_count = affected_lessons.count()
+
+        # Store classroom info for success message
+        classroom_info = f"Classroom {classroom.classroom_id}"
+
+        # Delete classroom (lessons will be automatically unassigned due to SET_NULL)
+        classroom.delete()
+
+        # Success message with lesson info
+        if lesson_count > 0:
+            messages.success(request, f"{classroom_info} deleted successfully! {lesson_count} lesson(s) unassigned from this classroom.")
+        else:
+            messages.success(request, f"{classroom_info} deleted successfully!")
+
+        return redirect("instructor_dashboard")
+
+    # GET request - show confirmation page
+    affected_lessons = classroom.lessons.all()
+    return render(request, "classroom_confirm_delete.html", {
+        "classroom": classroom,
+        "affected_lessons": affected_lessons,
+    })

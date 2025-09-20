@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Delete Classroom - Confirmation{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="mb-3">
+    <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">&larr; Back to Dashboard</a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-exclamation-triangle"></i>
+            Confirm Classroom Deletion
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-warning">
+            <strong>Warning:</strong> This action cannot be undone!
+          </div>
+
+          <h5>Classroom Details</h5>
+          <div class="mb-3">
+            <p><strong>Classroom ID:</strong> {{ classroom.classroom_id }}</p>
+            <p><strong>Course:</strong> {{ classroom.course_id.title }}</p>
+            <p><strong>Duration:</strong> {{ classroom.duration_weeks }} weeks</p>
+            <p><strong>Supervisor:</strong> {{ classroom.supervisor }}</p>
+            {% if classroom.building %}
+              <p><strong>Location:</strong> {{ classroom.building }}{% if classroom.room %}, Room {{ classroom.room }}{% endif %}</p>
+            {% endif %}
+            {% if classroom.online_link %}
+              <p><strong>Online Link:</strong> {{ classroom.online_link }}</p>
+            {% endif %}
+          </div>
+
+          {% if affected_lessons %}
+            <div class="alert alert-info">
+              <h6><i class="fas fa-info-circle"></i> Impact on Lessons</h6>
+              <p>The following <strong>{{ affected_lessons.count }}</strong> lesson(s) will be <strong>unassigned</strong> from this classroom:</p>
+              <ul class="mb-0">
+                {% for lesson in affected_lessons %}
+                  <li>{{ lesson.title }}</li>
+                {% endfor %}
+              </ul>
+              <small class="text-muted mt-2 d-block">
+                These lessons will not be deleted, but they will no longer be assigned to any classroom.
+              </small>
+            </div>
+          {% else %}
+            <div class="alert alert-success">
+              <i class="fas fa-check-circle"></i>
+              No lessons are currently assigned to this classroom.
+            </div>
+          {% endif %}
+
+          <form method="post" class="mt-4">
+            {% csrf_token %}
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'instructor_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+              </a>
+              <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Delete Classroom
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card-header {
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+  }
+
+  .btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+  }
+
+  .alert {
+    border-radius: 8px;
+  }
+</style>
+{% endblock %}
