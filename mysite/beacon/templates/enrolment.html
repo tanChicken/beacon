@@ -12,7 +12,7 @@
     <li class="list-group-item d-flex justify-content-between align-items-center">
       <div>
         <strong>{{ course.course_id }} - {{ course.title }}</strong> ({{ course.status }})
-        <div class="small text-muted">Instructor: {{ course.instructor.username }}</div>
+        <div class="small text-muted">Instructor: {{ course.instructor.email }}</div>
       </div>
       <a href="{% url 'enrol_course' course.id %}" class="btn btn-sm btn-primary">Enrol</a>
     </li>

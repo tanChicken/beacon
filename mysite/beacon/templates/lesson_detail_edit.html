@@ -59,7 +59,7 @@
     <ul class="list-group mb-3">
         {% for student in enrolled_students %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ student.username }} ({{ student.email }})
+            {{ student.email }}
             <form method="POST" style="display: inline;">
                 {% csrf_token %}
                 <input type="hidden" name="student_id" value="{{ student.id }}">
@@ -81,7 +81,7 @@
                     <option value="">Select a student from course...</option>
                     {% for student in course_students %}
                         {% if student not in enrolled_students %}
-                        <option value="{{ student.id }}">{{ student.username }} ({{ student.email }})</option>
+                        <option value="{{ student.id }}">{{ student.email }}</option>
                         {% endif %}
                     {% endfor %}
                 </select>

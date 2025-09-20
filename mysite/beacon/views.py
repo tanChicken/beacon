@@ -26,7 +26,7 @@ def login_view(request):
             try:
                 User = get_user_model()
                 user_obj = User.objects.get(email=email)
-                user = authenticate(request, username=user_obj.username, password=password)
+                user = authenticate(request, username=user_obj.email, password=password)
             except:
                 pass
 
@@ -105,13 +105,19 @@ def student_signup(request):
 
     return render(request, "signup.html")
 
+@login_required
 def student_dashboard(request):
+    # Check if user is a student
+    if request.user.role != "STUDENT":
+        messages.error(request, "Access denied. Students only.")
+        return redirect("home")
+
     student = request.user
     enrolled = student.courses_enroling.all()
-    
+
     # Get courses not yet enrolled by this student
     available_courses = Course.objects.filter(status="active").exclude(students=student)
-    
+
     return render(request, "student_dashboard.html", {
         "courses": enrolled,
         "available_courses": available_courses,
@@ -213,7 +219,7 @@ def instructor_login(request):
             try:
                 User = get_user_model()
                 user_obj = User.objects.get(email=email)
-                user = authenticate(request, username=user_obj.username, password=password)
+                user = authenticate(request, username=user_obj.email, password=password)
             except:
                 pass
 
@@ -351,7 +357,7 @@ def lesson_detail_edit(request, pk):
             if student_id:
                 student = get_object_or_404(User, id=student_id)
                 lesson.enrolled_students.add(student)
-                messages.success(request, f"{student.username} enrolled in lesson successfully!")
+                messages.success(request, f"{student.email} enrolled in lesson successfully!")
                 return redirect("lesson_detail_edit", pk=lesson.pk)
 
         # Handle student unenrollment
@@ -360,7 +366,7 @@ def lesson_detail_edit(request, pk):
             if student_id:
                 student = get_object_or_404(User, id=student_id)
                 lesson.enrolled_students.remove(student)
-                messages.success(request, f"{student.username} unenrolled from lesson successfully!")
+                messages.success(request, f"{student.email} unenrolled from lesson successfully!")
                 return redirect("lesson_detail_edit", pk=lesson.pk)
 
         # Handle lesson form and reading list updates

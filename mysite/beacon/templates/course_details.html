@@ -21,7 +21,7 @@
   <div class="d-flex justify-content-between">
       <div>
           <p>Course director: {{ course.instructor.get_full_name }}</p>
-          <p>Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}</p>
+          <p>Created by: {{ course.instructor.email }} on {{ course.created_at|date:"j/n/Y" }}</p>
       </div>
       <div>
           <p>Last updated: {{ course.updated_at|date:"M d, Y H:i" }}</p>

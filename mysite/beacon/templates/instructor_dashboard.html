@@ -82,7 +82,7 @@
         <li class="list-group-item course-card" data-course-id="{{ course.pk }}">
           <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
             <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-            <div class="small text-muted">Instructor: {{ course.instructor.username }}</div>
+            <div class="small text-muted">Instructor: {{ course.instructor.email }}</div>
           </a>
         </li>
       {% empty %}
@@ -107,7 +107,7 @@
               </p>
               <hr class="my-2">
               <p class="course-meta small">
-                <strong>Created By:</strong> {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}
+                <strong>Created By:</strong> {{ course.instructor.email }} on {{ course.created_at|date:"j/n/Y" }}
               </p>
               <p class="course-meta small">
                 <strong>Last Update:</strong> {{ course.updated_at|date:"j/n/Y" }}
