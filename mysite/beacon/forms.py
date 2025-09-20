@@ -63,7 +63,7 @@ class CourseForm(forms.ModelForm):
 
     class Meta:
         model = Course
-        fields = ["course_id", "title", "status", "instructor"]
+        fields = ["course_id", "title", "status"]
 
 class LessonForm(forms.ModelForm):
     class Meta:
