@@ -2,6 +2,10 @@
 {% block title %}Enrolment{% endblock %}
 
 {% block content %}
+<div class="mb-3">
+  <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
+</div>
+
 <h2>Available Courses to Enrol</h2>
 <ul class="list-group mt-3">
   {% for course in available_courses %}

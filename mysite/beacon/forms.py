@@ -1,6 +1,7 @@
 from django import forms
 from .models import Course, StudentReadingListItem, User
 from django.core.exceptions import ValidationError
+from django.forms import inlineformset_factory
 
 class StudentSignupForm(forms.ModelForm):
     title_choices = [
@@ -52,7 +53,6 @@ class InstructorLoginForm(forms.Form):
     email = forms.EmailField()
     password = forms.CharField(widget=forms.PasswordInput)
 
-from .models import Instructor
 class CourseForm(forms.ModelForm):
     instructor = forms.ModelChoiceField(
         queryset=Instructor.instructor.all(),
@@ -65,16 +65,6 @@ class CourseForm(forms.ModelForm):
         model = Course
         fields = ["course_id", "title", "status", "instructor"]
 
-# from django.forms import formset_factory
-
-# class LessonForm(forms.Form):
-#     title = forms.CharField(max_length=200)
-#     credit_points = forms.IntegerField(initial=0, min_value=0)
-#     status = forms.ChoiceField(choices=[("active","Active"),("inactive","Inactive")])
-
-# LessonFormSet = formset_factory(LessonForm, extra=1)
-from .models import Lesson
-from django.forms import inlineformset_factory
 class LessonForm(forms.ModelForm):
     class Meta:
         model = Lesson
@@ -87,8 +77,13 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ["title", "objective", "description", "effort_per_week", "credit_point"]
-
+        fields = ['title', 'description', 'objective', 'effort_per_week', 'assignment', 'status']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'objective': forms.Textarea(attrs={'rows': 3}),
+            'assignment': forms.Textarea(attrs={'rows': 3}),
+        }
+        
 class ReadingItemForm(forms.ModelForm):
     class Meta:
         model = StudentReadingListItem

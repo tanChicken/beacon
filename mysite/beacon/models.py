@@ -143,9 +143,9 @@ def ensure_profiles(sender, instance, created, **kwargs):
     if role in (getattr(User.Role, "INSTRUCTOR", "INSTRUCTOR"), "INSTRUCTOR"):
         InstructorProfile.objects.get_or_create(user=instance)  
 
-import uuid
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
+    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name="lessons")
     lesson_id = models.CharField(max_length=10, unique=False, editable=False)  
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -157,6 +157,13 @@ class Lesson(models.Model):
     credit_point = models.DecimalField(max_digits=4, decimal_places=1, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    assignment = models.TextField(blank=True, null=True)
+    STATUS_CHOICES = [
+        ("DRAFT", "Draft"),
+        ("PUBLISHED", "Published"),
+        ("ARCHIVED", "Archived"),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES,default="DRAFT")
 
     def save(self, *args, **kwargs):
         if not self.lesson_id:

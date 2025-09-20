@@ -1,0 +1,55 @@
+
+{% extends "base.html" %}
+{% block title %}Create Lesson{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="mb-3">
+      <a href="{% url 'course_detail' course.pk %}" class="btn btn-outline-secondary">
+        &larr; Back
+    </a>
+    </div>
+    <h2>Create Lesson for {{ course.title }}</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="id_title" class="form-label">Title</label>
+            <input type="text" name="title" id="id_title" class="form-control">
+        </div>
+
+        <div class="mb-3">
+            <label for="id_status" class="form-label">Status</label>
+            <select name="status" id="id_status" class="form-select">
+                <option value="DRAFT">Draft</option>
+                <option value="PUBLISHED">Published</option>
+                <option value="ARCHIVED">Archived</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_description" class="form-label">Description</label>
+            <textarea name="description" id="id_description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_objective" class="form-label">Objective</label>
+            <textarea name="objective" id="id_objective" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_effort_per_week" class="form-label">Effort per Week (hours)</label>
+            <input type="number" name="effort_per_week" id="id_effort_per_week" class="form-control">
+        </div>
+
+        <div class="mb-3">
+            <label for="id_assignment" class="form-label">Assignment</label>
+            <textarea name="assignment" id="id_assignment" class="form-control" rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">Create Lesson</button>
+        <a href="{% url 'course_detail' course.pk %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

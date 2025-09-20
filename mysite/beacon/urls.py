@@ -4,9 +4,9 @@ from . import views
 urlpatterns = [
     path("", views.home, name='home'),
     path("i_login/", views.instructor_login, name="instructor_login"),
-    path("login/", views.student_login, name="login"), # got problem
+    path("login/", views.student_login, name="login"), 
     path("sign_up/", views.student_signup, name="sign_up"), 
-    path("instructor/", views.instructor_dashboard, name="instructor_dashboard"), #got problem need create course
+    path("instructor/", views.instructor_dashboard, name="instructor_dashboard"), 
     path('course/add/', views.create_course, name='create_course'),
     path("course/<int:pk>/edit/", views.edit_course, name="edit_course"),
     path("course/<int:pk>/delete/", views.delete_course, name="delete_course"),
@@ -15,5 +15,7 @@ urlpatterns = [
     path("enroll/<int:course_id>/", views.enrol_course, name="enrol_course"),
     path('course/<int:pk>/', views.course_detail, name='course_detail'),
     path('lesson/<int:pk>/', views.lesson_detail_edit, name='lesson_detail_edit'),
-    path('course/<int:pk>/add_lessons/', views.add_lessons, name='add_lessons'),
+    path('course/<int:course_pk>/lesson/create/', views.create_lesson, name='create_lesson'),
+    path('lesson/<int:pk>/delete/', views.delete_lesson, name='delete_lesson'),
+    # path("classrooms/", views.student_classroom, name="student_classroom"),
     ]
