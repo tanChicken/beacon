@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, StudentReadingListItem, User
+from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 
