@@ -120,7 +120,6 @@
       {% if user.is_authenticated %}
         {% if user.role|upper == "STUDENT" %}
           <a href="{% url 'student_dashboard' %}">Courses</a>
-          <a href="{% url 'enrolment_page' %}">Enrolment</a>
         {% elif user.role|upper == "INSTRUCTOR" %}
           <a href="{% url 'instructor_dashboard' %}">Courses</a>
         {% endif %}
@@ -132,7 +131,6 @@
         <a href="{% url 'home' %}"> Home</a>
       {% endif %}
     </div>
-    {% endif %}
 
     <!-- Main Content -->
     <div class="main-content">

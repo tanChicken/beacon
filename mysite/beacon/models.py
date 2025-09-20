@@ -16,33 +16,33 @@ class TodoItem(models.Model):
         return self.title
 
 
-# ------------------------
-# User Profile for Roles
-# ------------------------
-class Profile(models.Model):
-    ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('student', 'Student'),
-        ('instructor', 'Instructor'),
-    ]
+# # ------------------------
+# # User Profile for Roles
+# # ------------------------
+# class Profile(models.Model):
+#     ROLE_CHOICES = [
+#         ('admin', 'Admin'),
+#         ('student', 'Student'),
+#         ('instructor', 'Instructor'),
+#     ]
     
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
+#     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+#     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     
-    def __str__(self):
-        return f"{self.user.username} - {self.role}"
+#     def __str__(self):
+#         return f"{self.user.username} - {self.role}"
 
 
-@receiver(post_save, sender='beacon.User')
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
+# @receiver(post_save, sender='beacon.User')
+# def create_user_profile(sender, instance, created, **kwargs):
+#     if created:
+#         Profile.objects.create(user=instance)
 
 
-@receiver(post_save, sender='beacon.User')
-def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'profile'):
-        instance.profile.save()
+# @receiver(post_save, sender='beacon.User')
+# def save_user_profile(sender, instance, **kwargs):
+#     if hasattr(instance, 'profile'):
+#         instance.profile.save()
 
 
 # ------------------------
@@ -196,41 +196,13 @@ def create_instructor_profile(sender, instance, created, **kwargs):
     if created and instance.role == "INSTRUCTOR":
         InstructorProfile.objects.create(user=instance)
     
-@receiver(post_save, sender='beacon.User')
+@receiver(post_save, sender=User)
 def ensure_profiles(sender, instance, created, **kwargs):
-    if not created:
-        return
-    role = getattr(instance, "role", None)
-    if role in (getattr(User.Role, "STUDENT", "STUDENT"), "STUDENT"):
-        StudentProfile.objects.get_or_create(user=instance)
-    if role in (getattr(User.Role, "INSTRUCTOR", "INSTRUCTOR"), "INSTRUCTOR"):
-        InstructorProfile.objects.get_or_create(user=instance)  
-
-class Classroom(models.Model):
-    DURATION_CHOICES = [
-        (2, "2 weeks"),
-        (3, "3 weeks"),
-        (4, "4 weeks"),
-    ]
-    classroom_id = models.CharField(max_length=20)
-    course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
-    duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
-    supervisor = models.CharField(max_length=100)
-
-    # Location attributes
-    building = models.CharField(max_length=100, blank=True, null=True)
-    room = models.CharField(max_length=50, blank=True, null=True)
-    online_link = models.URLField(blank=True, null=True)
-
-    def _str_(self):
-        return f"Classroom {self.id} for {self.course.course_code} ({self.duration_weeks} weeks)"
-
-    def location_display(self):
-        if self.online_link:
-            return f"Online class link: {self.online_link}"
-        elif self.building and self.room:
-            return f"{self.building}, Room {self.room}"
-        return "TBA"
+    if created:
+        if instance.role == User.Role.STUDENT:
+            StudentProfile.objects.get_or_create(user=instance)
+        elif instance.role == User.Role.INSTRUCTOR:
+            InstructorProfile.objects.get_or_create(user=instance)
 
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)

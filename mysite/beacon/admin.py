@@ -25,6 +25,7 @@ class CustomUserAdmin(UserAdmin):
     model = User
     list_display = ("email", "role", "is_staff", "is_active")
     ordering = ("email",)
+    search_fields = ("email", "role")
 
     fieldsets = (
         (None, {"fields": ("email", "password", "role")}),
@@ -63,13 +64,13 @@ admin.site.register(User, CustomUserAdmin)
 @admin.register(StudentProfile)
 class StudentProfileAdmin(admin.ModelAdmin):
     list_display = ("user", "title")           # add more fields as you have them
-    search_fields = ("user__username", "user__email", "user__first_name", "user__last_name")
+    search_fields = ("user__email", "user__first_name", "user__last_name")
 
 
 @admin.register(InstructorProfile)
 class InstructorProfileAdmin(admin.ModelAdmin):
     list_display = ("user",)
-    search_fields = ("user__username", "user__email", "user__first_name", "user__last_name")
+    search_fields = ("user__email", "user__first_name", "user__last_name")
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):

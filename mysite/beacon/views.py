@@ -32,7 +32,7 @@ def student_login(request):
             #     return redirect("instructor_dashboard")
             else:
                 messages.error(request, "This account is not a student. Please use the instructor login.")
-    return render(request, "login.html"), {"hide_sidebar": True}
+    return render(request, "login.html")
 
 def student_signup(request):
     if request.method == "POST":

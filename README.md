@@ -17,22 +17,6 @@ Everyone can use them to log in (both locally and on the deployed site).
 - **Email:** student1@gmail.com 
 - **Password:** student1234  
 
-
-## post merge
-
-## Admin
-- **Email:** superuser1@gmail.com
-- **Password:** superuser1
-
-** please create your own superuser account as well! **
-
-## Instructor
-- **Email:** kbinstructor@gmail.com 
-- **Password:** kbinstructor  
-
-## Student 
-- **Email:** kbstudent@gmail.com 
-- **Password:** kbstudent  
 ** feel free to do testing and create dummy accounts on the database, it would be deleted afterwards as well **
 
 Note: Do not delete or change these accounts.  
@@ -61,3 +45,23 @@ If you need to test new accounts, create separate ones instead.
 - When finished with work, please comment out the local dataabase code and change it back to shared for convenience
 
 - Three test accounts with details are currently provided above, please refer and log in using the details.
+
+
+
+
+
+## post merge
+
+## Admin
+- **Email:** superuser1@gmail.com
+- **Password:** superuser1
+
+** please create your own superuser account as well! **
+
+## Instructor
+- **Email:** kbinstructor@gmail.com 
+- **Password:** kbinstructor  
+
+## Student 
+- **Email:** kbstudent@gmail.com 
+- **Password:** kbstudent  
