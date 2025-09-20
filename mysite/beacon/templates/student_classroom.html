@@ -15,12 +15,12 @@
   }
 
   .btn-primary {
-    background-color: #e67e22;
-    border-color: #e67e22;
+    background-color: #41ca7c;
+    border-color: #41ca7c;
   }
   .btn-primary:hover {
-    background-color: #cf711f;
-    border-color: #cf711f;
+    background-color: #369e65;
+    border-color: #369e65;
   }
 
   .custom-classroom-card {
@@ -47,7 +47,7 @@
 </style>
 
 <div class="container mt-4">
-  <h1>CLASSROOMS</h1>
+  <h1>YOUR CLASSROOMS</h1>
 
   <div class="d-flex justify-content-end mb-3">
     <button id="listViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
@@ -70,23 +70,26 @@
     </ul>
   </div>
 
-  <!-- Card View -->
-  <div id="cardView" class="row d-none">
-    {% for classroom in classrooms %}
-      <div class="col-md-4 mb-4">
-        <div class="card custom-classroom-card">
-          <div class="card-body">
-            <h5 class="card-title">Classroom {{ classroom.classroom_id }}</h5>
-            <p class="meta-info">Course: {{ classroom.course_id.course_id }}</p>
-            <p class="meta-info">Supervisor: {{ classroom.supervisor }}</p>
-            <p class="meta-info">Duration: {{ classroom.get_duration_weeks_display }}</p>
-            <hr>
+   <!-- Card View -->
+  <div id="cardView" class="mt-3 d-none">
+    <div class="card-grid">
+      {% for classroom in classrooms %}
+        <div class="card-col">
+          <div class="classroom-oval" role="article" aria-label="Classroom {{ classroom.classroom_id }}">
+            <div class="classroom-course">{{ classroom.course_id.course_id }}</div>
+
+            <div class="classroom-id">{{ classroom.classroom_id }}</div>
+
+            <div class="classroom-meta">
+              <span class="label">Supervisor: {{ classroom.supervisor }}</span>
+              <span>Duration: {{ classroom.get_duration_weeks_display }}</span>
+            </div>
           </div>
         </div>
-      </div>
-    {% empty %}
-      <p class="text-muted">No classrooms created yet.</p>
-    {% endfor %}
+      {% empty %}
+        <p class="text-muted">No classrooms created yet.</p>
+      {% endfor %}
+    </div>
   </div>
 </div>
 
