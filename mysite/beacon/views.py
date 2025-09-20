@@ -89,22 +89,16 @@ def student_signup(request):
 
         with transaction.atomic():
             user = UserModel.objects.create_user(
-                username=email,  
                 email=email,
-                first_name=first_name,
-                last_name=last_name,
                 password=password,
+                role="STUDENT",
             )
-            # set role
 
-
-            # Assign role via Profile
-            if hasattr(user, "profile"):
-                user.profile.role = "student"
-                user.profile.save()
-
-            # Create StudentProfile
-            StudentProfile.objects.create(user=user, student_id=student_id)
+            profile = user.studentprofile
+            profile.title = title
+            profile.first_name = first_name
+            profile.last_name = last_name
+            profile.save()
 
         messages.success(request, "Signup successful! Please log in.")
         return redirect("login")

@@ -1,8 +1,7 @@
 from django.contrib import admin
 from .models import TodoItem, Course, StudentProfile, InstructorProfile
 from django.contrib.auth import get_user_model
-from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-from .models import TodoItem, Profile, Course
+from django.contrib.auth.admin import UserAdmin 
 
 
 # Register your models here.
@@ -22,25 +21,44 @@ class InstructorProfileInline(admin.StackedInline):
     extra = 0
     fk_name = "user"
 
-@admin.register(User)
-class UserAdmin(DjangoUserAdmin):
-    # CHANGE view (edit existing user)
+class CustomUserAdmin(UserAdmin):
+    model = User
+    list_display = ("email", "role", "is_staff", "is_active")
+    ordering = ("email",)
+
     fieldsets = (
-        *DjangoUserAdmin.fieldsets,
-        ("Role", {"fields": ("role",)}),
+        (None, {"fields": ("email", "password", "role")}),
+        ("Permissions", {"fields": ("is_staff", "is_active", "is_superuser", "groups", "user_permissions")}),
     )
-    # ADD view (create new user) — replace, don’t append
+
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("username", "email", "password1", "password2", "role"),
-        }),
+            "fields": ("email", "role", "password1", "password2", "is_staff", "is_active")}
+            ),
     )
-    list_display = ("username", "email", "first_name", "last_name", "role", "is_staff")
-    list_filter = (*DjangoUserAdmin.list_filter, "role")
-    search_fields = ("username", "email", "first_name", "last_name")
 
-    # inlines = [StudentProfileInline, InstructorProfileInline]
+admin.site.register(User, CustomUserAdmin)
+
+# @admin.register(User)
+# class UserAdmin(DjangoUserAdmin):
+#     # CHANGE view (edit existing user)
+#     fieldsets = (
+#         *DjangoUserAdmin.fieldsets,
+#         ("Role", {"fields": ("role",)}),
+#     )
+#     # ADD view (create new user) - replace, don't append
+#     add_fieldsets = (
+#         (None, {
+#             "classes": ("wide",),
+#             "fields": ("username", "email", "password1", "password2", "role"),
+#         }),
+#     )
+#     list_display = ("username", "email", "first_name", "last_name", "role", "is_staff")
+#     list_filter = (*DjangoUserAdmin.list_filter, "role")
+#     search_fields = ("username", "email", "first_name", "last_name")
+
+#     # inlines = [StudentProfileInline, InstructorProfileInline]
 
 @admin.register(StudentProfile)
 class StudentProfileAdmin(admin.ModelAdmin):
