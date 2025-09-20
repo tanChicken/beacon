@@ -159,6 +159,12 @@ class Lesson(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     assignment = models.TextField(blank=True, null=True)
+    STATUS_CHOICES = [
+        ("DRAFT", "Draft"),
+        ("PUBLISHED", "Published"),
+        ("ARCHIVED", "Archived"),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES,default="DRAFT")
 
     def save(self, *args, **kwargs):
         if not self.lesson_id:

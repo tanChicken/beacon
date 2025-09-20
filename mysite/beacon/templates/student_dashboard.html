@@ -6,39 +6,75 @@
   h1, h3 { font-weight: bold; }
   h3 { margin-top: 20px; }
 
+  /* Theme: Green for Student */
   .list-group-item {
-    background-color: #ffffff; 
-    border: 2px solid #41ca7c; 
+    background-color: #ffffff;
+    border: 2px solid #41ca7c;
     border-radius: 5px;
     margin-bottom: 10px;
     padding: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
   }
+  .list-group-item:hover { background-color: #eafaf1; }
 
+  /* Primary button (enrol, create, etc.) */
   .btn-primary {
-    background-color: #e67e22;
-    border-color: #e67e22;
+    background-color: #41ca7c;
+    border-color: #41ca7c;
   }
   .btn-primary:hover {
-    background-color: #cf711f;
-    border-color: #cf711f;
+    background-color: #369e65; /* darker green */
+    border-color: #369e65;
   }
 
+  /* Toggle buttons (List/Card view) */
+  .btn-outline-primary {
+    color: #41ca7c;
+    border-color: #41ca7c;
+  }
+  .btn-outline-primary:hover {
+    background-color: #41ca7c;
+    color: #fff;
+    border-color: #41ca7c;
+  }
   .custom-course-card {
-    border: 2px solid #41ca7c; 
+    border: 2px solid #41ca7c;
     border-radius: 5px;
-    background-color: #ffffff; 
-    height: 220px; 
+    background-color: #ffffff;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
   }
-
+  .custom-course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
   .card-title,
   .course-meta {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .btn-primary {
+  background-color: #41ca7c;
+  border-color: #41ca7c;
+}
+.btn-primary:hover {
+  background-color: #369e65;
+  border-color: #369e65;
+}
+.btn-outline-primary {
+  color: #41ca7c;
+  border-color: #41ca7c;
+}
+.btn-outline-primary:hover {
+  background-color: #41ca7c;
+  color: #fff;
+}
 </style>
 
 <div class="container mt-4">
@@ -56,7 +92,7 @@
         <li class="list-group-item course-card" data-course-id="{{ course.pk }}">
           <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
             <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-            <div class="small text-muted">Instructor: {{ course.instructor.get_full_name }}</div>
+            <div class="small text-muted">Instructor: {{ course.instructor.get_full_name|default:course.instructor.username }}</div>
           </a>
         </li>
       {% empty %}
@@ -69,22 +105,17 @@
   <div id="cardView" class="row d-none">
     {% for course in courses %}
       <div class="col-md-4 mb-4">
-        <div class="card custom-course-card course-card" data-course-id="{{ course.pk }}">
-          <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;"></a>
+        <div class="card custom-course-card">
           <div class="card-body">
-            <div class="course-meta">{{ course.course_id }}</div>
-            <h5 class="card-title">{{ course.title }}</h5>
-            <p class="course-meta">Status: {{ course.status }}</p>
-            <hr>
-            <p class="course-meta">
-              Instructor: {{ course.instructor.get_full_name }}
-            </p>
-            <p class="course-meta">
-              Created: {{ course.created_at|date:"j/n/Y" }}
-            </p>
-            <p class="course-meta">
-              Last Updated: {{ course.updated_at|date:"j/n/Y" }}
-            </p>
+            <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+              <div class="course-meta">{{ course.course_id }}</div>
+              <h5 class="card-title">{{ course.title }}</h5>
+              <p class="course-meta">Status: {{ course.status }}</p>
+              <hr>
+              <p class="course-meta">Instructor: {{ course.instructor.get_full_name|default:course.instructor.username }}</p>
+              <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
+              <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+            </a>
           </div>
         </div>
       </div>
@@ -96,9 +127,7 @@
   <!-- Enrolment Button -->
   {% if courses|length < 4 %}
     <div class="mt-4 text-right">
-      <a href="{% url 'enrolment_page' %}" class="btn btn-primary">
-        📚 Enrol in New Courses
-      </a>
+      <a href="{% url 'enrolment_page' %}" class="btn btn-primary">📚 Enrol in New Courses</a>
     </div>
   {% endif %}
 </div>
@@ -108,7 +137,6 @@
     document.getElementById("listView").classList.remove("d-none");
     document.getElementById("cardView").classList.add("d-none");
   });
-
   document.getElementById("cardViewBtn").addEventListener("click", function() {
     document.getElementById("cardView").classList.remove("d-none");
     document.getElementById("listView").classList.add("d-none");

@@ -1,32 +1,20 @@
-from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentReadingListProgress
-from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Course, Lesson, StudentReadingListItem, StudentReadingListProgress, StudentProfile
+from .forms import CourseForm, LessonDetailForm
 from django.contrib import messages
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
-from django.views.decorators.csrf import csrf_exempt
-from django.db import transaction, IntegrityError
+from django.db import transaction
 from django.contrib.auth import get_user_model
-from django.db.models import Count
-
-from .models import Course, Student, StudentProfile  # note: import Student & StudentProfile
-
 
 # Create your views here.
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
 
-
-# ------------------------
-# Login
-# ------------------------
 def login_view(request):
     return render(request, "home.html", {"hide_sidebar": True})
 
-# ------------------------
-# Student
-# ------------------------
 def student_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
@@ -36,7 +24,6 @@ def student_login(request):
         if user is None:
             messages.error(request, "Invalid email or password.")
         else:
-            # allow only Student accounts here
             if getattr(user, "role", None) == "STUDENT":
                 login(request, user)
                 return redirect("student_dashboard")
@@ -69,7 +56,7 @@ def student_signup(request):
 
         with transaction.atomic():
             user = UserModel.objects.create_user(
-                username=email,  # keep if your model still uses username
+                username=email,  
                 email=email,
                 first_name=first_name,
                 last_name=last_name,
@@ -89,11 +76,6 @@ def student_signup(request):
 
     return render(request, "signup.html")
 
-# @login_required(login_url="/login/")
-# def student_dashboard(request):
-#     student = request.user
-#     enrolled = student.courses_enroling.all()  # Assuming ManyToManyField 'students'
-#     return render(request, "student_dashboard.html", {"courses": enrolled, "student": student})
 def student_dashboard(request):
     student = request.user
     enrolled = student.courses_enroling.all()
@@ -126,45 +108,10 @@ def student_lessons(request):
     if not request.user.role == "STUDENT":
         return render(request, "403.html")
 
-    lessons = request.user.lessons.all()  # thanks to the ManyToManyField
+    lessons = request.user.lessons.all()  
 
     return render(request, "student_lessons.html", {"lessons": lessons})
 
-@login_required
-def lesson_detail(request, lesson_id):
-    lesson = get_object_or_404(Lesson, id=lesson_id)
-    reading_items = lesson.reading_items.all()
-
-    if request.method == "POST" and request.user.is_authenticated:
-        for item in reading_items:
-            checkbox = str(item.id) in request.POST
-            progress, created = StudentReadingListProgress.objects.get_or_create(
-                student=request.user, item=item
-            )
-            progress.completed = checkbox
-            progress.save()
-        return redirect("lesson_detail", lesson_id=lesson.id)
-
-    completed_ids = list(
-    StudentReadingListProgress.objects
-        .filter(student=request.user, item__lesson=lesson, completed=True)
-        .values_list('item_id', flat=True)
-)
-
-    return render(request, "lesson_detail.html", {
-        "lesson": lesson,
-        "reading_items": reading_items,
-        "progress": completed_ids,
-    })
-
-@login_required
-def student_classroom(request):
-    classrooms = Classroom.objects.prefetch_related("lessons").all()
-    return render(request, "student_classroom.html", {"classrooms": classrooms})
-
-# ------------------------
-# Instructor
-# ------------------------
 def instructor_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
@@ -185,8 +132,6 @@ def instructor_dashboard(request):
     courses = Course.objects.filter(instructor=request.user)
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
-from django.forms import inlineformset_factory
-from .forms import CourseForm, LessonForm
 @login_required
 def create_course(request):
     if request.method == "POST":
@@ -232,7 +177,6 @@ def edit_course(request, pk):
         "read_only_lessons": True,
     })
 
-
 @login_required
 def delete_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
@@ -243,30 +187,32 @@ def delete_course(request, pk):
 @login_required
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
-
-    if request.method == "POST":
-        form = CourseForm(request.POST, instance=course)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Course updated successfully!")
-            return redirect("instructor_dashboard")
-        else:
-            messages.error(request, "Please fix the errors below.")
-    else:
-        form = CourseForm(instance=course)
-
     lessons = course.lessons.all()
+
+    students_progress = []
+    for student in course.students.all():
+        total_items = StudentReadingListItem.objects.filter(lesson__course=course).count()
+        completed_items = StudentReadingListProgress.objects.filter(
+            student=student, completed=True, item__lesson__course=course
+        ).count()
+
+        percent_complete = 0
+        if total_items > 0:
+            percent_complete = int((completed_items / total_items) * 100)
+
+        students_progress.append({
+            "student": student,
+            "completed": completed_items,
+            "total": total_items,
+            "percent": percent_complete,
+        })
 
     return render(request, "course_details.html", {
         "course": course,
-        "form": form,
+        "form": CourseForm(instance=course),
         "lessons": lessons,
+        "students_progress": students_progress,
     })
-
-
-
-from .models import Lesson, StudentReadingListItem
-from .forms import LessonDetailForm, ReadingItemForm
 
 @login_required
 def lesson_detail_edit(request, pk):
@@ -291,7 +237,6 @@ def lesson_detail_edit(request, pk):
                 if title.strip():
                     StudentReadingListItem.objects.create(lesson=lesson, title=title.strip())
 
-            # Success message and redirect
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("course_detail", pk=lesson.course.pk)
     else:

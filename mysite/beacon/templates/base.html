@@ -8,9 +8,11 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
     <style>
       body {
-        background-color: #ffffff; /* always white */
+        background-color: #ffffff;
         font-family: Arial, sans-serif;
       }
+
+      /* Sidebar default (desktop view) */
       .sidebar {
         height: 100vh;
         border-right: 1px solid #ddd;
@@ -19,11 +21,14 @@
         top: 0;
         left: 0;
         width: 240px;
+        transition: all 0.3s ease;
       }
+
       .sidebar h2 {
         font-size: 20px;
         margin-bottom: 20px;
       }
+
       .sidebar a {
         display: block;
         padding: 8px 12px;
@@ -32,13 +37,14 @@
         border-radius: 6px;
         margin-bottom: 5px;
       }
+
       .sidebar a:hover {
         color: white;
       }
 
       /* Instructor (Orange Theme) */
       .instructor-sidebar {
-        background-color: #fae3d3; /* very light orange */
+        background-color: #fae3d3;
       }
       .instructor-sidebar h2 a {
         color: #e67e22;
@@ -54,7 +60,7 @@
 
       /* Student (Green Theme) */
       .student-sidebar {
-        background-color: #d8fae6; /* very light green */
+        background-color: #d8fae6;
       }
       .student-sidebar h2 a {
         color: #34a464;
@@ -69,17 +75,41 @@
       }
 
       .main-content {
-        margin-left: 260px; /* leave space for sidebar */
+        margin-left: 260px;
         padding: 20px;
+        transition: margin-left 0.3s ease;
       }
-      .alert-info {
-        background-color: #f9f9f9;
-        border-color: #ddd;
-        color: #333;
+
+      /* 📱 Responsive for tablets & mobile */
+      @media (max-width: 991px) {
+        .sidebar {
+          width: 200px;
+        }
+        .main-content {
+          margin-left: 210px;
+        }
+      }
+
+      @media (max-width: 767px) {
+        .sidebar {
+          position: relative;
+          width: 100%;
+          height: auto;
+          border-right: none;
+          border-bottom: 1px solid #ddd;
+        }
+        .main-content {
+          margin-left: 0;
+        }
+        .sidebar a {
+          display: inline-block;
+          margin-right: 10px;
+        }
       }
     </style>
   </head>
   <body>
+    <!-- Sidebar -->
     <div class="sidebar 
       {% if user.is_authenticated and user.role == 'INSTRUCTOR' %}instructor-sidebar{% endif %}
       {% if user.is_authenticated and user.role == 'STUDENT' %}student-sidebar{% endif %}">
@@ -93,18 +123,16 @@
         {% elif user.role == "INSTRUCTOR" %}
           <a href="{% url 'instructor_dashboard' %}">Courses</a>
         {% endif %}
-        {% if user.role == "STUDENT" %}
-          <a href="{% url 'student_classroom' %}">Classroom</a>
-        {% elif user.role == "INSTRUCTOR" %}
-          <a href=#>Classroom</a>
-        {% endif %}
-        <a href=#>Student</a>
-        <a href=#>Report</a>
+        
+        <a href="#">Classroom</a>
+        <a href="#">Student</a>
+        <a href="#">Report</a>
       {% else %}
         <a href="{% url 'home' %}">🏠 Home</a>
       {% endif %}
     </div>
 
+    <!-- Main Content -->
     <div class="main-content">
       {% if messages %}
         {% for message in messages %}
