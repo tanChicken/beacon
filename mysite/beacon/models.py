@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db.models.signals import post_save 
 from django.dispatch import receiver
 from django.utils import timezone
@@ -33,47 +33,44 @@ class Course(models.Model):
 
     def __str__(self):
         return f"{self.course_id} - {self.title}"
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, password, role, **extra_fields):
+        if not email:
+            raise ValueError("Email is required")
+        if not password:
+            raise ValueError("Password is required")
+        if not role:
+            raise ValueError("Role is required")
+        
+        email = self.normalize_email(email)
+        user = self.model(email=email, role=role, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
     
-class Classroom(models.Model):
-    DURATION_CHOICES = [
-        (2, "2 weeks"),
-        (3, "3 weeks"),
-        (4, "4 weeks"),
-    ]
-    classroom_id = models.CharField(max_length=20)
-    course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
-    duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
-    supervisor = models.CharField(max_length=100)
-
-    # Location attributes
-    building = models.CharField(max_length=100, blank=True, null=True)
-    room = models.CharField(max_length=50, blank=True, null=True)
-    online_link = models.URLField(blank=True, null=True)
-
-    def __str__(self):
-        return f"Classroom {self.id} for {self.course.course_code} ({self.duration_weeks} weeks)"
-
-    def location_display(self):
-        if self.online_link:
-            return f"Online class link: {self.online_link}"
-        elif self.building and self.room:
-            return f"{self.building}, Room {self.room}"
-        return "TBA"
-    
-class User(AbstractUser):
+    def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return self.create_user(email, password, role="ADMIN", **extra_fields)
+   
+class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
         ADMIN = "ADMIN", "Admin"
         STUDENT = "STUDENT", "Student"
         INSTRUCTOR = "INSTRUCTOR", "Instructor"
 
-    base_role = Role.ADMIN
-
+    email = models.EmailField(unique=True)
     role = models.CharField(max_length=50, choices=Role.choices)
 
-    def save(self, *args, **kwargs):
-        if not self.pk and not self.role:
-            self.role = self.base_role
-        return super().save(*args, **kwargs)
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
+
+    objects = CustomUserManager()
+
 
 class StudentManager(models.Manager):
     def get_queryset(self, *args, **kwargs):
@@ -99,11 +96,13 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    student_id = models.IntegerField(null=True, blank=True)
+    first_name = models.CharField(max_length=30, blank=True, null=True)
+    last_name = models.CharField(max_length=30, blank=True, null=True)
     title = models.CharField(
         max_length=10,
         choices=[("Mr", "Mr"), ("Ms", "Ms"), ("Mrs", "Mrs"), ("Dr", "Dr")],
-        default="Mr"
+        blank=True,
+        null=True
     )
 
 class InstructorManager(models.Manager):
@@ -127,7 +126,7 @@ class InstructorProfile(models.Model):
     bio = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Instructor Profile: {self.user.username}"
+        return f"Instructor Profile: {self.user.email}"
 
 @receiver(post_save, sender=Instructor)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -180,7 +179,7 @@ class StudentReadingListItem(models.Model):
     title = models.CharField(max_length=255)
 
     def __str__(self):
-        return f"{self.lesson.title} – {self.title}"
+        return f"{self.lesson.title} - {self.title}"
 
 class StudentReadingListProgress(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -191,5 +190,4 @@ class StudentReadingListProgress(models.Model):
         unique_together = ("student", "item")
 
     def __str__(self):
-        return f"{self.student.username} – {self.item.title}: {'Done' if self.completed else 'Not Done'}"
-    
+        return f"{self.student.email} - {self.item.title}: {'Done' if self.completed else 'Not Done'}"
