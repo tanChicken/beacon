@@ -13,32 +13,6 @@ def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
 
 def login_view(request):
-    if request.method == "POST":
-        email = (request.POST.get("email") or "").strip().lower()
-        password = request.POST.get("password") or ""
-
-        # Try authenticating with email as username first
-        user = authenticate(request, username=email, password=password)
-
-        # If that fails, try finding user by email and authenticate with username
-        if user is None:
-            try:
-                User = get_user_model()
-                user_obj = User.objects.get(email=email)
-                user = authenticate(request, username=user_obj.username, password=password)
-            except:
-                pass
-
-        if not user:
-            messages.error(request, "Invalid email or password.")
-            return render(request, "login.html", {"hide_sidebar": True})
-
-        # Login the user
-        login(request, user)
-
-        # Redirect to student dashboard (this is the student login)
-        return redirect("student_dashboard")
-
     return render(request, "login.html", {"hide_sidebar": True})
 
 def student_login(request):
@@ -50,31 +24,22 @@ def student_login(request):
 
         if user is None:
             messages.error(request, "Invalid email or password.")
-            return render(request, "login.html")
-
-        # Login first
-        login(request, user)
-
-        # Redirect automatically based on role/profile
-        if hasattr(user, "profile"):
-            role = user.profile.role.upper()
-            if role == "STUDENT":
+        else:
+            if getattr(user, "role", None) == "STUDENT":
+                login(request, user)
                 return redirect("student_dashboard")
-            # elif getattr(user, "role", None) == "INSTRUCTOR":
-            #     return redirect("instructor_dashboard")
             else:
                 messages.error(request, "This account is not a student. Please use the instructor login.")
+    
     return render(request, "login.html")
 
 def student_signup(request):
     if request.method == "POST":
         first_name = (request.POST.get("first_name") or "").strip()
         last_name = (request.POST.get("last_name") or "").strip()
-        student_id = (request.POST.get("title") or "").strip()  # renamed for clarity
-        email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
         confirm = request.POST.get("confirm_password") or ""
-
+        email = (request.POST.get("email") or "").strip().lower()
         title = request.POST.get("title") or ""  
 
         if not first_name or not last_name or not email or not password or not confirm or not title:
@@ -95,14 +60,10 @@ def student_signup(request):
                 email=email,
                 password=password,
                 role="STUDENT",
-                role="STUDENT",
             )
 
             profile = user.studentprofile
-            profile = user.studentprofile
             profile.title = title
-            profile.first_name = first_name
-            profile.last_name = last_name
             profile.first_name = first_name
             profile.last_name = last_name
             profile.save()
@@ -149,63 +110,11 @@ def student_lessons(request):
 
     return render(request, "student_lessons.html", {"lessons": lessons})
 
-@login_required
-def lesson_detail(request, lesson_id):
-    lesson = get_object_or_404(Lesson, id=lesson_id)
-    reading_items = lesson.reading_items.all()
-
-    # Check if student is enrolled in this lesson
-    is_enrolled = request.user in lesson.enrolled_students.all()
-
-    # Check if student is enrolled in the course (prerequisite for lesson enrollment)
-    can_enroll = False
-    if lesson.course and request.user.role == "STUDENT":
-        can_enroll = request.user in lesson.course.students.all()
-
-    if request.method == "POST" and request.user.is_authenticated:
-        # Handle lesson enrollment
-        if 'enroll_lesson' in request.POST and can_enroll and not is_enrolled:
-            lesson.enrolled_students.add(request.user)
-            messages.success(request, f"You have enrolled in {lesson.title}!")
-            return redirect("lesson_detail", lesson_id=lesson.id)
-
-        # Handle lesson unenrollment
-        elif 'unenroll_lesson' in request.POST and is_enrolled:
-            lesson.enrolled_students.remove(request.user)
-            messages.success(request, f"You have unenrolled from {lesson.title}!")
-            return redirect("lesson_detail", lesson_id=lesson.id)
-
-        # Handle reading list progress (only if enrolled)
-        elif is_enrolled:
-            for item in reading_items:
-                checkbox = str(item.id) in request.POST
-                progress, created = StudentReadingListProgress.objects.get_or_create(
-                    student=request.user, item=item
-                )
-                progress.completed = checkbox
-                progress.save()
-            return redirect("lesson_detail", lesson_id=lesson.id)
-
-    completed_ids = list(
-        StudentReadingListProgress.objects
-            .filter(student=request.user, item__lesson=lesson, completed=True)
-            .values_list('item_id', flat=True)
-    )
-
-    return render(request, "lesson_detail.html", {
-        "lesson": lesson,
-        "reading_items": reading_items,
-        "progress": completed_ids,
-        "is_enrolled": is_enrolled,
-        "can_enroll": can_enroll,
-    })
-
 def instructor_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
-        # Try authenticating with email as username first
         # Try authenticating with email as username first
         user = authenticate(request, username=email, password=password)
 
@@ -219,24 +128,14 @@ def instructor_login(request):
             messages.error(request, "This account is not an instructor. Please use the student login.")
     return render(request, "instructor_login.html")
 
-
-# ------------------------
-# Dashboards
-# ------------------------
-
-
 @login_required
 def instructor_dashboard(request):
-    # Get courses created by this instructor
     # Get courses created by this instructor
     courses = Course.objects.filter(instructor=request.user)
     return render(request, "instructor_dashboard.html", {
         "courses": courses,
     })
 
-# ------------------------
-# Courses (Instructor only)
-# ------------------------
 @login_required
 def create_course(request):
     if request.method == "POST":
@@ -319,20 +218,7 @@ def course_detail(request, pk):
 
 @login_required
 def lesson_detail_edit(request, pk):
-    lesson = get_object_or_404(Lesson, pk=pk, course__instructor=request.user)
-
-    # Lesson main form
-    lesson_form = LessonDetailForm(request.POST or None, instance=lesson)
-
-    # Reading list formset
-    ReadingFormSet = inlineformset_factory(
-        Lesson, StudentReadingListItem, form=ReadingItemForm, extra=1, can_delete=True
-    )
-    reading_formset = ReadingFormSet(request.POST or None, instance=lesson)
-
-    # Get students enrolled in the course for enrollment options
-    course_students = lesson.course.students.all() if lesson.course else []
-    enrolled_students = lesson.enrolled_students.all()
+    lesson = get_object_or_404(Lesson, pk=pk)
 
     if request.method == "POST":
         form = LessonDetailForm(request.POST, instance=lesson)
@@ -351,7 +237,9 @@ def lesson_detail_edit(request, pk):
                     StudentReadingListItem.objects.create(lesson=lesson, title=title.strip())
 
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
-            return redirect("lesson_detail_edit", pk=lesson.pk)
+            return redirect("course_detail", pk=lesson.course.pk)
+    else:
+        form = LessonDetailForm(instance=lesson)
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,

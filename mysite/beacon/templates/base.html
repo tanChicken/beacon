@@ -119,7 +119,6 @@
 
       {% if user.is_authenticated %}
         {% if user.role|upper == "STUDENT" %}
-        {% if user.role|upper == "STUDENT" %}
           <a href="{% url 'student_dashboard' %}">Courses</a>
         {% elif user.role|upper == "INSTRUCTOR" %}
           <a href="{% url 'instructor_dashboard' %}">Courses</a>
