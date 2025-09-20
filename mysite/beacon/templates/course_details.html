@@ -104,43 +104,46 @@
         {% endfor %}
     </div>
 
-    <!-- Add Lessons (Instructor Only) -->
+    <!-- Add Lessons functionality removed for now -->
     {% if user.role == "INSTRUCTOR" %}
     <div class="mb-2">
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLessonPlaceholder()">
-            + Add Lesson
-        </a>
+        <p class="text-muted"><em>Lesson management functionality coming soon...</em></p>
     </div>
-
-    <form id="newLessonForm" method="POST" action="{% url 'add_lessons' course.id %}">
-        {% csrf_token %}
-        <input type="hidden" name="course_id" value="{{ course.id }}">
-        <div id="newLessonContainer"></div>
-        <button type="submit" class="btn btn-success mt-2">Save All Lessons</button>
-    </form>
-
-    <script>
-    function addLessonPlaceholder() {
-        const container = document.getElementById('newLessonContainer');
-        const div = document.createElement('div');
-        div.classList.add('mb-2', 'd-flex');
-
-        // Create input for lesson title
-        div.innerHTML = `
-            <input type="text" name="lesson_titles[]" class="form-control me-2" placeholder="Lesson title" required>
-            <button type="button" class="btn btn-outline-danger" onclick="removeLessonPlaceholder(this)">✖</button>
-        `;
-
-        container.appendChild(div);
-    }
-
-    function removeLessonPlaceholder(btn) {
-        btn.parentElement.remove();
-    }
-    </script>
     {% endif %}
 
     <hr class="mb-3">
+
+    <!-- Classrooms Section -->
+    {% if user.role == "INSTRUCTOR" %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Classrooms</h4>
+    </div>
+
+    <div class="list-group mb-3">
+        {% for classroom in course.classrooms.all %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ classroom.classroom_id }}</strong>
+                <div class="small text-muted">
+                    {{ classroom.duration_weeks }} weeks | Supervisor: {{ classroom.supervisor }}
+                    {% if classroom.building and classroom.room %}
+                        | Location: {{ classroom.building }}, Room {{ classroom.room }}
+                    {% elif classroom.online_link %}
+                        | Online Class
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <a href="{% url 'delete_classroom' classroom.pk %}" class="btn btn-outline-danger btn-sm">Delete</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="list-group-item text-muted">No classrooms created yet.</div>
+        {% endfor %}
+    </div>
+
+    <hr class="mb-3">
+    {% endif %}
 
     <!-- Enrolled Students -->
     <div class="d-flex justify-content-between align-items-center mb-3">

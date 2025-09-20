@@ -22,9 +22,8 @@ urlpatterns = [
     path("course/<int:pk>/", views.course_detail, name="course_detail"),
     path('lesson/<int:lesson_id>/', views.lesson_detail, name='lesson_detail'),
     path('lesson/<int:pk>/edit/', views.lesson_detail_edit, name='lesson_detail_edit'),
-    path('course/<int:pk>/add_lessons/', views.add_lessons, name='add_lessons'),
-    path('lesson/<int:pk>/', views.lesson_detail_edit, name='lesson_detail_edit'),
-    path('course/<int:course_pk>/lesson/create/', views.create_lesson, name='create_lesson'),
     path('lesson/<int:pk>/delete/', views.delete_lesson, name='delete_lesson'),
-    path("classrooms/", views.student_classroom, name="student_classroom"),
+
+    # Classroom management
+    path('classroom/<int:pk>/delete/', views.delete_classroom, name='delete_classroom'),
     ]

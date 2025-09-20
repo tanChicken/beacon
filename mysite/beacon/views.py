@@ -18,7 +18,33 @@ def home(request):
 # Login
 # ------------------------
 def login_view(request):
-    return render(request, "home.html", {"hide_sidebar": True})
+    if request.method == "POST":
+        email = (request.POST.get("email") or "").strip().lower()
+        password = request.POST.get("password") or ""
+
+        # Try authenticating with email as username first
+        user = authenticate(request, username=email, password=password)
+
+        # If that fails, try finding user by email and authenticate with username
+        if user is None:
+            try:
+                User = get_user_model()
+                user_obj = User.objects.get(email=email)
+                user = authenticate(request, username=user_obj.username, password=password)
+            except:
+                pass
+
+        if not user:
+            messages.error(request, "Invalid email or password.")
+            return render(request, "login.html", {"hide_sidebar": True})
+
+        # Login the user
+        login(request, user)
+
+        # Redirect to student dashboard (this is the student login)
+        return redirect("student_dashboard")
+
+    return render(request, "login.html", {"hide_sidebar": True})
 
 # ------------------------
 # Student
@@ -119,7 +145,15 @@ def enrolment_page(request):
 @login_required
 def enrol_course(request, course_id):
     student = request.user
-    course = get_object_or_404(Course, id=course_id)
+
+    # Only allow enrollment in active courses that the student isn't already enrolled in
+    course = get_object_or_404(Course, id=course_id, status="active")
+
+    # Check if student is already enrolled
+    if student in course.students.all():
+        messages.warning(request, f"You are already enrolled in {course.title}!")
+        return redirect("student_dashboard")
+
     course.students.add(student)
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
@@ -186,68 +220,46 @@ def lesson_detail(request, lesson_id):
 
 def instructor_login(request):
     if request.method == "POST":
-        first = (request.POST.get("first_name") or "").strip()
-        last = (request.POST.get("last_name") or "").strip()
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
+        # Try authenticating with email as username first
         user = authenticate(request, username=email, password=password)
+
+        # If that fails, try finding user by email and authenticate with username
+        if user is None:
+            try:
+                User = get_user_model()
+                user_obj = User.objects.get(email=email)
+                user = authenticate(request, username=user_obj.username, password=password)
+            except:
+                pass
+
         if user is None:
             messages.error(request, "Invalid email or password.")
+            return render(request, "instructor_login.html", {"hide_sidebar": True})
         else:
             if getattr(user, "role", None) == "INSTRUCTOR":
                 login(request, user)
                 return redirect("instructor_dashboard")
             messages.error(request, "This account is not an instructor. Please use the student login.")
-            return render(request, "instructor_login.html") 
+            return render(request, "instructor_login.html", {"hide_sidebar": True})
 
-        UserModel = get_user_model()
-        if UserModel.objects.filter(email=email).exists():
-            messages.error(request, "This email is already registered.")
-            return render(request, "signup.html")
-
-        with transaction.atomic():
-            # Create the user
-            user = UserModel.objects.create_user(
-                username=email,
-                email=email,
-                first_name=first,
-                last_name=last,
-                password=password,
-            )
-
-            # Assign role via Profile
-            if hasattr(user, "profile"):
-                user.profile.role = "instructor"
-                user.profile.save()
-
-            # Create InstructorProfile
-            InstructorProfile.objects.create(user=user)
-
-        messages.success(request, "Instructor signup successful! Please log in.")
-        return redirect("login")
-
-    return render(request, "signup.html", {"hide_sidebar": True})
+    return render(request, "instructor_login.html", {"hide_sidebar": True})
 
 
 # ------------------------
 # Dashboards
 # ------------------------
-@login_required
-def student_dashboard(request):
-    if not request.user.is_authenticated:
-        return redirect("login")
-
-    courses = Course.objects.filter(students=request.user)
-
-    return render(request, "student_dashboard.html", {
-        "courses": courses,
-    })
 
 
 @login_required
 def instructor_dashboard(request):
-    return render(request, "instructor_dashboard.html")
+    # Get courses created by this instructor
+    courses = Course.objects.filter(instructor=request.user)
+    return render(request, "instructor_dashboard.html", {
+        "courses": courses,
+    })
 
 
 from django.forms import inlineformset_factory
@@ -394,3 +406,36 @@ def delete_lesson(request, pk):
     lesson.delete()
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
+
+@login_required
+def delete_classroom(request, pk):
+    from .models import Classroom
+
+    # Get classroom and ensure instructor owns the related course
+    classroom = get_object_or_404(Classroom, pk=pk, course_id__instructor=request.user)
+
+    if request.method == "POST":
+        # Count affected lessons before deletion
+        affected_lessons = classroom.lessons.all()
+        lesson_count = affected_lessons.count()
+
+        # Store classroom info for success message
+        classroom_info = f"Classroom {classroom.classroom_id}"
+
+        # Delete classroom (lessons will be automatically unassigned due to SET_NULL)
+        classroom.delete()
+
+        # Success message with lesson info
+        if lesson_count > 0:
+            messages.success(request, f"{classroom_info} deleted successfully! {lesson_count} lesson(s) unassigned from this classroom.")
+        else:
+            messages.success(request, f"{classroom_info} deleted successfully!")
+
+        return redirect("instructor_dashboard")
+
+    # GET request - show confirmation page
+    affected_lessons = classroom.lessons.all()
+    return render(request, "classroom_confirm_delete.html", {
+        "classroom": classroom,
+        "affected_lessons": affected_lessons,
+    })

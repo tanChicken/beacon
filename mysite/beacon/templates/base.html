@@ -80,23 +80,25 @@
     </style>
   </head>
   <body>
-    <div class="sidebar 
-      {% if user.is_authenticated and user.role == 'INSTRUCTOR' %}instructor-sidebar{% endif %}
-      {% if user.is_authenticated and user.role == 'STUDENT' %}student-sidebar{% endif %}">
+    <div class="sidebar
+      {% if user.is_authenticated and user.role|upper == 'INSTRUCTOR' %}instructor-sidebar{% endif %}
+      {% if user.is_authenticated and user.role|upper == 'STUDENT' %}student-sidebar{% endif %}">
+      <!-- DEBUG: User: {{ user.username }}, Role: "{{ user.role }}" -->
       <h2 class="logo">
         <a href="{% url 'home' %}">Beacon</a>
       </h2>
 
       {% if user.is_authenticated %}
-        {% if user.role == "STUDENT" %}
+        {% if user.role|upper == "STUDENT" %}
           <a href="{% url 'student_dashboard' %}">Courses</a>
-        {% elif user.role == "INSTRUCTOR" %}
+          <a href="{% url 'enrolment_page' %}">Enrolment</a>
+        {% elif user.role|upper == "INSTRUCTOR" %}
           <a href="{% url 'instructor_dashboard' %}">Courses</a>
-        {% endif %}
-        {% if user.role == "STUDENT" %}
-          <a href="{% url 'student_classroom' %}">Classroom</a>
-        {% elif user.role == "INSTRUCTOR" %}
           <a href=#>Classroom</a>
+        {% else %}
+          <!-- Fallback: Default to student sidebar for unknown roles -->
+          <a href="{% url 'student_dashboard' %}">Courses</a>
+          <a href="{% url 'enrolment_page' %}">Enrolment</a>
         {% endif %}
         <a href=#>Student</a>
         <a href=#>Report</a>
