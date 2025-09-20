@@ -6,31 +6,132 @@
   h1, h3 { font-weight: bold; }
   h3 { margin-top: 20px; }
 
+  .btn-primary {
+    background-color: #41ca7c;
+    border-color: #41ca7c;
+  }
+
+  .btn-primary:hover {
+    background-color: #369e65; /* darker green */
+    border-color: #369e65;
+  }
+
+  .btn-outline-primary {
+    color: #41ca7c;
+    border-color: #41ca7c;
+  }
+
+  .btn-outline-primary:hover {
+    background-color: #41ca7c;
+    color: #fff;
+    border-color: #41ca7c;
+  }
+
+  /* List View */
   .list-group-item {
-    background-color: #ffffff; 
-    border: 2px solid #41ca7c; 
+    background-color: #ffffff;
+    border: 2px solid #41ca7c;
     border-radius: 5px;
     margin-bottom: 10px;
     padding: 15px;
-  }
-
-  .btn-primary {
-    background-color: #e67e22;
-    border-color: #e67e22;
-  }
-  .btn-primary:hover {
-    background-color: #cf711f;
-    border-color: #cf711f;
-  }
-
-  .custom-classroom-card {
-    border: 2px solid #41ca7c; 
-    border-radius: 5px;
-    background-color: #ffffff; 
-    height: 280px; 
+    height: 100px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .list-group-item:hover { background-color: #eafaf1; }
+
+  .list-course {
+    position: absolute;
+    text-transform: uppercase;
+    align-self: flex-start;
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
+
+  .list-classroom {
+    font-size: 1.4rem;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 35px; /* center vertically */
+  }
+
+  .list-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1rem;
+    margin-top: auto;
+  }
+
+  .list-duration {
+    align-self: flex-start;
+  }
+
+  .list-supervisor {
+    align-self: flex-end;
+  }
+
+  /* Card Grid */
+  .card-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-top: 20px;
+  }
+
+  .card-col {
+    width: calc(50% - 12px); /* 2 per row */
+    min-width: 220px;
+  }
+
+  .classroom-oval {
+    box-sizing: border-box;
+    width: 100%;
+    height: 220px;
+    border-radius: 40px;
+    border: 3px solid #222;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* ensures top, middle, bottom placement */
+    align-items: center;
+    padding: 18px 22px;
+    text-align: center;
+    background-clip: padding-box;
+  }
+
+  .classroom-course {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+    text-align: center;
+    }
+
+  .classroom-id {
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    padding-bottom: 6px;
+    border-bottom: 3px solid rgba(0,0,0,0.85);
+    width: 70%;
+    margin-top: 25px;
+  }
+
+  .classroom-meta {
+    font-size: 0.95rem;
+    margin-top: 12px;
+    line-height: 1.3;
+    color: #333;
+  }
+
+  .classroom-meta .label {
+    display: block;
+    margin-top: 6px;
+    font-weight: 600;
   }
 
   .card-title,
@@ -39,15 +140,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
-  .lesson-list {
-    font-size: 0.9em;
-    margin-top: 10px;
-  }
 </style>
 
 <div class="container mt-4">
-  <h1>CLASSROOMS</h1>
+  <h1>YOUR CLASSROOMS</h1>
 
   <div class="d-flex justify-content-end mb-3">
     <button id="listViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
@@ -59,10 +155,12 @@
     <ul class="list-group mt-3">
       {% for classroom in classrooms %}
         <li class="list-group-item">
-          <strong>Classroom {{ classroom.classroom_id }}</strong> – {{ classroom.course_id.course_id }}
-          <div class="small text-muted">
-            Supervisor: {{ classroom.supervisor }} | Duration: {{ classroom.get_duration_weeks_display }}
-          </div>
+            <div class="list-course">classroom.course_id.course_id</div>
+            <div class="list-classroom">{{ classroom.classroom_id }}</div>
+            <div class="list-footer">
+              <div class="list-duration">Duration: {{ classroom.get_duration_weeks_display }}</div>
+              <div class="list-supervisor">Supervisor: {{ classroom.supervisor }}</div>
+            </div>
         </li>
       {% empty %}
         <li class="list-group-item text-muted">No classrooms created yet.</li>
@@ -70,23 +168,24 @@
     </ul>
   </div>
 
-  <!-- Card View -->
+   <!-- Card View -->
   <div id="cardView" class="row d-none">
     {% for classroom in classrooms %}
-      <div class="col-md-4 mb-4">
-        <div class="card custom-classroom-card">
-          <div class="card-body">
-            <h5 class="card-title">Classroom {{ classroom.classroom_id }}</h5>
-            <p class="meta-info">Course: {{ classroom.course_id.course_id }}</p>
-            <p class="meta-info">Supervisor: {{ classroom.supervisor }}</p>
-            <p class="meta-info">Duration: {{ classroom.get_duration_weeks_display }}</p>
-            <hr>
+    <div class="card-grid">
+        <div class="card-col">
+          <div class="classroom-oval">
+              <div class="classroom-course">{{ classroom.course_id.course_id }}1</div>
+              <div class="classroom-id">{{ classroom.classroom_id }}</div>
+              <div class="classroom-meta">
+                <span class="label">Supervisor: {{ classroom.supervisor }}</span>
+                <span>Duration: {{ classroom.get_duration_weeks_display }}</span>
+              </div>
           </div>
         </div>
-      </div>
-    {% empty %}
-      <p class="text-muted">No classrooms created yet.</p>
-    {% endfor %}
+      {% empty %}
+        <p class="text-muted">No classrooms created yet.</p>
+      {% endfor %}
+    </div>
   </div>
 </div>
 
