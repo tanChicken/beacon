@@ -11,202 +11,202 @@
     {% endif %}
   </div>
 
-    <!-- Course Header -->
-    <div class="text-center mb-4">
-        <h2>{{ course.course_id }}</h2>
-        <h2 class="mb-5">{{ course.title }}</h2>
-    </div>
+  <!-- Course Header -->
+  <div class="text-center mb-4">
+      <h2>{{ course.course_id }}</h2>
+      <h2 class="mb-5">{{ course.title }}</h2>
+  </div>
 
-    <!-- Course Info -->
-    <div class="d-flex justify-content-between">
-        <div>
-            <p>Course director: {{ course.instructor.get_full_name }}</p>
-            <p>Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}</p>
-        </div>
-        <div>
-            <p>Last updated: {{ course.updated_at|date:"M d, Y H:i" }}</p>
-            <p>Course Credit Point: {{ course.credit_points }}</p>
-        </div>
-    </div>
+  <!-- Course Info -->
+  <div class="d-flex justify-content-between">
+      <div>
+          <p>Course director: {{ course.instructor.get_full_name }}</p>
+          <p>Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}</p>
+      </div>
+      <div>
+          <p>Last updated: {{ course.updated_at|date:"M d, Y H:i" }}</p>
+          <p>Course Credit Point: {{ course.credit_points }}</p>
+      </div>
+  </div>
 
-    <hr class="my-2">
+  <hr class="my-2">
 
-    <!-- Lessons -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Lessons</h4>
-        <div>
-            <button id="lessonsListViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
-            <button id="lessonsCardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
-        </div>
-    </div>
+  <!-- Lessons -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>Lessons</h4>
+      <div>
+          <button id="lessonsListViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+          <button id="lessonsCardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+      </div>
+  </div>
 
-    <!-- Lessons List View -->
-    <div id="lessonsListView" class="list-group mb-3">
-        {% for lesson in course.lessons.all %}
-        {% if user.role == "INSTRUCTOR" %}
-        <a href="{% url 'lesson_detail_edit' lesson.id %}" class="list-group-item list-group-item-action">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>{{ lesson.title }}</strong>
-                    <div class="small text-muted">{{ lesson.lesson_id }} | {{ lesson.effort_per_week }} hrs/week</div>
-                </div>
-                <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
-            </div>
-        </a>
-        {% else %}
-        <a href="{% url 'lesson_detail' lesson.id %}" class="list-group-item list-group-item-action">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>{{ lesson.title }}</strong>
-                    <div class="small text-muted">{{ lesson.lesson_id }} | {{ lesson.effort_per_week }} hrs/week</div>
-                </div>
-                <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
-            </div>
-        </a>
-        {% endif %}
-        {% empty %}
-        <p class="text-muted">No lessons added yet.</p>
-        {% endfor %}
-    </div>
+  <!-- Lessons List View -->
+  <div id="lessonsListView" class="list-group mb-3">
+      {% for lesson in course.lessons.all %}
+      {% if user.role == "INSTRUCTOR" %}
+      <a href="{% url 'lesson_detail_edit' lesson.id %}" class="list-group-item list-group-item-action">
+          <div class="d-flex justify-content-between align-items-center">
+              <div>
+                  <strong>{{ lesson.title }}</strong>
+                  <div class="small text-muted">{{ lesson.lesson_id }} | {{ lesson.effort_per_week }} hrs/week</div>
+              </div>
+              <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
+          </div>
+      </a>
+      {% else %}
+      <a href="{% url 'lesson_detail' lesson.id %}" class="list-group-item list-group-item-action">
+          <div class="d-flex justify-content-between align-items-center">
+              <div>
+                  <strong>{{ lesson.title }}</strong>
+                  <div class="small text-muted">{{ lesson.lesson_id }} | {{ lesson.effort_per_week }} hrs/week</div>
+              </div>
+              <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
+          </div>
+      </a>
+      {% endif %}
+      {% empty %}
+      <p class="text-muted">No lessons added yet.</p>
+      {% endfor %}
+  </div>
 
-    <!-- Lessons Card View -->
-    <div id="lessonsCardView" class="row mb-3 d-none">
-        {% for lesson in course.lessons.all %}
-        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-            {% if user.role == "INSTRUCTOR" %}
-            <a href="{% url 'lesson_detail_edit' lesson.id %}" style="text-decoration: none;">
-            {% else %}
-            <a href="{% url 'lesson_detail' lesson.id %}" style="text-decoration: none;">
-            {% endif %}
-                <div class="card" style="border: 2px solid #17a2b8; border-radius: 10px; background-color: #ffffff; height: 180px; transition: transform 0.2s ease, box-shadow 0.2s ease;">
-                    <div class="card-body d-flex flex-column justify-content-between">
-                        <div>
-                            <div class="text-info font-weight-bold small">{{ lesson.lesson_id }}</div>
-                            <h6 class="card-title font-weight-bold text-dark">{{ lesson.title }}</h6>
-                        </div>
-                        <div>
-                            <p class="card-text small text-muted mb-1">
-                                <strong>Effort:</strong> {{ lesson.effort_per_week }} hrs/week
-                            </p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
-                                <small class="text-muted">{{ lesson.updated_at|date:"M d" }}</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-        {% empty %}
-        <div class="col-12">
-            <p class="text-muted">No lessons added yet.</p>
-        </div>
-        {% endfor %}
-    </div>
+  <!-- Lessons Card View -->
+  <div id="lessonsCardView" class="row mb-3 d-none">
+      {% for lesson in course.lessons.all %}
+      <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+          {% if user.role == "INSTRUCTOR" %}
+          <a href="{% url 'lesson_detail_edit' lesson.id %}" style="text-decoration: none;">
+          {% else %}
+          <a href="{% url 'lesson_detail' lesson.id %}" style="text-decoration: none;">
+          {% endif %}
+              <div class="card" style="border: 2px solid #17a2b8; border-radius: 10px; background-color: #ffffff; height: 180px; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                  <div class="card-body d-flex flex-column justify-content-between">
+                      <div>
+                          <div class="text-info font-weight-bold small">{{ lesson.lesson_id }}</div>
+                          <h6 class="card-title font-weight-bold text-dark">{{ lesson.title }}</h6>
+                      </div>
+                      <div>
+                          <p class="card-text small text-muted mb-1">
+                              <strong>Effort:</strong> {{ lesson.effort_per_week }} hrs/week
+                          </p>
+                          <div class="d-flex justify-content-between align-items-center">
+                              <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
+                              <small class="text-muted">{{ lesson.updated_at|date:"M d" }}</small>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </a>
+      </div>
+      {% empty %}
+      <div class="col-12">
+          <p class="text-muted">No lessons added yet.</p>
+      </div>
+      {% endfor %}
+  </div>
 
-    <!-- Add Lessons functionality removed for now -->
-    {% if user.role == "INSTRUCTOR" %}
-    <div class="mb-2">
-        <p class="text-muted"><em>Lesson management functionality coming soon...</em></p>
-    </div>
-    {% endif %}
+  <!-- Add Lessons functionality removed for now -->
+  {% if user.role == "INSTRUCTOR" %}
+  <div class="mb-2">
+      <p class="text-muted"><em>Lesson management functionality coming soon...</em></p>
+  </div>
+  {% endif %}
 
-    <hr class="mb-3">
+  <hr class="mb-3">
 
-    <!-- Classrooms Section -->
-    {% if user.role == "INSTRUCTOR" %}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Classrooms</h4>
-    </div>
+  <!-- Classrooms Section -->
+  {% if user.role == "INSTRUCTOR" %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>Classrooms</h4>
+  </div>
 
-    <div class="list-group mb-3">
-        {% for classroom in course.classrooms.all %}
-        <div class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-                <strong>{{ classroom.classroom_id }}</strong>
-                <div class="small text-muted">
-                    {{ classroom.duration_weeks }} weeks | Supervisor: {{ classroom.supervisor }}
-                    {% if classroom.building and classroom.room %}
-                        | Location: {{ classroom.building }}, Room {{ classroom.room }}
-                    {% elif classroom.online_link %}
-                        | Online Class
-                    {% endif %}
-                </div>
-            </div>
-            <div>
-                <a href="{% url 'delete_classroom' classroom.pk %}" class="btn btn-outline-danger btn-sm">Delete</a>
-            </div>
-        </div>
-        {% empty %}
-        <div class="list-group-item text-muted">No classrooms created yet.</div>
-        {% endfor %}
-    </div>
+  <div class="list-group mb-3">
+      {% for classroom in course.classrooms.all %}
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+              <strong>{{ classroom.classroom_id }}</strong>
+              <div class="small text-muted">
+                  {{ classroom.duration_weeks }} weeks | Supervisor: {{ classroom.supervisor }}
+                  {% if classroom.building and classroom.room %}
+                      | Location: {{ classroom.building }}, Room {{ classroom.room }}
+                  {% elif classroom.online_link %}
+                      | Online Class
+                  {% endif %}
+              </div>
+          </div>
+          <div>
+              <a href="{% url 'delete_classroom' classroom.pk %}" class="btn btn-outline-danger btn-sm">Delete</a>
+          </div>
+      </div>
+      {% empty %}
+      <div class="list-group-item text-muted">No classrooms created yet.</div>
+      {% endfor %}
+  </div>
 
-    <hr class="mb-3">
-    {% endif %}
+  <hr class="mb-3">
+  {% endif %}
 
-    <!-- Enrolled Students -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Enrolled Students</h4>
-        <div>
-            <button id="studentsListViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
-            <button id="studentsCardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
-        </div>
-    </div>
+  <!-- Enrolled Students -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>Enrolled Students</h4>
+      <div>
+          <button id="studentsListViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+          <button id="studentsCardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+      </div>
+  </div>
 
-    <!-- Students List View -->
-    <div id="studentsListView">
-        <ul class="list-group">
-            {% for student in course.students.all %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>{{ student.first_name }} {{ student.last_name }}</strong>
-                    <div class="small text-muted">{{ student.email }} | Student ID: {{ student.studentprofile.student_id|default:"N/A" }}</div>
-                </div>
-                <span class="badge badge-primary">{{ student.role|title }}</span>
-            </li>
-            {% empty %}
-            <li class="list-group-item text-muted">No students enrolled yet.</li>
-            {% endfor %}
-        </ul>
-    </div>
+  <!-- Students List View -->
+  <div id="studentsListView">
+      <ul class="list-group">
+          {% for student in course.students.all %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                  <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                  <div class="small text-muted">{{ student.email }} | Student ID: {{ student.studentprofile.student_id|default:"N/A" }}</div>
+              </div>
+              <span class="badge badge-primary">{{ student.role|title }}</span>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">No students enrolled yet.</li>
+          {% endfor %}
+      </ul>
+  </div>
 
-    <!-- Students Card View -->
-    <div id="studentsCardView" class="row d-none">
-        {% for student in course.students.all %}
-        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-            <div class="card" style="border: 2px solid #28a745; border-radius: 10px; background-color: #ffffff; height: 150px;">
-                <div class="card-body d-flex flex-column justify-content-between">
-                    <div>
-                        <h6 class="card-title font-weight-bold">{{ student.first_name }} {{ student.last_name }}</h6>
-                        <p class="card-text small">{{ student.email }}</p>
-                    </div>
-                    <div>
-                        <p class="card-text small"><strong>ID:</strong> {{ student.studentprofile.student_id|default:"N/A" }}</p>
-                        <span class="badge badge-success">{{ student.role|title }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <p class="text-muted">No students enrolled yet.</p>
-        {% endfor %}
-    </div>
+  <!-- Students Card View -->
+  <div id="studentsCardView" class="row d-none">
+      {% for student in course.students.all %}
+      <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+          <div class="card" style="border: 2px solid #28a745; border-radius: 10px; background-color: #ffffff; height: 150px;">
+              <div class="card-body d-flex flex-column justify-content-between">
+                  <div>
+                      <h6 class="card-title font-weight-bold">{{ student.first_name }} {{ student.last_name }}</h6>
+                      <p class="card-text small">{{ student.email }}</p>
+                  </div>
+                  <div>
+                      <p class="card-text small"><strong>ID:</strong> {{ student.studentprofile.student_id|default:"N/A" }}</p>
+                      <span class="badge badge-success">{{ student.role|title }}</span>
+                  </div>
+              </div>
+          </div>
+      </div>
+      {% empty %}
+      <p class="text-muted">No students enrolled yet.</p>
+      {% endfor %}
+  </div>
 </div>
 
 {% if user.role == "INSTRUCTOR" %}
 <!-- Action Dropdown for Instructor only -->
 <div style="position: fixed; bottom: 30px; right: 30px; z-index: 1000;">
-    <div class="btn-group dropup">
-        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Actions
-        </button>
-        <div class="dropdown-menu dropdown-menu-right">
-            <a class="dropdown-item" href="{% url 'edit_course' course.pk %}">Edit</a>
-            <a class="dropdown-item text-danger" href="{% url 'delete_course' course.pk %}">Delete</a>
-        </div>
-    </div>
-  </form>
+  <div class="btn-group dropup">
+      <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Actions
+      </button>
+      <div class="dropdown-menu dropdown-menu-right">
+          <a class="dropdown-item" href="{% url 'edit_course' course.pk %}">Edit</a>
+          <a class="dropdown-item text-danger" href="{% url 'delete_course' course.pk %}">Delete</a>
+      </div>
+  </div>
+</div>
 </div>
 {% endif %}
 
