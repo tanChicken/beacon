@@ -29,18 +29,19 @@
 
   .custom-course-card {
     border: 2px solid #f5d0a9;
-    border-radius: 5px;
+    border-radius: 10px;
     background-color: #ffffff;
+    height: 250px; /* fixed uniform height */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    height: 100%;
+    cursor: pointer;
   }
   .custom-course-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   }
   .card-title,
   .course-meta {
@@ -97,13 +98,20 @@
         <div class="card custom-course-card">
           <div class="card-body">
             <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-              <div class="course-meta">{{ course.course_id }}</div>
-              <h5 class="card-title">{{ course.title }}</h5>
-              <p class="course-meta">Status: {{ course.status }}</p>
-              <hr>
-              <p class="course-meta">Instructor: {{ course.instructor.username }}</p>
-              <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
-              <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+              <div class="course-meta text-primary font-weight-bold">{{ course.course_id }}</div>
+              <h5 class="card-title font-weight-bold">{{ course.title }}</h5>
+              <p class="course-meta">
+                <span class="badge badge-{% if course.status == 'active' %}success{% else %}secondary{% endif %}">
+                  {{ course.status|title }}
+                </span>
+              </p>
+              <hr class="my-2">
+              <p class="course-meta small">
+                <strong>Created By:</strong> {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}
+              </p>
+              <p class="course-meta small">
+                <strong>Last Update:</strong> {{ course.updated_at|date:"j/n/Y" }}
+              </p>
             </a>
           </div>
         </div>
@@ -117,16 +125,55 @@
   <div class="fixed-bottom mb-3 d-flex justify-content-center">
     <a href="{% url 'create_course' %}" class="btn btn-primary btn-lg"> Create Course</a>
   </div>
-</div>
 
 <script>
+  // Set default view to list view
+  document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("listView").classList.remove("d-none");
+    document.getElementById("cardView").classList.add("d-none");
+
+    // Set active button
+    document.getElementById("listViewBtn").classList.add("btn-primary");
+    document.getElementById("listViewBtn").classList.remove("btn-outline-primary");
+  });
+
   document.getElementById("listViewBtn").addEventListener("click", function() {
     document.getElementById("listView").classList.remove("d-none");
     document.getElementById("cardView").classList.add("d-none");
+
+    // Update button styles
+    this.classList.add("btn-primary");
+    this.classList.remove("btn-outline-primary");
+    document.getElementById("cardViewBtn").classList.add("btn-outline-primary");
+    document.getElementById("cardViewBtn").classList.remove("btn-primary");
   });
+
   document.getElementById("cardViewBtn").addEventListener("click", function() {
     document.getElementById("cardView").classList.remove("d-none");
     document.getElementById("listView").classList.add("d-none");
+
+    // Update button styles
+    this.classList.add("btn-primary");
+    this.classList.remove("btn-outline-primary");
+    document.getElementById("listViewBtn").classList.add("btn-outline-primary");
+    document.getElementById("listViewBtn").classList.remove("btn-primary");
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // Handle clicking a course card
+    document.querySelectorAll(".course-card").forEach(function (card) {
+      card.addEventListener("click", function (e) {
+        // Don't navigate if clicking on dropdown or its children
+        if (e.target.closest('.dropdown')) {
+          return;
+        }
+
+        const courseId = this.dataset.courseId;
+        // Normal click = view course details
+        window.location.href = `/course/${courseId}/`;
+      });
+    });
   });
 </script>
+</div>
 {% endblock %}

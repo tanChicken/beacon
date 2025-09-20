@@ -13,9 +13,6 @@ class StudentSignupForm(forms.ModelForm):
     confirm_password = forms.CharField(widget=forms.PasswordInput, min_length=8)
     first_name = forms.CharField(max_length=30, label="First Name")
     last_name = forms.CharField(max_length=30, label="Last Name")
-    first_name = forms.CharField(max_length=30, label="First Name")
-    last_name = forms.CharField(max_length=30, label="Last Name")
-
 
     class Meta:
         model = User
@@ -33,7 +30,7 @@ class StudentSignupForm(forms.ModelForm):
         confirm_password = cleaned_data.get("confirm_password")
         if password and confirm_password and password != confirm_password:
             raise ValidationError("Passwords do not match.")
-    
+        
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data["password"])
@@ -47,7 +44,6 @@ class StudentSignupForm(forms.ModelForm):
                 student_id = "TEMP"
             )
         return user
-
 
 class StudentLoginForm(forms.Form):
     email = forms.EmailField()

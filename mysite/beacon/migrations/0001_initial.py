@@ -12,10 +12,24 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
+        migrations.CreateModel(
+            name='Lesson',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('lesson_id', models.CharField(max_length=50, unique=True)),
+                ('title', models.CharField(max_length=200)),
+                ('description', models.TextField()),
+                ('objective', models.TextField(blank=True, null=True)),
+                ('effort_per_week', models.PositiveIntegerField(default=0)),
+                ('credit_point', models.DecimalField(decimal_places=1, default=0, max_digits=4)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+            ],
+        ),
         migrations.CreateModel(
             name='TodoItem',
             fields=[
@@ -32,7 +46,10 @@ class Migration(migrations.Migration):
                 ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
                 ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
                 ('email', models.EmailField(max_length=254, unique=True)),
+                ('email', models.EmailField(max_length=254, unique=True)),
                 ('role', models.CharField(choices=[('ADMIN', 'Admin'), ('STUDENT', 'Student'), ('INSTRUCTOR', 'Instructor')], max_length=50)),
+                ('is_staff', models.BooleanField(default=False)),
+                ('is_active', models.BooleanField(default=True)),
                 ('is_staff', models.BooleanField(default=False)),
                 ('is_active', models.BooleanField(default=True)),
                 ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
@@ -71,17 +88,31 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Course',
+            name='TeacherProfile',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('course_id', models.CharField(max_length=20, unique=True)),
                 ('title', models.CharField(max_length=200)),
                 ('status', models.CharField(choices=[('active', 'Active'), ('inactive', 'Inactive')], default='active', max_length=20)),
                 ('credit_points', models.IntegerField(default=30, editable=False)),
+                ('credit_points', models.IntegerField(default=30, editable=False)),
                 ('created_at', models.DateTimeField(default=django.utils.timezone.now)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('instructor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='courses_teaching', to=settings.AUTH_USER_MODEL)),
                 ('students', models.ManyToManyField(blank=True, related_name='courses_enroling', to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Classroom',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('classroom_id', models.CharField(max_length=20)),
+                ('duration_weeks', models.PositiveIntegerField(choices=[(2, '2 weeks'), (3, '3 weeks'), (4, '4 weeks')])),
+                ('supervisor', models.CharField(max_length=100)),
+                ('building', models.CharField(blank=True, max_length=100, null=True)),
+                ('room', models.CharField(blank=True, max_length=50, null=True)),
+                ('online_link', models.URLField(blank=True, null=True)),
+                ('course_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='classrooms', to='beacon.course')),
             ],
         ),
         migrations.CreateModel(
@@ -134,6 +165,26 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(blank=True, choices=[('Mr', 'Mr'), ('Ms', 'Ms'), ('Mrs', 'Mrs'), ('Dr', 'Dr')], default='Mr', max_length=10, null=True)),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
+        ),
+        migrations.CreateModel(
+            name='StudentReadingListItem',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.CharField(max_length=255)),
+                ('lesson', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reading_items', to='beacon.lesson')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='StudentReadingListProgress',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('completed', models.BooleanField(default=False)),
+                ('item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='beacon.studentreadinglistitem')),
+                ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                'unique_together': {('student', 'item')},
+            },
         ),
         migrations.CreateModel(
             name='StudentReadingListItem',
