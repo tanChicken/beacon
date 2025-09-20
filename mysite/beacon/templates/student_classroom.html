@@ -59,7 +59,7 @@
     <ul class="list-group mt-3">
       {% for classroom in classrooms %}
         <li class="list-group-item">
-          <strong>Classroom {{ classroom.classroom_id }}</strong> – {{ classroom.course_id.course_id }}
+          <strong>Classroom {{ classroom.classroom_id }}</strong> - {{ classroom.course_id.course_id }}
           <div class="small text-muted">
             Supervisor: {{ classroom.supervisor }} | Duration: {{ classroom.get_duration_weeks_display }}
           </div>
