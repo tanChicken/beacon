@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.db import transaction
 from django.contrib.auth import get_user_model
+from .authz import role_required
+
 
 # Create your views here.
 def home(request):
@@ -85,13 +87,13 @@ def student_dashboard(request):
         "student": student
     })
     
-@login_required
+@role_required("STUDENT")
 def enrolment_page(request):
     student = request.user
     available_courses = Course.objects.filter(status="active").exclude(students=student)
     return render(request, "enrolment.html", {"available_courses": available_courses, "student": student})
 
-@login_required
+@role_required("STUDENT")
 def enrol_course(request, course_id):
     student = request.user
     course = get_object_or_404(Course, id=course_id)
@@ -99,7 +101,7 @@ def enrol_course(request, course_id):
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
 
-@login_required
+@role_required("STUDENT")
 def student_lessons(request):
     if not request.user.role == "STUDENT":
         return render(request, "403.html")
@@ -123,12 +125,12 @@ def instructor_login(request):
             messages.error(request, "This account is not an instructor. Please use the student login.")
     return render(request, "instructor_login.html")
 
-@login_required(login_url="/i_login/")
+@role_required("INSTRUCTOR")
 def instructor_dashboard(request):
     courses = Course.objects.filter(instructor=request.user)
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
-@login_required
+@role_required("INSTRUCTOR")
 def create_course(request):
     if request.method == "POST":
         form = CourseForm(request.POST)
@@ -153,7 +155,7 @@ def create_course(request):
 
     return render(request, "course_form.html", {"form": form, "action": "Create"})
 
-@login_required
+@role_required("INSTRUCTOR")
 def edit_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
     if request.method == "POST":
@@ -173,14 +175,14 @@ def edit_course(request, pk):
         "read_only_lessons": True,
     })
 
-@login_required
+@role_required("INSTRUCTOR")
 def delete_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
     course.delete()
     messages.success(request, "Course deleted successfully!")
     return redirect("instructor_dashboard")
 
-@login_required
+@role_required("INSTRUCTOR")
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = course.lessons.all()
@@ -210,7 +212,7 @@ def course_detail(request, pk):
         "students_progress": students_progress,
     })
 
-@login_required
+@role_required("INSTRUCTOR")
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
 
@@ -243,7 +245,7 @@ def lesson_detail_edit(request, pk):
         "lesson_form": form
     })
 
-@login_required
+@role_required("INSTRUCTOR")
 def create_lesson(request, course_pk):
     course = get_object_or_404(Course, pk=course_pk, instructor=request.user)
 
@@ -265,7 +267,7 @@ def create_lesson(request, course_pk):
         'action': 'Create'
     })
 
-@login_required
+@role_required("INSTRUCTOR")
 def delete_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk, designer=request.user)
     course_pk = lesson.course.pk
