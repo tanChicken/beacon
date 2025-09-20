@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.db import transaction
 from django.contrib.auth import get_user_model
+from .authz import role_required
+
 from django.forms import inlineformset_factory
 from django.db.models import Count
 
@@ -118,13 +120,13 @@ def student_dashboard(request):
         "student": student
     })
     
-@login_required
+@role_required("STUDENT")
 def enrolment_page(request):
     student = request.user
     available_courses = Course.objects.filter(status="active").exclude(students=student)
     return render(request, "enrolment.html", {"available_courses": available_courses, "student": student})
 
-@login_required
+@role_required("STUDENT")
 def enrol_course(request, course_id):
     student = request.user
 
@@ -140,7 +142,7 @@ def enrol_course(request, course_id):
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
 
-@login_required
+@role_required("STUDENT")
 def student_lessons(request):
     if not request.user.role == "STUDENT":
         return render(request, "403.html")
@@ -227,15 +229,7 @@ def instructor_login(request):
             messages.error(request, "This account is not an instructor. Please use the student login.")
             return render(request, "instructor_login.html", {"hide_sidebar": True})
 
-    return render(request, "instructor_login.html", {"hide_sidebar": True})
-
-
-# ------------------------
-# Dashboards
-# ------------------------
-
-
-@login_required
+@role_required("INSTRUCTOR")
 def instructor_dashboard(request):
     # Get courses created by this instructor
     courses = Course.objects.filter(instructor=request.user)
@@ -243,9 +237,7 @@ def instructor_dashboard(request):
         "courses": courses,
     })
 
-
-from .forms import CourseForm, LessonForm
-@login_required
+@role_required("INSTRUCTOR")
 def create_course(request):
     if request.method == "POST":
         form = CourseForm(request.POST)
@@ -270,7 +262,7 @@ def create_course(request):
 
     return render(request, "course_form.html", {"form": form, "action": "Create"})
 
-@login_required
+@role_required("INSTRUCTOR")
 def edit_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
     if request.method == "POST":
@@ -290,14 +282,14 @@ def edit_course(request, pk):
         "read_only_lessons": True,
     })
 
-@login_required
+@role_required("INSTRUCTOR")
 def delete_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
     course.delete()
     messages.success(request, "Course deleted successfully!")
     return redirect("instructor_dashboard")
 
-@login_required
+@role_required("INSTRUCTOR")
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = course.lessons.all()
@@ -327,7 +319,7 @@ def course_detail(request, pk):
         "students_progress": students_progress,
     })
 
-@login_required
+@role_required("INSTRUCTOR")
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk, course__instructor=request.user)
 
@@ -379,13 +371,40 @@ def lesson_detail_edit(request, pk):
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
+        "lesson_form": form
+    })
+
+@role_required("INSTRUCTOR")
+def create_lesson(request, course_pk):
+    course = get_object_or_404(Course, pk=course_pk, instructor=request.user)
+
+    if request.method == "POST":
+        form = LessonDetailForm(request.POST)
+        if form.is_valid():
+            lesson = form.save(commit=False)
+            lesson.course = course
+            lesson.designer = request.user
+            lesson.save()
+            messages.success(request, f"Lesson '{lesson.title}' created successfully!")
+            return redirect('course_detail', pk=course.pk)
+    else:
+        form = LessonDetailForm()
+
+    return render(
+    request,
+    "create_lesson.html",
+    {
+        "form": form,
+        "course": course,
+        "action": "Create",
         "lesson_form": lesson_form,
         "reading_formset": reading_formset,
         "enrolled_students": enrolled_students,
         "course_students": course_students,
-    })
+    },
+        )
 
-@login_required
+@role_required("INSTRUCTOR")
 def delete_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk, designer=request.user)
     course_pk = lesson.course.pk
