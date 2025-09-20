@@ -62,11 +62,9 @@ def student_signup(request):
                 last_name=last_name,
                 password=password,
             )
-            # set role
             user.role = "STUDENT"
             user.save()
 
-            # ensure profile exists, now set title
             profile, created = StudentProfile.objects.get_or_create(user=user)
             profile.title = title
             profile.save()
@@ -79,8 +77,6 @@ def student_signup(request):
 def student_dashboard(request):
     student = request.user
     enrolled = student.courses_enroling.all()
-    
-    # Get courses not yet enrolled by this student
     available_courses = Course.objects.filter(status="active").exclude(students=student)
     
     return render(request, "student_dashboard.html", {
@@ -136,16 +132,14 @@ def instructor_dashboard(request):
 def create_course(request):
     if request.method == "POST":
         form = CourseForm(request.POST)
-        lesson_titles = request.POST.getlist("lesson_title")  # grab all lessons
-
+        lesson_titles = request.POST.getlist("lesson_title")  
         if form.is_valid():
             with transaction.atomic():
                 course = form.save(commit=False)
                 course.instructor = request.user
-                course.credit_points = 30  # fixed
+                course.credit_points = 30  
                 course.save()
 
-                # save each lesson
                 for title in lesson_titles:
                     if title.strip():
                         Lesson.objects.create(course=course, designer=request.user, title=title)
@@ -221,17 +215,14 @@ def lesson_detail_edit(request, pk):
     if request.method == "POST":
         form = LessonDetailForm(request.POST, instance=lesson)
         if form.is_valid():
-            # Save lesson fields
             form.save()
 
-            # Update existing reading items
             for item in lesson.reading_items.all():
                 key = f"reading_item_{item.id}"
                 if key in request.POST:
                     item.title = request.POST[key]
                     item.save()
 
-            # Add new reading items
             new_items = request.POST.getlist("new_reading_item")
             for title in new_items:
                 if title.strip():
@@ -273,8 +264,6 @@ def create_lesson(request, course_pk):
 def delete_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk, designer=request.user)
     course_pk = lesson.course.pk
-
-    # Delete immediately
     lesson.delete()
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
