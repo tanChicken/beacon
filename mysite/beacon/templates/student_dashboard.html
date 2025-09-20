@@ -40,18 +40,19 @@
   }
   .custom-course-card {
     border: 2px solid #41ca7c;
-    border-radius: 5px;
+    border-radius: 10px;
     background-color: #ffffff;
+    height: 250px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    height: 100%;
+    cursor: pointer;
   }
   .custom-course-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   }
   .card-title,
   .course-meta {
@@ -108,13 +109,20 @@
         <div class="card custom-course-card">
           <div class="card-body">
             <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-              <div class="course-meta">{{ course.course_id }}</div>
-              <h5 class="card-title">{{ course.title }}</h5>
-              <p class="course-meta">Status: {{ course.status }}</p>
-              <hr>
-              <p class="course-meta">Instructor: {{ course.instructor.get_full_name|default:course.instructor.username }}</p>
-              <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
-              <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+              <div class="course-meta text-success font-weight-bold">{{ course.course_id }}</div>
+              <h5 class="card-title font-weight-bold">{{ course.title }}</h5>
+              <p class="course-meta">
+                <span class="badge badge-{% if course.status == 'active' %}success{% else %}secondary{% endif %}">
+                  {{ course.status|title }}
+                </span>
+              </p>
+              <hr class="my-2">
+              <p class="course-meta small">
+                <strong>Instructor:</strong> {{ course.instructor.get_full_name|default:course.instructor.username }}
+              </p>
+              <p class="course-meta small">
+                <strong>Created:</strong> {{ course.created_at|date:"j/n/Y" }} | <strong>Updated:</strong> {{ course.updated_at|date:"j/n/Y" }}
+              </p>
             </a>
           </div>
         </div>

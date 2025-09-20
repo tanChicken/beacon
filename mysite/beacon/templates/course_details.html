@@ -12,96 +12,281 @@
   </div>
 
   <!-- Course Header -->
-  <div class="row align-items-center mb-4">
-    <div class="col-md-8">
-      <h2>Edit Course: {{ course.title }}</h2>
-      {{ form.as_p }}
-    </div>
-    <div class="col-md-4">
-      <p><strong>Credit Points:</strong> {{ course.credit_points }}</p>
-      <p><strong>Created At:</strong> {{ course.created_at|date:"M d, Y H:i" }}</p>
-      <p><strong>Last Updated:</strong> {{ course.updated_at|date:"M d, Y H:i" }}</p>
-    </div>
+  <div class="text-center mb-4">
+      <h2>{{ course.course_id }}</h2>
+      <h2 class="mb-5">{{ course.title }}</h2>
   </div>
 
-  <h4>Lessons</h4>
-  <div class="list-group mb-3">
-    {% for lesson in lessons %}
-      <div class="list-group-item">
-        <a href="{% url 'lesson_detail_edit' lesson.pk %}">{{ lesson.title }}</a>
+  <!-- Course Info -->
+  <div class="d-flex justify-content-between">
+      <div>
+          <p>Course director: {{ course.instructor.get_full_name }}</p>
+          <p>Created by: {{ course.instructor.username }} on {{ course.created_at|date:"j/n/Y" }}</p>
       </div>
-    {% empty %}
-      <p class="text-muted">No lessons yet.</p>
-    {% endfor %}
+      <div>
+          <p>Last updated: {{ course.updated_at|date:"M d, Y H:i" }}</p>
+          <p>Course Credit Point: {{ course.credit_points }}</p>
+      </div>
   </div>
 
-  <div class="mb-3">
-    <a href="{% url 'create_lesson' course.pk %}" class="btn btn-sm btn-outline-primary">
-      + Add Lesson
-    </a>
+  <hr class="my-2">
+
+  <!-- Lessons -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>Lessons</h4>
+      <div>
+          <button id="lessonsListViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+          <button id="lessonsCardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+      </div>
   </div>
 
-  <hr>
-  <h4>Classroom</h4>
-  <div class="mb-3">
-    <a href="#" class="btn btn-sm btn-outline-primary">
-      + Add Classroom
-    </a>
-  </div>
-
-  <hr>
-  <h4>Enrolled Students</h4>
-  <ul class="list-group mb-4">
-    {% for sp in students_progress %}
-      <li class="list-group-item">
-        <div class="d-flex justify-content-between align-items-center">
-          <span>{{ sp.student.first_name }} {{ sp.student.last_name }}</span>
-          <small>{{ sp.completed }}/{{ sp.total }} completed</small>
-        </div>
-        <div class="progress mt-2">
-          <div class="progress-bar progress-{{ sp.percent|floatformat:0 }}"
-               role="progressbar"
-               aria-valuenow="{{ sp.percent }}" aria-valuemin="0" aria-valuemax="100">
-            {{ sp.percent }}%
+  <!-- Lessons List View -->
+  <div id="lessonsListView" class="list-group mb-3">
+      {% for lesson in course.lessons.all %}
+      {% if user.role == "INSTRUCTOR" %}
+      <a href="{% url 'lesson_detail_edit' lesson.id %}" class="list-group-item list-group-item-action">
+          <div class="d-flex justify-content-between align-items-center">
+              <div>
+                  <strong>{{ lesson.title }}</strong>
+                  <div class="small text-muted">{{ lesson.lesson_id }} | {{ lesson.effort_per_week }} hrs/week</div>
+              </div>
+              <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
           </div>
-        </div>
-      </li>
-    {% empty %}
-      <li class="list-group-item text-muted">No students enrolled yet.</li>
-    {% endfor %}
-  </ul>
-
-  <!-- Buttons -->
-  <div class="d-flex justify-content-between mt-4">
-    <button type="submit" class="btn btn-primary">Save Changes</button>
-    <a href="{% url 'delete_course' course.pk %}" 
-      class="btn btn-danger" 
-      onclick="return confirm('Are you sure you want to delete this course?');">
-      Delete Course
-    </a>
+      </a>
+      {% else %}
+      <a href="{% url 'lesson_detail' lesson.id %}" class="list-group-item list-group-item-action">
+          <div class="d-flex justify-content-between align-items-center">
+              <div>
+                  <strong>{{ lesson.title }}</strong>
+                  <div class="small text-muted">{{ lesson.lesson_id }} | {{ lesson.effort_per_week }} hrs/week</div>
+              </div>
+              <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
+          </div>
+      </a>
+      {% endif %}
+      {% empty %}
+      <p class="text-muted">No lessons added yet.</p>
+      {% endfor %}
   </div>
-</form>
+
+  <!-- Lessons Card View -->
+  <div id="lessonsCardView" class="row mb-3 d-none">
+      {% for lesson in course.lessons.all %}
+      <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+          {% if user.role == "INSTRUCTOR" %}
+          <a href="{% url 'lesson_detail_edit' lesson.id %}" style="text-decoration: none;">
+          {% else %}
+          <a href="{% url 'lesson_detail' lesson.id %}" style="text-decoration: none;">
+          {% endif %}
+              <div class="card" style="border: 2px solid #17a2b8; border-radius: 10px; background-color: #ffffff; height: 180px; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                  <div class="card-body d-flex flex-column justify-content-between">
+                      <div>
+                          <div class="text-info font-weight-bold small">{{ lesson.lesson_id }}</div>
+                          <h6 class="card-title font-weight-bold text-dark">{{ lesson.title }}</h6>
+                      </div>
+                      <div>
+                          <p class="card-text small text-muted mb-1">
+                              <strong>Effort:</strong> {{ lesson.effort_per_week }} hrs/week
+                          </p>
+                          <div class="d-flex justify-content-between align-items-center">
+                              <span class="badge badge-info">{{ lesson.credit_point }} pts</span>
+                              <small class="text-muted">{{ lesson.updated_at|date:"M d" }}</small>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </a>
+      </div>
+      {% empty %}
+      <div class="col-12">
+          <p class="text-muted">No lessons added yet.</p>
+      </div>
+      {% endfor %}
+  </div>
+
+  <!-- Add Lessons functionality removed for now -->
+  {% if user.role == "INSTRUCTOR" %}
+  <div class="mb-2">
+      <p class="text-muted"><em>Lesson management functionality coming soon...</em></p>
+  </div>
+  {% endif %}
+
+  <hr class="mb-3">
+
+  <!-- Classrooms Section -->
+  {% if user.role == "INSTRUCTOR" %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>Classrooms</h4>
+  </div>
+
+  <div class="list-group mb-3">
+      {% for classroom in course.classrooms.all %}
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+              <strong>{{ classroom.classroom_id }}</strong>
+              <div class="small text-muted">
+                  {{ classroom.duration_weeks }} weeks | Supervisor: {{ classroom.supervisor }}
+                  {% if classroom.building and classroom.room %}
+                      | Location: {{ classroom.building }}, Room {{ classroom.room }}
+                  {% elif classroom.online_link %}
+                      | Online Class
+                  {% endif %}
+              </div>
+          </div>
+          <div>
+              <a href="{% url 'delete_classroom' classroom.pk %}" class="btn btn-outline-danger btn-sm">Delete</a>
+          </div>
+      </div>
+      {% empty %}
+      <div class="list-group-item text-muted">No classrooms created yet.</div>
+      {% endfor %}
+  </div>
+
+  <hr class="mb-3">
+  {% endif %}
+
+  <!-- Enrolled Students -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>Enrolled Students</h4>
+      <div>
+          <button id="studentsListViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+          <button id="studentsCardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+      </div>
+  </div>
+
+  <!-- Students List View -->
+  <div id="studentsListView">
+      <ul class="list-group">
+          {% for student in course.students.all %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                  <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                  <div class="small text-muted">{{ student.email }} | Student ID: {{ student.studentprofile.student_id|default:"N/A" }}</div>
+              </div>
+              <span class="badge badge-primary">{{ student.role|title }}</span>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">No students enrolled yet.</li>
+          {% endfor %}
+      </ul>
+  </div>
+
+  <!-- Students Card View -->
+  <div id="studentsCardView" class="row d-none">
+      {% for student in course.students.all %}
+      <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+          <div class="card" style="border: 2px solid #28a745; border-radius: 10px; background-color: #ffffff; height: 150px;">
+              <div class="card-body d-flex flex-column justify-content-between">
+                  <div>
+                      <h6 class="card-title font-weight-bold">{{ student.first_name }} {{ student.last_name }}</h6>
+                      <p class="card-text small">{{ student.email }}</p>
+                  </div>
+                  <div>
+                      <p class="card-text small"><strong>ID:</strong> {{ student.studentprofile.student_id|default:"N/A" }}</p>
+                      <span class="badge badge-success">{{ student.role|title }}</span>
+                  </div>
+              </div>
+          </div>
+      </div>
+      {% empty %}
+      <p class="text-muted">No students enrolled yet.</p>
+      {% endfor %}
+  </div>
 </div>
 
+{% if user.role == "INSTRUCTOR" %}
+<!-- Action Dropdown for Instructor only -->
+<div style="position: fixed; bottom: 30px; right: 30px; z-index: 1000;">
+  <div class="btn-group dropup">
+      <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Actions
+      </button>
+      <div class="dropdown-menu dropdown-menu-right">
+          <a class="dropdown-item" href="{% url 'edit_course' course.pk %}">Edit</a>
+          <a class="dropdown-item text-danger" href="{% url 'delete_course' course.pk %}">Delete</a>
+      </div>
+  </div>
+</div>
+</div>
+{% endif %}
+
 <script>
-function addForm() {
-  const totalForms = document.getElementById('id_form-TOTAL_FORMS');
-  const currentCount = parseInt(totalForms.value);
-  const list = document.getElementById('lesson-list');
-  const firstForm = list.firstElementChild.cloneNode(true);
+// Wait for DOM to be fully loaded
+document.addEventListener("DOMContentLoaded", function() {
+    // Lessons view toggle functionality
+    const lessonsListBtn = document.getElementById("lessonsListViewBtn");
+    const lessonsCardBtn = document.getElementById("lessonsCardViewBtn");
+    const lessonsListView = document.getElementById("lessonsListView");
+    const lessonsCardView = document.getElementById("lessonsCardView");
 
-  // Reset input values
-  firstForm.querySelectorAll('input').forEach(input => {
-    if (input.type === 'text') input.value = '';
-    if (input.type === 'checkbox') input.checked = false;
-    if (input.type === 'hidden') input.value = '';
-  });
+    if (lessonsListBtn && lessonsCardBtn && lessonsListView && lessonsCardView) {
+        lessonsListBtn.addEventListener("click", function() {
+            lessonsListView.classList.remove("d-none");
+            lessonsCardView.classList.add("d-none");
+            this.classList.add("btn-primary");
+            this.classList.remove("btn-outline-primary");
+            lessonsCardBtn.classList.add("btn-outline-primary");
+            lessonsCardBtn.classList.remove("btn-primary");
+        });
 
-  // Update index
-  firstForm.innerHTML = firstForm.innerHTML.replace(/form-(\d+)-/g, `form-${currentCount}-`);
+        lessonsCardBtn.addEventListener("click", function() {
+            lessonsCardView.classList.remove("d-none");
+            lessonsListView.classList.add("d-none");
+            this.classList.add("btn-primary");
+            this.classList.remove("btn-outline-primary");
+            lessonsListBtn.classList.add("btn-outline-primary");
+            lessonsListBtn.classList.remove("btn-primary");
+        });
 
-  list.appendChild(firstForm);
-  totalForms.value = currentCount + 1;
-}
+        // Set default view to list view for lessons
+        lessonsListBtn.click();
+    }
+});
+
+// Add hover effect for lesson cards (after DOM is loaded)
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll("#lessonsCardView .card").forEach(function(card) {
+        card.addEventListener("mouseenter", function() {
+            this.style.transform = "translateY(-5px)";
+            this.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
+        });
+        card.addEventListener("mouseleave", function() {
+            this.style.transform = "";
+            this.style.boxShadow = "";
+        });
+    });
+});
+
+// Students view toggle functionality
+document.addEventListener("DOMContentLoaded", function() {
+    const studentsListBtn = document.getElementById("studentsListViewBtn");
+    const studentsCardBtn = document.getElementById("studentsCardViewBtn");
+    const studentsListView = document.getElementById("studentsListView");
+    const studentsCardView = document.getElementById("studentsCardView");
+
+    if (studentsListBtn && studentsCardBtn && studentsListView && studentsCardView) {
+        studentsListBtn.addEventListener("click", function() {
+            studentsListView.classList.remove("d-none");
+            studentsCardView.classList.add("d-none");
+            this.classList.add("btn-primary");
+            this.classList.remove("btn-outline-primary");
+            studentsCardBtn.classList.add("btn-outline-primary");
+            studentsCardBtn.classList.remove("btn-primary");
+        });
+
+        studentsCardBtn.addEventListener("click", function() {
+            studentsCardView.classList.remove("d-none");
+            studentsListView.classList.add("d-none");
+            this.classList.add("btn-primary");
+            this.classList.remove("btn-outline-primary");
+            studentsListBtn.classList.add("btn-outline-primary");
+            studentsListBtn.classList.remove("btn-primary");
+        });
+
+        // Set default view to list view
+        studentsListBtn.click();
+    }
+});
 </script>
+
 {% endblock %}

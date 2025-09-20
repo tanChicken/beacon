@@ -76,8 +76,4 @@ class CourseAdmin(admin.ModelAdmin):
     list_display = ("course_id", "title", "status", "instructor")
     list_filter = ("status",)
     search_fields = ("course_id", "title")
-    filter_horizontal = ("students",)  # nicer M2M widget
-
-# @admin.register(TodoItem)
-# class TodoItemAdmin(admin.ModelAdmin):
-#     list_display = ("title", "completed")
+    filter_horizontal = ("students",)
