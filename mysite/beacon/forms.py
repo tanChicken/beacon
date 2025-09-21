@@ -147,7 +147,7 @@ class ClassroomForm(forms.ModelForm):
 
             "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
-            "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://…"}),
+            "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -185,7 +185,7 @@ class EditClassroomForm(forms.ModelForm):
 
             "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
-            "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://…"}),
+            "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
         }
 
     def __init__(self, *args, **kwargs):
