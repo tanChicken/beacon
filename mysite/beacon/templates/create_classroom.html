@@ -32,6 +32,21 @@
       {% if form.supervisor.errors %}<div class="text-danger small">{{ form.supervisor.errors }}</div>{% endif %}
     </div>
 
+    <div class="mb-3">
+      <label class="form-label">Building</label>
+      {{ form.building }} {{ form.building.errors }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Room</label>
+      {{ form.room }} {{ form.room.errors }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Online Link</label>
+      {{ form.online_link }} {{ form.online_link.errors }}
+    </div>
+
     <button type="submit" class="btn btn-primary">Create Classroom</button>
     <a href="{% if course %}{% url 'course_detail' course.pk %}{% else %}#{% endif %}" class="btn btn-secondary ms-2">Cancel</a>
   </form>

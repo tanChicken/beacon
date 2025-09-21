@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile
-from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm
+from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm, EditClassroomForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
@@ -320,7 +320,32 @@ def instructor_classroom(request):
 @login_required
 def edit_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
-    return render(request, 'edit_classroom.html', {'classroom': classroom})
+
+    # Authorization: only supervisor or instructors can edit
+    # user = request.user
+    # can_edit = (
+    #     getattr(user, "role", None) == "INSTRUCTOR"
+    #     or user == classroom.supervisor
+    #     or user.has_perm("beacon.change_classroom")
+    # )
+    # if not can_edit:
+    #     raise PermissionDenied("You do not have permission to edit this classroom.")
+
+    if request.method == "POST":
+        form = EditClassroomForm(request.POST, instance=classroom, request=request)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Classroom updated successfully.")
+            # Redirect wherever makes sense in your app:
+            # - to details
+            return redirect("student_classroom_details", pk=classroom.pk)
+            # - or to list: return redirect("classroom_list")
+        else:
+            messages.error(request, "Please fix the errors below.")
+    else:
+        form = EditClassroomForm(instance=classroom, request=request)
+
+    return render(request, "edit_classroom.html", {"classroom": classroom, "form": form})
 
 @login_required
 def create_classroom(request, pk=None):

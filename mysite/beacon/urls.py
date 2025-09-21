@@ -25,5 +25,5 @@ urlpatterns = [
     #instructor classroom
     path("instructor/classroom/", views.instructor_classroom, name="instructor_classroom"),
     path("instructor/classroom/course/<int:pk>/add", views.create_classroom, name="create_classroom"),
-    path("instructor/classroom/course<int:pk>/edit", views.edit_classroom, name="edit_classroom")
+    path("instructor/classroom/<int:pk>/edit", views.edit_classroom, name="edit_classroom")
     ]
