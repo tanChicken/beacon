@@ -59,6 +59,11 @@
             <textarea name="assignment" id="id_assignment" class="form-control" rows="3"></textarea>
         </div>
 
+        <div class="mb-3">
+            <label for="id_prerequisites" class="form-label">Prerequisites</label>
+            {{ form.prerequisites }}
+        </div>
+
         <button type="submit" class="btn btn-success">Create Lesson</button>
         <a href="{% url 'course_detail' course.pk %}" class="btn btn-secondary">Cancel</a>
     </form>

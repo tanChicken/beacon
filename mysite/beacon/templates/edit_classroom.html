@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Edit Classroom {{ classroom.classroom_id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 720px;">
+  <h1 class="mb-3">Edit Classroom</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="mb-3">
+      <label class="form-label">Classroom ID</label>
+      {{ form.classroom_id }} {{ form.classroom_id.errors }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Course</label>
+      {{ form.course_id }} {{ form.course_id.errors }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Duration (weeks)</label>
+      {{ form.duration_weeks }} {{ form.duration_weeks.errors }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Supervisor</label>
+      {{ form.supervisor }} {{ form.supervisor.errors }}
+    </div>
+
+    <!-- NEW FIELDS -->
+    <div class="mb-3">
+      <label class="form-label">Building</label>
+      {{ form.building }} {{ form.building.errors }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Room</label>
+      {{ form.room }} {{ form.room.errors }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Online Link</label>
+      {{ form.online_link }} {{ form.online_link.errors }}
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Save changes</button>
+      <a href="{% url 'instructor_classroom'%}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
