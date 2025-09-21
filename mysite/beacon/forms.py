@@ -1,6 +1,5 @@
 from django import forms
-from .models import Course, StudentReadingListItem, Instructor, Lesson
-from django.contrib.auth.models import User
+from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 
@@ -12,10 +11,12 @@ class StudentSignupForm(forms.ModelForm):
     title = forms.ChoiceField(choices=title_choices)
     password = forms.CharField(widget=forms.PasswordInput, min_length=8)
     confirm_password = forms.CharField(widget=forms.PasswordInput, min_length=8)
+    first_name = forms.CharField(max_length=30, label="First Name")
+    last_name = forms.CharField(max_length=30, label="Last Name")
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "email"]
+        fields = ["email", "role"]
 
     def clean_email(self):
         email = self.cleaned_data.get("email")
@@ -29,6 +30,20 @@ class StudentSignupForm(forms.ModelForm):
         confirm_password = cleaned_data.get("confirm_password")
         if password and confirm_password and password != confirm_password:
             raise ValidationError("Passwords do not match.")
+        
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password"])
+        if commit:
+            user.save()
+
+            StudentProfile.objects.create(
+                user=user,
+                first_name = self.cleaned_data["first_name"],
+                last_name = self.cleaned_data["last_name"],
+                student_id = "TEMP"
+            )
+        return user
 
 class StudentLoginForm(forms.Form):
     email = forms.EmailField()
@@ -48,7 +63,7 @@ class CourseForm(forms.ModelForm):
 
     class Meta:
         model = Course
-        fields = ["course_id", "title", "status", "instructor"]
+        fields = ["course_id", "title", "status"]
 
 class LessonForm(forms.ModelForm):
     class Meta:

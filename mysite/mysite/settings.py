@@ -78,22 +78,22 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': 
-#         dj_database_url.config(
-#             default=os.getenv("DATABASE_URL")
-#         )
-# }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mysite_db',
-        'USER': 'mysite_user',
-        'PASSWORD': 'mypassword',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    'default': 
+        dj_database_url.config(
+            default=os.getenv("DATABASE_URL")
+        )
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'mysite_db',
+#         'USER': 'mysite_user',
+#         'PASSWORD': 'mypassword',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
 
 
 
@@ -138,6 +138,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = "beacon.User"
+# Custom user model
+AUTH_USER_MODEL = 'beacon.User'
 
 LOGIN_URL = "/login/"

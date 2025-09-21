@@ -98,7 +98,7 @@ function addForm() {
   });
 
   // Update index
-  firstForm.innerHTML = firstForm.innerHTML.replace(/form-(\d+)-/g, `form-${currentCount}-`);
+  firstForm.innerHTML = firstForm.innerHTML.replace(/form-(\d+)-/g, 'form-${currentCount}-');
 
   list.appendChild(firstForm);
   totalForms.value = currentCount + 1;

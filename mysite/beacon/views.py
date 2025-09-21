@@ -1,19 +1,19 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Course, Lesson, StudentReadingListItem, StudentReadingListProgress, StudentProfile
-from .forms import CourseForm, LessonDetailForm
+from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
+from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile
+from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm
 from django.contrib import messages
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login
 from django.db import transaction
-from django.contrib.auth import get_user_model
 
-# Create your views here.
+from .models import Course, Student, StudentProfile, User  # note: import Student & StudentProfile
+
+
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
 
 def login_view(request):
-    return render(request, "home.html", {"hide_sidebar": True})
+    return render(request, "login.html", {"hide_sidebar": True})
 
 def student_login(request):
     if request.method == "POST":
@@ -21,6 +21,7 @@ def student_login(request):
         password = request.POST.get("password") or ""
 
         user = authenticate(request, username=email, password=password)
+
         if user is None:
             messages.error(request, "Invalid email or password.")
         else:
@@ -29,15 +30,16 @@ def student_login(request):
                 return redirect("student_dashboard")
             else:
                 messages.error(request, "This account is not a student. Please use the instructor login.")
+    
     return render(request, "login.html")
 
 def student_signup(request):
     if request.method == "POST":
         first_name = (request.POST.get("first_name") or "").strip()
         last_name = (request.POST.get("last_name") or "").strip()
-        email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
         confirm = request.POST.get("confirm_password") or ""
+        email = (request.POST.get("email") or "").strip().lower()
         title = request.POST.get("title") or ""  
 
         if not first_name or not last_name or not email or not password or not confirm or not title:
@@ -47,19 +49,19 @@ def student_signup(request):
         if password != confirm:
             messages.error(request, "Passwords do not match.")
             return render(request, "signup.html")
-
+        
         UserModel = get_user_model()
         if UserModel.objects.filter(email=email).exists():
             messages.error(request, "This email is already registered.")
             return render(request, "signup.html")
 
-
         with transaction.atomic():
-            user = UserModel.objects.create_user(
+            user = UserModel.objects.create_user( 
                 email=email,
                 password=password,
                 role="STUDENT",
             )
+
             profile = user.studentprofile
             profile.title = title
             profile.first_name = first_name
@@ -91,7 +93,10 @@ def enrolment_page(request):
 @login_required
 def enrol_course(request, course_id):
     student = request.user
-    course = get_object_or_404(Course, id=course_id)
+
+    # Only allow enrollment in active courses that the student isn't already enrolled in
+    course = get_object_or_404(Course, id=course_id, status="active")
+
     course.students.add(student)
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
@@ -105,14 +110,28 @@ def student_lessons(request):
 
     return render(request, "student_lessons.html", {"lessons": lessons})
 
+@login_required
+def student_classroom(request):
+    classrooms = Classroom.objects.prefetch_related("lessons").all()
+    return render(request, "student_classroom.html", {"classrooms": classrooms})
+
+@login_required
+def student_classroom_details(request, classroom_id):
+    classroom = get_object_or_404(Classroom, classroom_id=classroom_id)
+    return render(request, 'student_classroom_details.html', {'classroom': classroom})
+
+
 def instructor_login(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
+        # Try authenticating with email as username first
         user = authenticate(request, username=email, password=password)
+
         if user is None:
             messages.error(request, "Invalid email or password.")
+            # return render(request, "instructor_login.html", {"hide_sidebar": True})
         else:
             if getattr(user, "role", None) == "INSTRUCTOR":
                 login(request, user)
@@ -120,10 +139,13 @@ def instructor_login(request):
             messages.error(request, "This account is not an instructor. Please use the student login.")
     return render(request, "instructor_login.html")
 
-@login_required(login_url="/i_login/")
+@login_required
 def instructor_dashboard(request):
+    # Get courses created by this instructor
     courses = Course.objects.filter(instructor=request.user)
-    return render(request, "instructor_dashboard.html", {"courses": courses})
+    return render(request, "instructor_dashboard.html", {
+        "courses": courses,
+    })
 
 @login_required
 def create_course(request):
@@ -155,7 +177,7 @@ def edit_course(request, pk):
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
             form.save()
-            messages.success(request, "Course updated successfully!")
+            messages.success(request, "Course updated successfully.")
             return redirect("instructor_dashboard")
     else:
         form = CourseForm(instance=course)
@@ -251,7 +273,9 @@ def create_lesson(request, course_pk):
     else:
         form = LessonDetailForm()
 
-    return render(request, 'create_lesson.html', {
+    return render(
+        request, 'create_lesson.html',
+        {
         'form': form,
         'course': course,
         'action': 'Create'
@@ -264,3 +288,36 @@ def delete_lesson(request, pk):
     lesson.delete()
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
+
+# @login_required
+# def delete_classroom(request, pk):
+#     from .models import Classroom
+
+#     # Get classroom and ensure instructor owns the related course
+#     classroom = get_object_or_404(Classroom, pk=pk, course_id__instructor=request.user)
+
+#     if request.method == "POST":
+#         # Count affected lessons before deletion
+#         affected_lessons = classroom.lessons.all()
+#         lesson_count = affected_lessons.count()
+
+#         # Store classroom info for success message
+#         classroom_info = f"Classroom {classroom.classroom_id}"
+
+#         # Delete classroom (lessons will be automatically unassigned due to SET_NULL)
+#         classroom.delete()
+
+#         # Success message with lesson info
+#         if lesson_count > 0:
+#             messages.success(request, f"{classroom_info} deleted successfully! {lesson_count} lesson(s) unassigned from this classroom.")
+#         else:
+#             messages.success(request, f"{classroom_info} deleted successfully!")
+
+#         return redirect("instructor_dashboard")
+
+#     # GET request - show confirmation page
+#     affected_lessons = classroom.lessons.all()
+#     return render(request, "classroom_confirm_delete.html", {
+#         "classroom": classroom,
+#         "affected_lessons": affected_lessons,
+#     })
