@@ -73,30 +73,24 @@ def student_signup(request):
 
     return render(request, "signup.html")
 
-@login_required
 def student_dashboard(request):
-    # Check if user is a student
-    if request.user.role != "STUDENT":
-        messages.error(request, "Access denied. Students only.")
-        return redirect("home")
-
     student = request.user
     enrolled = student.courses_enroling.all()
     available_courses = Course.objects.filter(status="active").exclude(students=student)
-
+    
     return render(request, "student_dashboard.html", {
         "courses": enrolled,
         "available_courses": available_courses,
         "student": student
     })
     
-@role_required("STUDENT")
+@login_required
 def enrolment_page(request):
     student = request.user
     available_courses = Course.objects.filter(status="active").exclude(students=student)
     return render(request, "enrolment.html", {"available_courses": available_courses, "student": student})
 
-@role_required("STUDENT")
+@login_required
 def enrol_course(request, course_id):
     student = request.user
 
@@ -107,7 +101,7 @@ def enrol_course(request, course_id):
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
 
-@role_required("STUDENT")
+@login_required
 def student_lessons(request):
     if not request.user.role == "STUDENT":
         return render(request, "403.html")
@@ -176,7 +170,7 @@ def create_course(request):
 
     return render(request, "course_form.html", {"form": form, "action": "Create"})
 
-@role_required("INSTRUCTOR")
+@login_required
 def edit_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
     if request.method == "POST":
@@ -194,14 +188,14 @@ def edit_course(request, pk):
         "action": "Edit",
     })
 
-@role_required("INSTRUCTOR")
+@login_required
 def delete_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
     course.delete()
     messages.success(request, "Course deleted successfully!")
     return redirect("instructor_dashboard")
 
-@role_required("INSTRUCTOR")
+@login_required
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = course.lessons.all()
@@ -231,7 +225,7 @@ def course_detail(request, pk):
         "students_progress": students_progress,
     })
 
-@role_required("INSTRUCTOR")
+@login_required
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
 
@@ -288,7 +282,7 @@ def create_lesson(request, course_pk):
         'next_lesson_id': next_lesson_id,
     })
 
-@role_required("INSTRUCTOR")
+@login_required
 def delete_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk, designer=request.user)
     course_pk = lesson.course.pk
