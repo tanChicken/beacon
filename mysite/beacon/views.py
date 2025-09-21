@@ -115,6 +115,11 @@ def student_classroom(request):
     classrooms = Classroom.objects.prefetch_related("lessons").all()
     return render(request, "student_classroom.html", {"classrooms": classrooms})
 
+@login_required
+def student_classroom_details(request, classroom_id):
+    classroom = get_object_or_404(Classroom, classroom_id=classroom_id)
+    return render(request, 'student_classroom_details.html', {'classroom': classroom})
+
 
 def instructor_login(request):
     if request.method == "POST":
