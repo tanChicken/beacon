@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile
+from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile
 from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
@@ -109,6 +109,12 @@ def student_lessons(request):
     lessons = request.user.lessons.all()  
 
     return render(request, "student_lessons.html", {"lessons": lessons})
+
+@login_required
+def student_classroom(request):
+    classrooms = Classroom.objects.prefetch_related("lessons").all()
+    return render(request, "student_classroom.html", {"classrooms": classrooms})
+
 
 def instructor_login(request):
     if request.method == "POST":

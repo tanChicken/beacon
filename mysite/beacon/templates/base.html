@@ -128,7 +128,12 @@
           <a href="{% url 'enrolment_page' %}">Enrolment</a>
         {% endif %}
 
-        <a href="#">Classroom</a>
+        {% if user.role == "STUDENT" %}
+          <a href="{% url 'student_classroom' %}">Classroom</a>
+        {% elif user.role == "INSTRUCTOR" %}
+          <a href=#>Classroom</a>
+        {% endif %}
+
         <a href="#">Student</a>
         <a href="#">Report</a>
       {% else %}
