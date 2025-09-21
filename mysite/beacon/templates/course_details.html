@@ -11,7 +11,8 @@
     {% endif %}
   </div>
 
-  <form method="POST" action="{% url 'edit_course' course.pk %}">
+  <form method="POST" action="{% url 'edit_course' course.pk %}" 
+    onsubmit="return confirm('Are you sure you want to save the course changes?');">
     {% csrf_token %}
 
     <div class="row align-items-center mb-4">
@@ -29,35 +30,63 @@
     <h4>Lessons</h4>
     <div class="list-group mb-3">
       {% for lesson in lessons %}
-        <div class="list-group-item">
-          <a href="{% url 'lesson_detail_edit' lesson.pk %}">{{ lesson.title }}</a>
-        </div>
+        <a href="{% url 'lesson_detail_edit' lesson.pk %}" class="list-group-item list-group-item-action d-flex align-items-center">
+          <strong>{{ lesson.lesson_id }}</strong>: {{ lesson.title }}
+        </a>
       {% empty %}
         <p class="text-muted">No lessons yet.</p>
       {% endfor %}
     </div>
 
+    <div class="mb-3">
+      <a href="{% url 'create_lesson' course.pk %}" class="btn btn-sm btn-outline-primary">
+        Add Lesson
+      </a>
+    </div>
+
+    <h4>Classroom</h4>
+    <div class="mb-3">
+      <a href="#" class="btn btn-sm btn-outline-primary">
+        + Add Classroom
+      </a>
+    </div>
+
     <hr>
     <h4>Enrolled Students</h4>
-    <ul class="list-group mb-4">
-        {% for sp in students_progress %}
-            {% empty %}
-            <li class="list-group-item text-muted">No students enrolled yet.</li>
-        {% endfor %}
-    </ul>
+    {% if students_progress %}
+        <ul class="list-group mb-4">
+            {% for sp in students_progress %}
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>{{ sp.student.studentprofile.first_name }} {{ sp.student.studentprofile.last_name }}</span>
+                    <small>{{ sp.completed }}/{{ sp.total }} completed</small>
+                </div>
+                <div class="progress mt-2">
+                    <div class="progress-bar progress-{{ sp.percent|floatformat:0 }}"
+                        role="progressbar"
+                        aria-valuenow="{{ sp.percent }}" aria-valuemin="0" aria-valuemax="100">
+                        {{ sp.percent }}%
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-muted">No students enrolled yet.</p>
+    {% endif %}
 
     <div class="d-flex justify-content-between mt-4">
-      <button type="submit" class="btn btn-primary">Save Changes</button>
-  </div>
-  </form> 
+    <button type="submit" class="btn btn-primary">Save Changes</button>
 
-  <form action="{% url 'delete_course' course.pk %}" method="POST" class="d-inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-danger" 
-                  onclick="return confirm('Are you sure you want to delete this course?');">
-              Delete Course
-          </button>
+    <form action="{% url 'delete_course' course.pk %}" method="POST" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger" 
+              onclick="return confirm('Are you sure you want to delete this course?');">
+          Delete Course
+      </button>
     </form>
+  </div>
+</form>
 </div>
 
 <script>
