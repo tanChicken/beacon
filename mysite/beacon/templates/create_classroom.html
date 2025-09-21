@@ -1,0 +1,39 @@
+{# templates/classroom_form.html #}
+{% extends "base.html" %}
+{% block title %}Create Classroom{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Create Classroom{% if course %} for {{ course.title }}{% endif %}</h2>
+
+  <form method="post" class="mt-3" novalidate>
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label">Classroom ID</label>
+      {{ form.classroom_id }}
+      {% if form.classroom_id.errors %}<div class="text-danger small">{{ form.classroom_id.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Course</label>
+      {{ form.course_id }}
+      {% if form.course_id.errors %}<div class="text-danger small">{{ form.course_id.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Duration</label>
+      {{ form.duration_weeks }}
+      {% if form.duration_weeks.errors %}<div class="text-danger small">{{ form.duration_weeks.errors }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Classroom Supervisor</label>
+      {{ form.supervisor }}
+      {% if form.supervisor.errors %}<div class="text-danger small">{{ form.supervisor.errors }}</div>{% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Classroom</button>
+    <a href="{% if course %}{% url 'course_detail' course.pk %}{% else %}#{% endif %}" class="btn btn-secondary ms-2">Cancel</a>
+  </form>
+</div>
+{% endblock %}

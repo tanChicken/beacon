@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile
-from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm
+from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
@@ -309,6 +309,33 @@ def delete_lesson(request, pk):
     lesson.delete()
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
+
+@login_required
+def instructor_classroom(request):
+    classroom = Classroom.objects.filter(instructor=request.user)
+    return render(request, "instructor_classroom.html", {
+        "classroom": classroom,
+    })
+
+@login_required
+def create_classroom(request, pk=None):
+    # ID, course ID, duration [2/3/4 weeks], classroom supervisor
+    preselected_course = get_object_or_404(Course, pk=pk) if pk is not None else None
+
+    if request.method == "POST":
+        form = ClassroomForm(request.POST, request=request, preselected_course=preselected_course)
+        if form.is_valid():
+            classroom = form.save(commit=False)
+            # If course dropdown was disabled, ensure we still set it
+            if preselected_course:
+                classroom.course_id = preselected_course
+            classroom.save()
+            messages.success(request, "Classroom created successfully.")
+            return redirect("course_detail", pk=classroom.course_id.pk)  # adjust route name if different
+    else:
+        form = ClassroomForm(request=request, preselected_course=preselected_course)
+
+    return render(request, "create_classroom.html", {"form": form, "course": preselected_course})
 
 # @login_required
 # def delete_classroom(request, pk):
