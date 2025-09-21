@@ -83,6 +83,39 @@
         </small>
     </div>
 
+    <!-- Classroom Allocation Section -->
+    <div class="mb-4 p-3 border rounded bg-light">
+        <h5 class="fw-semibold">Classroom Allocation</h5>
+        <p class="text-muted small">Assign this lesson to a classroom</p>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Classroom</label>
+                <select name="classroom" class="form-control">
+                    <option value="">-- No classroom assigned --</option>
+                    {% for classroom in available_classrooms %}
+                        <option value="{{ classroom.id }}" 
+                                {% if lesson.classroom and lesson.classroom.id == classroom.id %}selected{% endif %}>
+                            {{ classroom.classroom_id }} - {{ classroom.building }} Room {{ classroom.room }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Schedule/Time</label>
+                <input type="text" name="lesson_schedule" class="form-control" 
+                       placeholder="e.g., Monday 10:00-12:00">
+            </div>
+        </div>
+        
+        {% if lesson.classroom %}
+        <div class="alert alert-info mb-0">
+            <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Reading List -->
     <h4>Reading List</h4>
     {% for item in lesson.reading_items.all %}
