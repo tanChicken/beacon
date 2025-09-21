@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile
+from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
 from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
@@ -310,6 +310,18 @@ def delete_lesson(request, pk):
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
 
+@login_required
+def enrol_lesson(request, lesson_id):
+    student = request.user
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+
+    if Enrolment.objects.filter(student=student, lesson=lesson).exists():
+        messages.warning(request, f"You are already enrolled in {lesson.title}.")
+    else:
+        Enrolment.objects.create(student=student, lesson=lesson)
+        messages.success(request, f"You have enrolled in {lesson.title}!")
+
+    return redirect("student_lesson_details", pk=lesson.id)
 # @login_required
 # def delete_classroom(request, pk):
 #     from .models import Classroom

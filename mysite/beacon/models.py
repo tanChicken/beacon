@@ -219,3 +219,22 @@ class StudentReadingListProgress(models.Model):
     def __str__(self):
         return f"{self.student.email} - {self.item.title}: {'Done' if self.completed else 'Not Done'}"
     
+class Enrolment(models.Model):
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="enrolments"
+    )
+    lesson = models.ForeignKey(
+        "Lesson",
+        on_delete=models.CASCADE,
+        related_name="enrolments"
+    )
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    credit_earned = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ("student", "lesson")
+
+    def __str__(self):
+        return f"{self.student.email} enrolled in {self.lesson.title}"
