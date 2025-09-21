@@ -11,12 +11,7 @@ urlpatterns = [
     path("course/<int:pk>/edit/", views.edit_course, name="edit_course"),
     path("course/<int:pk>/delete/", views.delete_course, name="delete_course"),
     path("student/", views.student_dashboard, name="student_dashboard"), 
-    # path("student/course/<int:pk>/", views.student_course_details, name="student_course_details"),
-    path(
-    "student/course/<int:pk>/",
-    views.student_course_details,
-    name="student_course_details",
-),
+    path("student/course/<int:pk>/",views.student_course_details,name="student_course_details"),
     path("student/lesson/<int:pk>/", views.student_lesson_details, name="student_lesson_details"),
     path("enrollment/", views.enrolment_page, name="enrolment_page"),
     path("enroll/<int:course_id>/", views.enrol_course, name="enrol_course"),
@@ -24,6 +19,11 @@ urlpatterns = [
     path('lesson/<int:pk>/', views.lesson_detail_edit, name='lesson_detail_edit'),
     path('course/<int:course_pk>/lesson/create/', views.create_lesson, name='create_lesson'),
     path('lesson/<int:pk>/delete/', views.delete_lesson, name='delete_lesson'),
+    # student classroom
     path("classrooms/", views.student_classroom, name="student_classroom"),
-    path('classroom/<int:pk>/', views.student_classroom_details, name='student_classroom_detail'),
+    path('classroom/<int:pk>/', views.student_classroom_details, name='student_classroom_details'),
+    #instructor classroom
+    path("instructor/classroom/", views.instructor_classroom, name="instructor_classroom"),
+    path("instructor/classroom/course/<int:pk>/add", views.create_classroom, name="create_classroom"),
+    path("instructor/classroom/<int:pk>/edit", views.edit_classroom, name="edit_classroom")
     ]

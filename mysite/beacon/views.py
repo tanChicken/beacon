@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
-from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm
+from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm, EditClassroomForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
@@ -136,8 +136,8 @@ def student_classroom(request):
     return render(request, "student_classroom.html", {"classrooms": classrooms})
 
 @login_required
-def student_classroom_details(request, classroom_id):
-    classroom = get_object_or_404(Classroom, classroom_id=classroom_id)
+def student_classroom_details(request, pk):
+    classroom = get_object_or_404(Classroom, pk=pk)
     return render(request, 'student_classroom_details.html', {'classroom': classroom})
 
 
@@ -322,6 +322,63 @@ def enrol_lesson(request, lesson_id):
         messages.success(request, f"You have enrolled in {lesson.title}!")
 
     return redirect("student_lesson_details", pk=lesson.id)
+@login_required
+def instructor_classroom(request):
+    classrooms = Classroom.objects.prefetch_related("lessons").all()
+    return render(request, "instructor_classroom.html", {
+        "classrooms": classrooms,
+    })
+
+@login_required
+def edit_classroom(request, pk):
+    classroom = get_object_or_404(Classroom, pk=pk)
+
+    # Authorization: only supervisor or instructors can edit
+    # user = request.user
+    # can_edit = (
+    #     getattr(user, "role", None) == "INSTRUCTOR"
+    #     or user == classroom.supervisor
+    #     or user.has_perm("beacon.change_classroom")
+    # )
+    # if not can_edit:
+    #     raise PermissionDenied("You do not have permission to edit this classroom.")
+
+    if request.method == "POST":
+        form = EditClassroomForm(request.POST, instance=classroom, request=request)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Classroom updated successfully.")
+            # Redirect wherever makes sense in your app:
+            # - to details
+            return redirect("student_classroom_details", pk=classroom.pk)
+            # - or to list: return redirect("classroom_list")
+        else:
+            messages.error(request, "Please fix the errors below.")
+    else:
+        form = EditClassroomForm(instance=classroom, request=request)
+
+    return render(request, "edit_classroom.html", {"classroom": classroom, "form": form})
+
+@login_required
+def create_classroom(request, pk=None):
+    # ID, course ID, duration [2/3/4 weeks], classroom supervisor
+    preselected_course = get_object_or_404(Course, pk=pk) if pk is not None else None
+
+    if request.method == "POST":
+        form = ClassroomForm(request.POST, request=request, preselected_course=preselected_course)
+        if form.is_valid():
+            classroom = form.save(commit=False)
+            # If course dropdown was disabled, ensure we still set it
+            if preselected_course:
+                classroom.course_id = preselected_course
+            classroom.save()
+            messages.success(request, "Classroom created successfully.")
+            return redirect("course_detail", pk=classroom.course_id.pk)  # adjust route name if different
+    else:
+        form = ClassroomForm(request=request, preselected_course=preselected_course)
+
+    return render(request, "create_classroom.html", {"form": form, "course": preselected_course})
+
 # @login_required
 # def delete_classroom(request, pk):
 #     from .models import Classroom

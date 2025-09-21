@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson
+from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson, Classroom
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.db import models
@@ -123,3 +123,75 @@ class ReadingItemForm(forms.ModelForm):
     class Meta:
         model = StudentReadingListItem
         fields = ["title"]
+
+DURATION_CHOICES = [(2, "2 weeks"), (3, "3 weeks"), (4, "4 weeks")]
+class ClassroomForm(forms.ModelForm):
+    # Force a dropdown with 2/3/4 (stored as int)
+    duration_weeks = forms.TypedChoiceField(choices=DURATION_CHOICES, coerce=int)
+
+    # Your model has CharField for supervisor -> make a ChoiceField and fill from instructors
+    supervisor = forms.ChoiceField(choices=[])
+
+    class Meta:
+        model = Classroom
+        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor","building", "room", "online_link"]
+        widgets = {
+            "classroom_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. CLS-001"}),
+            "course_id": forms.Select(attrs={"class": "form-select"}),
+            "duration_weeks": forms.Select(attrs={"class": "form-select"}),
+            "supervisor": forms.Select(attrs={"class": "form-select"}),
+
+            "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
+            "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
+            "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://…"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        request = kwargs.pop("request", None)
+        preselected_course = kwargs.pop("preselected_course", None)
+        super().__init__(*args, **kwargs)
+
+        # Courses: optionally restrict for instructors to their own courses
+        qs = Course.objects.all()
+        if request and getattr(request.user, "role", None) == "INSTRUCTOR":
+            qs = qs.filter(instructor=request.user)
+        self.fields["course_id"].queryset = qs
+
+        # Supervisors: list of instructors; store username (or email) in the CharField
+        instructors = User.objects.filter(role="INSTRUCTOR").order_by("email")
+        self.fields["supervisor"].choices = list(
+            instructors.values_list("email", "email")
+        )
+
+        # Preselect course if provided by URL (/course/<pk>/classrooms/new/)
+        if preselected_course:
+            self.fields["course_id"].initial = preselected_course.pk
+            # If you want to lock it, uncomment:
+            # self.fields["course_id"].disabled = True
+
+class EditClassroomForm(forms.ModelForm):
+    class Meta:
+        model = Classroom
+        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor","building", "room", "online_link"]
+        widgets = {
+            "classroom_id": forms.TextInput(attrs={"class": "form-control"}),
+            "course_id": forms.Select(attrs={"class": "form-select"}),
+            "duration_weeks": forms.Select(attrs={"class": "form-select"}),  # choices on model
+            "supervisor": forms.Select(attrs={"class": "form-select"}),
+
+            "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
+            "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
+            "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://…"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+
+        # Supervisors: list of instructors; store username (or email) in the CharField
+        instructors = User.objects.filter(role="INSTRUCTOR").order_by("email")
+        self.fields["supervisor"].choices = list(
+            instructors.values_list("email", "email")
+        )
+        # If you want course to be uneditable on edit, uncomment below:
+        self.fields["course_id"].disabled = True
