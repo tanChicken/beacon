@@ -75,7 +75,7 @@
     <ul class="list-group mt-3">
       {% for course in courses %}
         <li class="list-group-item course-card" data-course-id="{{ course.pk }}">
-          <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+          <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
             <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
             <div class="small text-muted">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
           </a>
@@ -92,21 +92,14 @@
       <div class="col-md-4 mb-4">
         <div class="card custom-course-card">
           <div class="card-body">
-            <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-              <div class="course-meta text-success font-weight-bold">{{ course.course_id }}</div>
-              <h5 class="card-title font-weight-bold">{{ course.title }}</h5>
-              <p class="course-meta">
-                <span class="badge badge-{% if course.status == 'active' %}success{% else %}secondary{% endif %}">
-                  {{ course.status|title }}
-                </span>
-              </p>
-              <hr class="my-2">
-              <p class="course-meta small">
-                <strong>Instructor:</strong> {{ course.instructor.get_full_name|default:course.instructor.email }}
-              </p>
-              <p class="course-meta small">
-                <strong>Created:</strong> {{ course.created_at|date:"j/n/Y" }} | <strong>Updated:</strong> {{ course.updated_at|date:"j/n/Y" }}
-              </p>
+            <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+              <div class="course-meta">{{ course.course_id }}</div>
+              <h5 class="card-title">{{ course.title }}</h5>
+              <p class="course-meta">Status: {{ course.status }}</p>
+              <hr>
+              <p class="course-meta">Instructor: {{ course.instructor.email }}</p>
+              <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
+              <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
             </a>
           </div>
         </div>

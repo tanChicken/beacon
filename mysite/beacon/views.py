@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile
+from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
 from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
@@ -102,6 +102,19 @@ def enrol_course(request, course_id):
     return redirect("student_dashboard")
 
 @login_required
+def student_course_details(request,pk):
+    course = get_object_or_404(Course, pk=pk)
+
+    # optional: only allow enrolled students to view
+    if not course.students.filter(pk=request.user.pk).exists():
+        messages.error(request, "You are not enrolled in this course.")
+        return redirect("student_dashboard")
+
+    # lessons = getattr(course, "lessons", course.lesson_set).all()
+    lessons = course.lessons.all()
+    return render(request, "student_course_details.html", {"course": course, "lessons": lessons})
+
+@login_required
 def student_lessons(request):
     if not request.user.role == "STUDENT":
         return render(request, "403.html")
@@ -109,6 +122,13 @@ def student_lessons(request):
     lessons = request.user.lessons.all()  
 
     return render(request, "student_lessons.html", {"lessons": lessons})
+
+@login_required()
+def student_lesson_details(request, pk):    
+
+    lesson = get_object_or_404(Lesson, pk=pk) 
+    return render(request, "student_lesson_details.html", {"lesson": lesson})
+
 
 @login_required
 def student_classroom(request):
@@ -290,6 +310,18 @@ def delete_lesson(request, pk):
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
 
+@login_required
+def enrol_lesson(request, lesson_id):
+    student = request.user
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+
+    if Enrolment.objects.filter(student=student, lesson=lesson).exists():
+        messages.warning(request, f"You are already enrolled in {lesson.title}.")
+    else:
+        Enrolment.objects.create(student=student, lesson=lesson)
+        messages.success(request, f"You have enrolled in {lesson.title}!")
+
+    return redirect("student_lesson_details", pk=lesson.id)
 # @login_required
 # def delete_classroom(request, pk):
 #     from .models import Classroom
