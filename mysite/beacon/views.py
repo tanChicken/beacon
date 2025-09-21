@@ -110,6 +110,13 @@ def student_lessons(request):
 
     return render(request, "student_lessons.html", {"lessons": lessons})
 
+@login_required()
+def student_lesson_details(request, pk):    
+
+    lesson = get_object_or_404(Lesson, pk=pk) 
+    return render(request, "student_lesson_details.html", {"lesson": lesson})
+
+
 @login_required
 def student_classroom(request):
     classrooms = Classroom.objects.prefetch_related("lessons").all()
