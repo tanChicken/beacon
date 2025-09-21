@@ -73,7 +73,16 @@
         <label for="{{ lesson_form.assignment.id_for_label }}" class="form-label fw-semibold">Assignment Details</label>
         <textarea name="{{ lesson_form.assignment.name }}" class="form-control" rows="2">{{ lesson_form.assignment.value }}</textarea>
     </div>
-    
+
+    <!-- Prerequisites -->
+    <div class="mb-3">
+        <label for="{{ lesson_form.prerequisites.id_for_label }}" class="form-label fw-semibold">Prerequisites</label>
+        {{ lesson_form.prerequisites }}
+        <small class="form-text text-muted">
+            Select the lessons that must be completed before this one.
+        </small>
+    </div>
+
     <!-- Reading List -->
     <h4>Reading List</h4>
     {% for item in lesson.reading_items.all %}

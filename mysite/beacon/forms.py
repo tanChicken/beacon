@@ -78,11 +78,12 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ['title', 'description', 'objective', 'effort_per_week', 'assignment', 'status', 'lesson_point']
+        fields = ['title', 'description', 'objective', 'effort_per_week', 'assignment', 'status', 'lesson_point', 'prerequisites']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'objective': forms.Textarea(attrs={'rows': 3}),
             'assignment': forms.Textarea(attrs={'rows': 3}),
+            'prerequisites': forms.CheckboxSelectMultiple,
         }
     lesson_point = forms.IntegerField(
         min_value=0,
@@ -98,6 +99,9 @@ class LessonDetailForm(forms.ModelForm):
         self.course = kwargs.pop("course", None)
         self.instance = kwargs.get("instance", None)
         super().__init__(*args, **kwargs)
+
+        if self.course:
+            self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
 
     def clean_credit_point(self):
         lesson_point = self.cleaned_data.get("lesson_point", 0)
