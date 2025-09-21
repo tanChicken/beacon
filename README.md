@@ -46,7 +46,22 @@ If you need to test new accounts, create separate ones instead.
 
 - Three test accounts with details are currently provided above, please refer and log in using the details.
 
+DO NOT ALTER LIST:
+sample instructors:
+instructor1@gmail.com
+instructor2@gmail.com
+same password: instructor1234
 
+sample students:
+student1@gmail.com
+student2@gmail.com
+student3@gmail.com
+student4@gmail.com
+same password: student1234
+
+sample courses:
+C001 - instructor1@gmail.com
+C002 - instructor2@gmail.com
 
 
 
