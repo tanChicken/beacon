@@ -44,7 +44,7 @@ class Classroom(models.Model):
         (3, "3 weeks"),
         (4, "4 weeks"),
     ]
-    classroom_id = models.CharField(max_length=20)
+    classroom_id = models.CharField(max_length=20, unique=True)
     course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
     duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
     supervisor = models.CharField(max_length=100)
