@@ -136,8 +136,8 @@ def student_classroom(request):
     return render(request, "student_classroom.html", {"classrooms": classrooms})
 
 @login_required
-def student_classroom_details(request, classroom_id):
-    classroom = get_object_or_404(Classroom, classroom_id=classroom_id)
+def student_classroom_details(request, pk):
+    classroom = get_object_or_404(Classroom, pk=pk)
     return render(request, 'student_classroom_details.html', {'classroom': classroom})
 
 
@@ -312,10 +312,15 @@ def delete_lesson(request, pk):
 
 @login_required
 def instructor_classroom(request):
-    classroom = Classroom.objects.filter(instructor=request.user)
+    classrooms = Classroom.objects.prefetch_related("lessons").all()
     return render(request, "instructor_classroom.html", {
-        "classroom": classroom,
+        "classrooms": classrooms,
     })
+
+@login_required
+def edit_classroom(request, pk):
+    classroom = get_object_or_404(Classroom, pk=pk)
+    return render(request, 'edit_classroom.html', {'classroom': classroom})
 
 @login_required
 def create_classroom(request, pk=None):

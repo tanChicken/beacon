@@ -155,7 +155,7 @@
     <ul class="list-group mt-3">
       {% for classroom in classrooms %}
         <li class="list-group-item">
-          <a href="{% url 'student_classroom_details' classroom.pk %}" class="list-group-item text-decoration-none text-dark d-block"></a>
+          <a href="{% url 'edit_classroom' classroom.pk %}" class="list-group-item text-decoration-none text-dark d-block"></a>
             <div class="list-course">classroom.course_id.course_id</div>
             <div class="list-classroom">{{ classroom.classroom_id }}</div>
             <div class="list-footer">
@@ -174,7 +174,7 @@
     {% for classroom in classrooms %}
     <div class="card-grid">
         <div class="card-col">
-          <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark"></a>
+          <a href="{% url 'edit_classroom' classroom.pk %}" class="text-decoration-none text-dark"></a>
           <div class="classroom-oval">
               <div class="classroom-course">{{ classroom.course_id.course_id }}1</div>
               <div class="classroom-id">{{ classroom.classroom_id }}</div>

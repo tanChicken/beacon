@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Classroom {{ classroom.classroom_id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-3">Classroom Details</h1>
+  <div class="card shadow p-4">
+    <h3 class="mb-3">{{ classroom.classroom_id }}</h3>
+
+    <dl class="row">
+      <dt class="col-sm-3">Course</dt>
+      <dd class="col-sm-9">{{ classroom.course_id.course_id }}</dd>
+
+      <dt class="col-sm-3">Duration</dt>
+      <dd class="col-sm-9">{{ classroom.get_duration_weeks_display }}</dd>
+
+      <dt class="col-sm-3">Supervisor</dt>
+      <dd class="col-sm-9">{{ classroom.supervisor }}</dd>
+
+      <dt class="col-sm-3">Building</dt>
+      <dd class="col-sm-9">
+        {% if classroom.building %}{{ classroom.building }}{% else %}<span class="text-muted">N/A</span>{% endif %}
+      </dd>
+
+      <dt class="col-sm-3">Room</dt>
+      <dd class="col-sm-9">
+        {% if classroom.room %}{{ classroom.room }}{% else %}<span class="text-muted">N/A</span>{% endif %}
+      </dd>
+
+      <dt class="col-sm-3">Online Link</dt>
+      <dd class="col-sm-9">
+        {% if classroom.online_link %}
+          <a href="{{ classroom.online_link }}" target="_blank">{{ classroom.online_link }}</a>
+        {% else %}
+          <span class="text-muted">N/A</span>
+        {% endif %}
+      </dd>
+
+      <dt class="col-sm-3">Location</dt>
+      <dd class="col-sm-9">{{ classroom.location_display }}</dd>
+    </dl>
+  </div>
+
+  <div class="mt-3">
+    <a href="{% url 'student_classroom' %}" class="btn btn-outline-secondary">&larr; Back to Classrooms</a>
+  </div>
+</div>
+{% endblock %}
