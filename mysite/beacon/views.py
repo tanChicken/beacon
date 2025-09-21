@@ -177,17 +177,15 @@ def edit_course(request, pk):
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
             form.save()
-            messages.success(request, "Course updated successfully.")
-            return redirect("instructor_dashboard")
+            messages.success(request, "Course updated successfully!")
+            return redirect("instructor_dashboard")  # reloads page with updated info
     else:
         form = CourseForm(instance=course)
 
-    lessons = course.lessons.all()
     return render(request, "course_form.html", {
         "form": form,
-        "action": "Update",
-        "lessons": lessons,
-        "read_only_lessons": True,
+        "course": course,
+        "action": "Edit",
     })
 
 @login_required
