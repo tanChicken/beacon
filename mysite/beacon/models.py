@@ -13,9 +13,6 @@ class TodoItem(models.Model):
     def __str__(self):
         return self.title
 
-# ------------------------
-# Course Model
-# ------------------------
 class Course(models.Model):
     course_id = models.CharField(max_length=20, unique=True)
     title = models.CharField(max_length=200)
@@ -171,32 +168,6 @@ def ensure_profiles(sender, instance, created, **kwargs):
             StudentProfile.objects.get_or_create(user=instance)
         elif instance.role == User.Role.INSTRUCTOR:
             InstructorProfile.objects.get_or_create(user=instance)
-
-class Classroom(models.Model):
-    DURATION_CHOICES = [
-        (2, "2 weeks"),
-        (3, "3 weeks"),
-        (4, "4 weeks"),
-    ]
-    classroom_id = models.CharField(max_length=20)
-    course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
-    duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
-    supervisor = models.CharField(max_length=100)
-
-    # Location attributes
-    building = models.CharField(max_length=100, blank=True, null=True)
-    room = models.CharField(max_length=50, blank=True, null=True)
-    online_link = models.URLField(blank=True, null=True)
-
-    def _str_(self):
-        return f"Classroom {self.id} for {self.course.course_code} ({self.duration_weeks} weeks)"
-
-    def location_display(self):
-        if self.online_link:
-            return f"Online class link: {self.online_link}"
-        elif self.building and self.room:
-            return f"{self.building}, Room {self.room}"
-        return "TBA"
 
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)

@@ -11,76 +11,53 @@
     {% endif %}
   </div>
 
-  <!-- Course Header -->
-  <div class="row align-items-center mb-4">
-    <div class="col-md-8">
-      <h2>Edit Course: {{ course.title }}</h2>
-      {{ form.as_p }}
-    </div>
-    <div class="col-md-4">
-      <p><strong>Credit Points:</strong> {{ course.credit_points }}</p>
-      <p><strong>Created At:</strong> {{ course.created_at|date:"M d, Y H:i" }}</p>
-      <p><strong>Last Updated:</strong> {{ course.updated_at|date:"M d, Y H:i" }}</p>
-    </div>
-  </div>
+  <form method="POST" action="{% url 'edit_course' course.pk %}">
+    {% csrf_token %}
 
-  <h4>Lessons</h4>
-  <div class="list-group mb-3">
-    {% for lesson in lessons %}
-      <div class="list-group-item">
-        <a href="{% url 'lesson_detail_edit' lesson.pk %}">{{ lesson.title }}</a>
+    <div class="row align-items-center mb-4">
+      <div class="col-md-8">
+        <h2>Edit Course: {{ course.title }}</h2>
+        {{ form.as_p }}
       </div>
-    {% empty %}
-      <p class="text-muted">No lessons yet.</p>
-    {% endfor %}
-  </div>
+      <div class="col-md-4">
+        <p><strong>Credit Points:</strong> {{ course.credit_points }}</p>
+        <p><strong>Created At:</strong> {{ course.created_at|date:"M d, Y H:i" }}</p>
+        <p><strong>Last Updated:</strong> {{ course.updated_at|date:"M d, Y H:i" }}</p>
+      </div>
+    </div>
 
-  <div class="mb-3">
-    <a href="{% url 'create_lesson' course.pk %}" class="btn btn-sm btn-outline-primary">
-      + Add Lesson
-    </a>
-  </div>
-
-  <hr>
-  <h4>Classroom</h4>
-  <div class="mb-3">
-    <a href="#" class="btn btn-sm btn-outline-primary">
-      + Add Classroom
-    </a>
-  </div>
-
-  <hr>
-  <h4>Enrolled Students</h4>
-  <ul class="list-group mb-4">
-    {% for sp in students_progress %}
-      <li class="list-group-item">
-        <div class="d-flex justify-content-between align-items-center">
-          <span>{{ sp.student.first_name }} {{ sp.student.last_name }}</span>
-          <small>{{ sp.completed }}/{{ sp.total }} completed</small>
+    <h4>Lessons</h4>
+    <div class="list-group mb-3">
+      {% for lesson in lessons %}
+        <div class="list-group-item">
+          <a href="{% url 'lesson_detail_edit' lesson.pk %}">{{ lesson.title }}</a>
         </div>
-        <div class="progress mt-2">
-          <div class="progress-bar progress-{{ sp.percent|floatformat:0 }}"
-               role="progressbar"
-               aria-valuenow="{{ sp.percent }}" aria-valuemin="0" aria-valuemax="100">
-            {{ sp.percent }}%
-          </div>
-        </div>
-      </li>
-    {% empty %}
-      <li class="list-group-item text-muted">No students enrolled yet.</li>
-    {% endfor %}
-  </ul>
+      {% empty %}
+        <p class="text-muted">No lessons yet.</p>
+      {% endfor %}
+    </div>
 
-  <!-- Buttons -->
-  <div class="d-flex justify-content-between mt-4">
-    <button type="submit" class="btn btn-primary">Save Changes</button>
-    <a href="{% url 'delete_course' course.pk %}" 
-      class="btn btn-danger" 
-      onclick="return confirm('Are you sure you want to delete this course?');">
-      Delete Course
-    </a>
+    <hr>
+    <h4>Enrolled Students</h4>
+    <ul class="list-group mb-4">
+        {% for sp in students_progress %}
+            {% empty %}
+            <li class="list-group-item text-muted">No students enrolled yet.</li>
+        {% endfor %}
+    </ul>
+
+    <div class="d-flex justify-content-between mt-4">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
   </div>
-</form>
+  </form> 
+
+  <form action="{% url 'delete_course' course.pk %}" method="POST" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger" 
+                  onclick="return confirm('Are you sure you want to delete this course?');">
+              Delete Course
+          </button>
+    </form>
 </div>
 
 <script>
@@ -98,7 +75,7 @@ function addForm() {
   });
 
   // Update index
-  firstForm.innerHTML = firstForm.innerHTML.replace(/form-(\d+)-/g, 'form-${currentCount}-');
+  firstForm.innerHTML = firstForm.innerHTML.replace(/form-(\d+)-/g, `form-${currentCount}-`);
 
   list.appendChild(firstForm);
   totalForms.value = currentCount + 1;
