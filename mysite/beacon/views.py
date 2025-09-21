@@ -104,15 +104,29 @@ def enrol_course(request, course_id):
 @login_required
 def student_course_details(request,pk):
     course = get_object_or_404(Course, pk=pk)
+    lessons = Lesson.objects.filter(course=course)
 
-    # optional: only allow enrolled students to view
-    if not course.students.filter(pk=request.user.pk).exists():
-        messages.error(request, "You are not enrolled in this course.")
-        return redirect("student_dashboard")
+    lesson_status = []
+    for lesson in lessons:
+        enrolled = Enrolment.objects.filter(student=request.user, lesson=lesson).exists()
+        prereqs = lesson.prerequisites.all()
 
-    # lessons = getattr(course, "lessons", course.lesson_set).all()
-    lessons = course.lessons.all()
-    return render(request, "student_course_details.html", {"course": course, "lessons": lessons})
+        missing = [p for p in prereqs if not Enrolment.objects.filter(student=request.user, lesson=p).exists()]
+        prereqs_met = (len(missing) == 0)
+
+        lesson_status.append(
+            {
+                "lesson": lesson,
+                "enrolled": enrolled,
+                "can_enroll": prereqs_met and not enrolled,
+                "missing_prereqs": missing,
+            }
+        )
+
+    return render(request, "student_course_details.html", {
+        "course": course,
+        "lesson_status": lesson_status,
+    })
 
 @login_required
 def student_lessons(request):
@@ -248,9 +262,10 @@ def course_detail(request, pk):
 @login_required
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
+    course = lesson.course
 
     if request.method == "POST":
-        form = LessonDetailForm(request.POST, instance=lesson)
+        form = LessonDetailForm(request.POST, instance=lesson, course=course)
         if form.is_valid():
             form.save()
 
@@ -268,7 +283,7 @@ def lesson_detail_edit(request, pk):
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("course_detail", pk=lesson.course.pk)
     else:
-        form = LessonDetailForm(instance=lesson)
+        form = LessonDetailForm(instance=lesson, course=course)
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
@@ -288,6 +303,7 @@ def create_lesson(request, course_pk):
             lesson.course = course
             lesson.designer = request.user
             lesson.save()
+            form.save_m2m()
             messages.success(request, f"Lesson '{lesson.title}' created successfully!")
             return redirect('course_detail', pk=course.pk)
     else:
@@ -315,12 +331,24 @@ def enrol_lesson(request, lesson_id):
     student = request.user
     lesson = get_object_or_404(Lesson, id=lesson_id)
 
-    if Enrolment.objects.filter(student=student, lesson=lesson).exists():
-        messages.warning(request, f"You are already enrolled in {lesson.title}.")
-    else:
-        Enrolment.objects.create(student=student, lesson=lesson)
-        messages.success(request, f"You have enrolled in {lesson.title}!")
+    missing = []
+    for prereq in lesson.prerequisites.all():
+        if not Enrolment.objects.filter(student=student, lesson=prereq).exists():
+            missing.append(prereq)
 
+    if missing:
+        missing_ids = ", ".join(str(p.id) for p in missing)
+        missing_titles = ", ".join(p.title for p in missing)
+
+        messages.error(
+            request,
+            f"You must complete prerequisite lessons first. "
+            f"Missing: {missing_titles} (IDs: {missing_ids})"
+        )
+        return redirect("student_course_details", course_id=lesson.course.id)
+
+    Enrolment.objects.get_or_create(student=student, lesson=lesson)
+    messages.success(request, f"You are now enrolled in {lesson.title}.")
     return redirect("student_lesson_details", pk=lesson.id)
 @login_required
 def instructor_classroom(request):
@@ -378,6 +406,7 @@ def create_classroom(request, pk=None):
         form = ClassroomForm(request=request, preselected_course=preselected_course)
 
     return render(request, "create_classroom.html", {"form": form, "course": preselected_course})
+
 
 # @login_required
 # def delete_classroom(request, pk):
