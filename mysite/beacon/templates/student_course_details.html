@@ -40,6 +40,7 @@
     <div class="list-group">
         {% for lesson in course.lessons.all %}
         <div class="list-group-item">
+            <a href="{% url 'student_lesson_details' pk=lesson.pk %}">{{ lesson.title }}</a>
             <strong>{{ lesson.lesson_id }}</strong> – {{ lesson.title }}
             <div class="d-flex justify-content-between mt-1">
             <span>Status: {{ lesson.status }}</span>
