@@ -179,9 +179,9 @@ class Lesson(models.Model):
     designer = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="lessons"
     )
-    enrolled_students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="enrolled_lessons", blank=True)
+    # enrolled_students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="enrolled_lessons", blank=True)
     effort_per_week = models.PositiveIntegerField(default=0)
-    credit_point = models.DecimalField(max_digits=4, decimal_places=1, default=0)
+    lesson_point = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     assignment = models.TextField(blank=True, null=True)
