@@ -18,7 +18,8 @@
 
     <h2 class="mb-4">Edit Lesson: {{ lesson.title }}</h2>
 
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" enctype="multipart/form-data" 
+      onsubmit="return confirm('Are you sure you want to save the lesson details?');">
     {% csrf_token %}
 
     <!-- Title + Created/Updated -->
@@ -26,7 +27,14 @@
         <div class="col-md-6">
             <label for="{{ lesson_form.title.id_for_label }}" class="form-label fw-semibold">Title</label>
             {{ lesson_form.title }}
+            <p>Lesson ID: {{ lesson.lesson_id }}</p>
         </div>
+
+        <div class="col-md-6">
+            <label for="{{ lesson_form.lesson_point.id_for_label }}" class="form-label">Lesson Point</label>
+            {{ lesson_form.lesson_point }}
+        </div>
+
         <div class="col-md-6 text-end">
             <p>
                 <strong>Created At: </strong>{{ lesson.created_at|date:"M d, Y H:i" }}<br>

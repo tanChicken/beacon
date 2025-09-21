@@ -155,7 +155,7 @@ def create_course(request):
         if form.is_valid():
             with transaction.atomic():
                 course = form.save(commit=False)
-                course.instructor = request.user
+                # course.instructor = request.user
                 course.credit_points = 30  
                 course.save()
 
@@ -258,6 +258,8 @@ def lesson_detail_edit(request, pk):
 @login_required
 def create_lesson(request, course_pk):
     course = get_object_or_404(Course, pk=course_pk, instructor=request.user)
+    next_count = course.lessons.count() + 1
+    next_lesson_id = f"L{next_count:03d}"
 
     if request.method == "POST":
         form = LessonDetailForm(request.POST)
@@ -276,7 +278,8 @@ def create_lesson(request, course_pk):
         {
         'form': form,
         'course': course,
-        'action': 'Create'
+        'action': 'Create',
+        'next_lesson_id': next_lesson_id,
     })
 
 @login_required

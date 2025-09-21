@@ -20,12 +20,23 @@
         </div>
 
         <div class="mb-3">
+            <label class="form-label fw-semibold">Lesson ID</label>
+            <input type="text" class="form-control" value="{{ next_lesson_id }}" readonly>
+        </div>
+
+        <div class="mb-3">
             <label for="id_status" class="form-label">Status</label>
             <select name="status" id="id_status" class="form-select">
                 <option value="DRAFT">Draft</option>
                 <option value="PUBLISHED">Published</option>
                 <option value="ARCHIVED">Archived</option>
             </select>
+        </div>
+
+        <div class="mb-3">
+        <label for="id_lesson_point" class="form-label">Lesson Point</label>
+        <input type="number" name="lesson_point" id="id_lesson_point" 
+                class="form-control" min="0" max="30">
         </div>
 
         <div class="mb-3">
