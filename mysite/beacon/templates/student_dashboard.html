@@ -60,22 +60,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .btn-primary {
-  background-color: #41ca7c;
-  border-color: #41ca7c;
-}
-.btn-primary:hover {
-  background-color: #369e65;
-  border-color: #369e65;
-}
-.btn-outline-primary {
-  color: #41ca7c;
-  border-color: #41ca7c;
-}
-.btn-outline-primary:hover {
-  background-color: #41ca7c;
-  color: #fff;
-}
 </style>
 
 <div class="container mt-4">
@@ -128,7 +112,7 @@
   <!-- Enrolment Button -->
   {% if courses|length < 4 %}
     <div class="mt-4 text-right">
-      <a href="{% url 'enrolment_page' %}" class="btn btn-primary"> Enrol in New Courses</a>
+      <a href="{% url 'enrolment_page' %}" class="btn btn-primary">📚 Enrol in New Courses</a>
     </div>
   {% endif %}
 </div>
