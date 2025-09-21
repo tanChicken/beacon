@@ -114,7 +114,7 @@
     <div class="d-flex justify-content-between">
         <div>
             <p>Status: {{ lesson.status }}</p>
-            <p>Designed by: {{ lesson.designer.username }} on {{ lesson.created_at|date:"j/n/Y" }}</p>
+            <p>Designed by: {{ lesson.designer }} on {{ lesson.created_at|date:"j/n/Y" }}</p>
         </div>
         <div>
             <p>Credit Point: {{ lesson.credit_point }}</p>
@@ -126,7 +126,7 @@
     
     {# Effort estimation#}
     <div class="effort-section">
-        <p>Effort Estimated per Week: {{ lesson.estimated_effort }} hours</p>
+        <p>Effort Estimated per Week: {{ lesson.effort_per_week }} hours</p>
     </div>
 
     <table class="task-table">
@@ -137,17 +137,14 @@
         </tr>
     </thead>
     <tbody>
-        <tr>
+    <tr>
         <td>Task 1 description goes here</td>
         <td>2 hours</td>
-        </tr>
-        <tr>
+    </tr>
+    <tr>
         <td>Task 2 description goes here</td>
         <td>1.5 hours</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="2" class="text-muted">No tasks available.</td></tr>
-      {% endfor %}
+    </tr>
     </tbody>
     </table>
 
