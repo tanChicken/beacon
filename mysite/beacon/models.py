@@ -5,8 +5,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-
-
 # Demo
 class TodoItem(models.Model):
     title = models.CharField(max_length=200)
@@ -15,39 +13,6 @@ class TodoItem(models.Model):
     def __str__(self):
         return self.title
 
-
-# ------------------------
-# User Profile for Roles
-# ------------------------
-class Profile(models.Model):
-    ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('student', 'Student'),
-        ('instructor', 'Instructor'),
-    ]
-    
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
-    
-    def __str__(self):
-        return f"{self.user.email} - {self.role}"
-
-
-@receiver(post_save, sender='beacon.User')
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-
-
-@receiver(post_save, sender='beacon.User')
-def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'profile'):
-        instance.profile.save()
-
-
-# ------------------------
-# Course Model
-# ------------------------
 class Course(models.Model):
     course_id = models.CharField(max_length=20, unique=True)
     title = models.CharField(max_length=200)
@@ -69,6 +34,32 @@ class Course(models.Model):
 
     def __str__(self):
         return f"{self.course_id} - {self.title}"
+    
+class Classroom(models.Model):
+    DURATION_CHOICES = [
+        (2, "2 weeks"),
+        (3, "3 weeks"),
+        (4, "4 weeks"),
+    ]
+    classroom_id = models.CharField(max_length=20, unique=True)
+    course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
+    duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
+    supervisor = models.CharField(max_length=100)
+
+    # Location attributes
+    building = models.CharField(max_length=100, blank=True, null=True)
+    room = models.CharField(max_length=50, blank=True, null=True)
+    online_link = models.URLField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Classroom {self.id} for {self.course.course_code} ({self.duration_weeks} weeks)"
+
+    def location_display(self):
+        if self.online_link:
+            return f"Online class link: {self.online_link}"
+        elif self.building and self.room:
+            return f"{self.building}, Room {self.room}"
+        return "TBA"
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, role, **extra_fields):
@@ -105,8 +96,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
-    objects = CustomUserManager()
-
+    objects = CustomUserManager()    
 
 class StudentManager(models.Manager):
     def get_queryset(self, *args, **kwargs):
@@ -126,7 +116,7 @@ class Student(User):
         return "Only for students"       
     
 @receiver(post_save, sender=Student)
-def create_user_profile(sender, instance, created, **kwargs):
+def create_student_profile(sender, instance, created, **kwargs):
     if created and instance.role == "STUDENT":
         StudentProfile.objects.create(user=instance)
 
@@ -134,9 +124,11 @@ class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=30, blank=True, null=True)
     last_name = models.CharField(max_length=30, blank=True, null=True)
+
     title = models.CharField(
         max_length=10,
         choices=[("Mr", "Mr"), ("Ms", "Ms"), ("Mrs", "Mrs"), ("Dr", "Dr")],
+        default="Mr",
         blank=True,
         null=True
     )
@@ -165,45 +157,17 @@ class InstructorProfile(models.Model):
         return f"Instructor Profile: {self.user.email}"
 
 @receiver(post_save, sender=Instructor)
-def create_user_profile(sender, instance, created, **kwargs):
+def create_instructor_profile(sender, instance, created, **kwargs):
     if created and instance.role == "INSTRUCTOR":
         InstructorProfile.objects.create(user=instance)
     
-@receiver(post_save, sender='beacon.User')
+@receiver(post_save, sender=User)
 def ensure_profiles(sender, instance, created, **kwargs):
-    if not created:
-        return
-    role = getattr(instance, "role", None)
-    if role in (getattr(User.Role, "STUDENT", "STUDENT"), "STUDENT"):
-        StudentProfile.objects.get_or_create(user=instance)
-    if role in (getattr(User.Role, "INSTRUCTOR", "INSTRUCTOR"), "INSTRUCTOR"):
-        InstructorProfile.objects.get_or_create(user=instance)  
-
-class Classroom(models.Model):
-    DURATION_CHOICES = [
-        (2, "2 weeks"),
-        (3, "3 weeks"),
-        (4, "4 weeks"),
-    ]
-    classroom_id = models.CharField(max_length=20)
-    course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
-    duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
-    supervisor = models.CharField(max_length=100)
-
-    # Location attributes
-    building = models.CharField(max_length=100, blank=True, null=True)
-    room = models.CharField(max_length=50, blank=True, null=True)
-    online_link = models.URLField(blank=True, null=True)
-
-    def _str_(self):
-        return f"Classroom {self.id} for {self.course.course_code} ({self.duration_weeks} weeks)"
-
-    def location_display(self):
-        if self.online_link:
-            return f"Online class link: {self.online_link}"
-        elif self.building and self.room:
-            return f"{self.building}, Room {self.room}"
-        return "TBA"
+    if created:
+        if instance.role == User.Role.STUDENT:
+            StudentProfile.objects.get_or_create(user=instance)
+        elif instance.role == User.Role.INSTRUCTOR:
+            InstructorProfile.objects.get_or_create(user=instance)
 
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
@@ -213,11 +177,11 @@ class Lesson(models.Model):
     description = models.TextField()
     objective = models.TextField(blank=True, null=True)
     designer = models.ForeignKey(
-        Instructor, on_delete=models.SET_NULL, null=True, related_name="lessons"
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="lessons"
     )
-    enrolled_students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="enrolled_lessons", blank=True)
+    # enrolled_students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="enrolled_lessons", blank=True)
     effort_per_week = models.PositiveIntegerField(default=0)
-    credit_point = models.DecimalField(max_digits=4, decimal_places=1, default=0)
+    lesson_point = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     assignment = models.TextField(blank=True, null=True)
@@ -254,3 +218,4 @@ class StudentReadingListProgress(models.Model):
 
     def __str__(self):
         return f"{self.student.email} - {self.item.title}: {'Done' if self.completed else 'Not Done'}"
+    

@@ -4,8 +4,8 @@ These accounts are already created in the shared Render PostgreSQL DB.
 Everyone can use them to log in (both locally and on the deployed site).
 
 ## Admin
-- **Email:** meow1@gmail.com
-- **Password:** meow1  
+- **Email:** meow@gmail.com
+- **Password:** meow1
 
 ** please create your own superuser account as well! **
 
@@ -40,4 +40,28 @@ If you need to test new accounts, create separate ones instead.
 - After switching, do python manage.py migrate
 - When finished with work, please comment out the local dataabase code and change it back to shared for convenience
 
+- Check settings.py first to see which database are you on, local or shared
+- After switching, do python manage.py migrate
+- When finished with work, please comment out the local dataabase code and change it back to shared for convenience
+
 - Three test accounts with details are currently provided above, please refer and log in using the details.
+
+
+
+
+
+## post merge
+
+## Admin
+- **Email:** superuser1@gmail.com
+- **Password:** superuser1
+
+** please create your own superuser account as well! **
+
+## Instructor
+- **Email:** kbinstructor@gmail.com 
+- **Password:** kbinstructor  
+
+## Student 
+- **Email:** kbstudent@gmail.com 
+- **Password:** kbstudent  

@@ -80,7 +80,7 @@
         transition: margin-left 0.3s ease;
       }
 
-      /* 📱 Responsive for tablets & mobile */
+      /*  Responsive for tablets & mobile */
       @media (max-width: 991px) {
         .sidebar {
           width: 200px;
@@ -120,7 +120,6 @@
       {% if user.is_authenticated %}
         {% if user.role|upper == "STUDENT" %}
           <a href="{% url 'student_dashboard' %}">Courses</a>
-          <a href="{% url 'enrolment_page' %}">Enrolment</a>
         {% elif user.role|upper == "INSTRUCTOR" %}
           <a href="{% url 'instructor_dashboard' %}">Courses</a>
         {% else %}
@@ -129,11 +128,16 @@
           <a href="{% url 'enrolment_page' %}">Enrolment</a>
         {% endif %}
 
-        <a href="#">Classroom</a>
+        {% if user.role == "STUDENT" %}
+          <a href="{% url 'student_classroom' %}">Classroom</a>
+        {% elif user.role == "INSTRUCTOR" %}
+          <a href=#>Classroom</a>
+        {% endif %}
+
         <a href="#">Student</a>
         <a href="#">Report</a>
       {% else %}
-        <a href="{% url 'home' %}">🏠 Home</a>
+        <a href="{% url 'home' %}"> Home</a>
       {% endif %}
     </div>
 

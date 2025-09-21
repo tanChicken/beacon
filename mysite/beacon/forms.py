@@ -2,6 +2,7 @@ from django import forms
 from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
+from django.db import models
 
 class StudentSignupForm(forms.ModelForm):
     title_choices = [
@@ -63,7 +64,7 @@ class CourseForm(forms.ModelForm):
 
     class Meta:
         model = Course
-        fields = ["course_id", "title", "status"]
+        fields = ["course_id", "title", "status", "instructor"]
 
 class LessonForm(forms.ModelForm):
     class Meta:
@@ -77,12 +78,46 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ['title', 'description', 'objective', 'effort_per_week', 'assignment', 'status']
+        fields = ['title', 'description', 'objective', 'effort_per_week', 'assignment', 'status', 'lesson_point']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'objective': forms.Textarea(attrs={'rows': 3}),
             'assignment': forms.Textarea(attrs={'rows': 3}),
         }
+    lesson_point = forms.IntegerField(
+        min_value=0,
+        max_value=30,
+        widget=forms.NumberInput(attrs={
+            "class": "form-control",
+            "min": 0,
+            "max": 30
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.course = kwargs.pop("course", None)
+        self.instance = kwargs.get("instance", None)
+        super().__init__(*args, **kwargs)
+
+    def clean_credit_point(self):
+        lesson_point = self.cleaned_data.get("lesson_point", 0)
+
+        # Calculate current total
+        if self.course:
+            total_existing = (
+                Lesson.objects.filter(course=self.course)
+                .exclude(pk=self.instance.pk if self.instance else None)
+                .aggregate(total=models.Sum("lesson_point"))["total"] or 0
+            )
+        else:
+            total_existing = 0
+
+        total_after = total_existing + lesson_point
+        if total_after > 30:
+            raise forms.ValidationError(
+                f"Total credit points for this course cannot exceed 30 (currently {total_existing})."
+            )
+        return lesson_point
         
 class ReadingItemForm(forms.ModelForm):
     class Meta:
