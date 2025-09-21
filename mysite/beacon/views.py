@@ -102,6 +102,19 @@ def enrol_course(request, course_id):
     return redirect("student_dashboard")
 
 @login_required
+def student_course_details(request,pk):
+    course = get_object_or_404(Course, pk=pk)
+
+    # optional: only allow enrolled students to view
+    if not course.students.filter(pk=request.user.pk).exists():
+        messages.error(request, "You are not enrolled in this course.")
+        return redirect("student_dashboard")
+
+    # lessons = getattr(course, "lessons", course.lesson_set).all()
+    lessons = course.lessons.all()
+    return render(request, "student_course_details.html", {"course": course, "lessons": lessons})
+
+@login_required
 def student_lessons(request):
     if not request.user.role == "STUDENT":
         return render(request, "403.html")

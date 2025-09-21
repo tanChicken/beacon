@@ -75,7 +75,7 @@
     <ul class="list-group mt-3">
       {% for course in courses %}
         <li class="list-group-item course-card" data-course-id="{{ course.pk }}">
-          <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+          <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
             <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
             <div class="small text-muted">Instructor: {{ course.instructor.email }}</div>
           </a>
@@ -92,7 +92,7 @@
       <div class="col-md-4 mb-4">
         <div class="card custom-course-card">
           <div class="card-body">
-            <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+            <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
               <div class="course-meta">{{ course.course_id }}</div>
               <h5 class="card-title">{{ course.title }}</h5>
               <p class="course-meta">Status: {{ course.status }}</p>
