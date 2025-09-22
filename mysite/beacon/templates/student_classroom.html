@@ -34,7 +34,6 @@
     border-radius: 5px;
     margin-bottom: 10px;
     padding: 15px;
-    height: 100px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -46,7 +45,6 @@
   .list-group-item:hover { background-color: #eafaf1; }
 
   .list-course {
-    position: absolute;
     text-transform: uppercase;
     align-self: flex-start;
     font-size: 0.9rem;
@@ -57,7 +55,7 @@
     font-size: 1.4rem;
     font-weight: bold;
     text-align: center;
-    margin-top: 35px; /* center vertically */
+    margin-top: 15px 0; /* center vertically */
   }
 
   .list-footer {
@@ -84,7 +82,7 @@
   }
 
   .card-col {
-    width: calc(50% - 12px); /* 2 per row */
+    width: 400px; /* 2 per row */
     min-width: 220px;
   }
 
@@ -93,14 +91,13 @@
     width: 100%;
     height: 220px;
     border-radius: 40px;
-    border: 3px solid #222;
+    border: 2px solid #41ca7c;
     display: flex;
     flex-direction: column;
     justify-content: space-between; /* ensures top, middle, bottom placement */
     align-items: center;
-    padding: 18px 22px;
+    padding: 15px;
     text-align: center;
-    background-clip: padding-box;
   }
 
   .classroom-course {
@@ -155,13 +152,14 @@
     <ul class="list-group mt-3">
       {% for classroom in classrooms %}
         <li class="list-group-item">
-          <a href="{% url 'student_classroom_details' classroom.pk %}" class="list-group-item text-decoration-none text-dark d-block"></a>
-            <div class="list-course">classroom.course_id.course_id</div>
+          <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark d-block">
+            <div class="list-course"> {{ classroom.course_id }}</div>
             <div class="list-classroom">{{ classroom.classroom_id }}</div>
             <div class="list-footer">
               <div class="list-duration">Duration: {{ classroom.get_duration_weeks_display }}</div>
               <div class="list-supervisor">Supervisor: {{ classroom.supervisor }}</div>
             </div>
+          </a>
         </li>
       {% empty %}
         <li class="list-group-item text-muted">No classrooms created yet.</li>
@@ -172,22 +170,25 @@
    <!-- Card View -->
   <div id="cardView" class="row d-none">
     {% for classroom in classrooms %}
-    <div class="card-grid">
-        <div class="card-col">
-          <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark"></a>
-          <div class="classroom-oval">
-              <div class="classroom-course">{{ classroom.course_id.course_id }}1</div>
-              <div class="classroom-id">{{ classroom.classroom_id }}</div>
-              <div class="classroom-meta">
-                <span class="label">Supervisor: {{ classroom.supervisor }}</span>
-                <span>Duration: {{ classroom.get_duration_weeks_display }}</span>
-              </div>
+    <div class="col-md-5 mb-5">
+      <div class="card-grid">
+          <div class="card-col">
+            <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark">
+            <div class="classroom-oval">
+                <div class="classroom-course">{{ classroom.course_id.course_id }}1</div>
+                <div class="classroom-id">{{ classroom.classroom_id }}</div>
+                <div class="classroom-meta">
+                  <span class="label">Supervisor: {{ classroom.supervisor }}</span>
+                  <span>Duration: {{ classroom.get_duration_weeks_display }}</span>
+                </div>
+            </div>
+            </a>
           </div>
-        </div>
-      {% empty %}
-        <p class="text-muted">No classrooms created yet.</p>
-      {% endfor %}
+      </div>
     </div>
+    {% empty %}
+      <p class="text-muted">No classrooms created yet.</p>
+    {% endfor %}
   </div>
 </div>
 
