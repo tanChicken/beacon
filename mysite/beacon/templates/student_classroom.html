@@ -152,13 +152,14 @@
     <ul class="list-group mt-3">
       {% for classroom in classrooms %}
         <li class="list-group-item">
-          <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark d-block"></a>
+          <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark d-block">
             <div class="list-course"> {{ classroom.course_id }}</div>
             <div class="list-classroom">{{ classroom.classroom_id }}</div>
             <div class="list-footer">
               <div class="list-duration">Duration: {{ classroom.get_duration_weeks_display }}</div>
               <div class="list-supervisor">Supervisor: {{ classroom.supervisor }}</div>
             </div>
+          </a>
         </li>
       {% empty %}
         <li class="list-group-item text-muted">No classrooms created yet.</li>
