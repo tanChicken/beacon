@@ -34,7 +34,6 @@
     border-radius: 5px;
     margin-bottom: 10px;
     padding: 15px;
-    height: 100px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -46,7 +45,6 @@
   .list-group-item:hover { background-color: #eafaf1; }
 
   .list-course {
-    position: absolute;
     text-transform: uppercase;
     align-self: flex-start;
     font-size: 0.9rem;
@@ -57,7 +55,7 @@
     font-size: 1.4rem;
     font-weight: bold;
     text-align: center;
-    margin-top: 35px; /* center vertically */
+    margin-top: 15px 0; /* center vertically */
   }
 
   .list-footer {
@@ -155,8 +153,8 @@
     <ul class="list-group mt-3">
       {% for classroom in classrooms %}
         <li class="list-group-item">
-          <a href="{% url 'student_classroom_details' classroom.pk %}" class="list-group-item text-decoration-none text-dark d-block"></a>
-            <div class="list-course">classroom.course_id.course_id</div>
+          <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark d-block"></a>
+            <div class="list-course"> {{ classroom.course_id }}</div>
             <div class="list-classroom">{{ classroom.classroom_id }}</div>
             <div class="list-footer">
               <div class="list-duration">Duration: {{ classroom.get_duration_weeks_display }}</div>
