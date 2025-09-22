@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
-from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm, EditClassroomForm
+from .models import Classroom, Course, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
+from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, LessonForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm, EditClassroomForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 
-from .models import Course, Student, StudentProfile, User  # note: import Student & StudentProfile
+from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
+from .forms import LessonForm, LessonTaskFormSet
 
 
 def home(request):
@@ -104,7 +105,8 @@ def enrol_course(request, course_id):
 @login_required
 def student_course_details(request,pk):
     course = get_object_or_404(Course, pk=pk)
-    lessons = Lesson.objects.filter(course=course)
+    lessons = Lesson.objects.filter(course=course, status="PUBLISHED")
+
 
     lesson_status = []
     for lesson in lessons:
@@ -139,9 +141,36 @@ def student_lessons(request):
 
 @login_required()
 def student_lesson_details(request, pk):    
+    lesson = get_object_or_404(Lesson, pk=pk)
+    student = request.user  
 
-    lesson = get_object_or_404(Lesson, pk=pk) 
-    return render(request, "student_lesson_details.html", {"lesson": lesson})
+    # Check if already enrolled
+    is_enrolled = Enrolment.objects.filter(student=student, lesson=lesson).exists()
+
+    # Check prerequisites
+    prereqs = lesson.prerequisites.all()
+    missing_prereqs = [
+        p for p in prereqs
+        if not Enrolment.objects.filter(student=student, lesson=p).exists()
+    ]
+    prereqs_met = (len(missing_prereqs) == 0)
+
+    # Can enroll if:
+    #   - Student is enrolled in the parent course
+    #   - Not already enrolled in this lesson
+    #   - All prerequisites are met
+    can_enroll = (
+        lesson.course in student.courses_enroling.all()
+        and not is_enrolled
+        and prereqs_met
+    )
+
+    return render(request, "student_lesson_details.html", {
+        "lesson": lesson,
+        "is_enrolled": is_enrolled,
+        "can_enroll": can_enroll,
+        "missing_prereqs": missing_prereqs,  # optional: useful to show in template
+    })
 
 
 @login_required
@@ -266,8 +295,13 @@ def lesson_detail_edit(request, pk):
 
     if request.method == "POST":
         form = LessonDetailForm(request.POST, instance=lesson, course=course)
-        if form.is_valid():
+        formset = LessonTaskFormSet(request.POST, instance=lesson)
+        
+        if form.is_valid() and formset.is_valid():
             form.save()
+            lesson = form.save()
+            formset.instance = lesson
+            formset.save()
 
             for item in lesson.reading_items.all():
                 key = f"reading_item_{item.id}"
@@ -280,14 +314,17 @@ def lesson_detail_edit(request, pk):
                 if title.strip():
                     StudentReadingListItem.objects.create(lesson=lesson, title=title.strip())
 
-            messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
-            return redirect("course_detail", pk=lesson.course.pk)
+            messages.success(request, f"Lesson '{lesson}' updated successfully!")
     else:
         form = LessonDetailForm(instance=lesson, course=course)
+        formset = LessonTaskFormSet(instance=lesson)
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
-        "lesson_form": form
+        "lesson_form": form,
+        "formset": formset,
+        "course": course,
+        "empty_form": formset.empty_form,   # <-- pass this
     })
 
 @login_required

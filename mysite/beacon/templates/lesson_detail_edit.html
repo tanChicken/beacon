@@ -2,6 +2,26 @@
 {% block title %}Edit Lesson: {{ lesson.title }}{% endblock %}
 
 {% block content %}
+<style>
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+.task-table th, .task-table td {
+  border: 1px solid #000;
+  padding: 15px;
+  text-align: left;
+}
+.task-table th {
+  background-color: #f2f2f2;
+  text-align: center;
+}
+input[name$="-DELETE"] {
+  display: none;
+}
+</style>
+
 {% if messages %}
   {% for message in messages %}
     <div class="alert alert-success">{{ message }}</div>
@@ -18,12 +38,18 @@
     
     <div class="row align-items-center mb-4">
         <div class="col-md-8">
-            <h2 class="mb-0">Lesson: {{ lesson.title }}</h2>
+            <h1 class="mb-0">Lesson: {{ lesson }}</h1>
         </div>
         <div class="col-md-4 text-end">
             <p class="mb-0">
-                <strong>Created At:</strong> {{ lesson.created_at|date:"M d, Y H:i" }}<br>
-                <strong>Last Updated:</strong> {{ lesson.updated_at|date:"M d, Y H:i" }}
+                <div class="mb-2">
+                    <label class="form-label">Created On:</label>
+                    <input type="text" class="form-control" value="{{ lesson.created_at|date:'M d, Y H:i'  }}" readonly>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Last Updated:</label>
+                    <input type="text" class="form-control" value="{{ lesson.updated_at|date:'M d, Y H:i'  }}" readonly>
+                </div>
             </p>
         </div>
     </div>
@@ -35,12 +61,65 @@
     {% for field in lesson_form %}
     <div class="mb-3">
         <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
-        {{ field }}
+
+        {% if field.name == "prerequisites" %}
+            {% for checkbox in field %}
+                <div class="form-check">
+                    {{ checkbox.tag }}
+                    <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                        {{ checkbox.choice_label }}
+                    </label>
+                </div>
+            {% endfor %}
+        {% else %}
+            {{ field }}
+        {% endif %}
+
         {% if field.errors %}
             <div class="text-danger">{{ field.errors }}</div>
         {% endif %}
     </div>
     {% endfor %}
+
+     <h4>Tasks</h4>
+    <table class="task-table">
+    <thead>
+        <tr>
+        <th>Description</th>
+        <th>Estimated Time (hrs)</th>
+        <th>Remove</th>
+        </tr>
+    </thead>
+
+    <tbody id="task-rows">
+        {{ formset.management_form }}
+        {% for form in formset %}
+        <tr>
+            <td>{{ form.description }}</td>
+            <td>{{ form.estimated_time }}</td>
+            <td>
+                {{ form.DELETE }}
+                <button type="button" class="btn btn-sm btn-danger remove-task">&times;</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    </table>
+
+    <!-- Hidden empty row for cloning -->
+    <table style="display:none;">
+    <tr id="empty-form">
+        <td>{{ empty_form.description }}</td>
+        <td>{{ empty_form.estimated_time }}</td>
+        <td>
+            {{ empty_form.DELETE }}
+            <button type="button" class="btn btn-sm btn-danger remove-task">&times;</button>
+        </td>
+    </tr>
+    </table>
+    <button type="button" class="btn btn-sm btn-outline-primary" id="add-task">+ Add Task</button>
+
+    <hr>
 
     <!-- Classroom Allocation Section -->
     <div class="mb-4 p-3 border rounded bg-light">
@@ -80,9 +159,13 @@
     <div class="mb-2">
         <input type="text" class="form-control" name="reading_item_{{ item.id }}" value="{{ item.title }}">
     </div>
-    {% empty %}
-    <p class="text-muted">No reading items yet.</p>
-    {% endfor %}
+
+    <h4>Reading List</h4>
+        {% for item in lesson.reading_items.all %}
+            <div class="mb-2">
+                <input type="text" class="form-control" name="reading_item_{{ item.id }}" value="{{ item.title }}">
+            </div>
+        {% endfor %}
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addReadingItem()">+ Add Reading Item</button>
 
     <div class="mt-4 d-flex justify-content-between">
@@ -105,6 +188,42 @@ function addReadingItem() {
     container.innerHTML = '<input type="text" class="form-control" name="new_reading_item" placeholder="Reading item title">';
     document.querySelector('form').insertBefore(container, document.querySelector('button[onclick="addReadingItem()"]'));
 }
+const taskRows = document.getElementById("task-rows");
+const addTaskBtn = document.getElementById("add-task");
+const totalForms = document.getElementById("id_tasks-TOTAL_FORMS");
+
+// Add new task
+addTaskBtn.addEventListener("click", function () {
+    const formIdx = parseInt(totalForms.value);
+    
+    // Clone empty form row
+    const newRow = document.getElementById("empty-form").cloneNode(true);
+    newRow.removeAttribute("id");
+    newRow.style.display = "";
+
+    // Replace __prefix__ with current index in all input/select/textarea
+    newRow.querySelectorAll("input, select, textarea").forEach(function(input) {
+        if (input.name) input.name = input.name.replace(/__prefix__/g, formIdx);
+        if (input.id) input.id = input.id.replace(/__prefix__/g, formIdx);
+        if (input.type === "checkbox") input.checked = false; // reset DELETE checkbox
+    });
+
+    // Append to table
+    taskRows.appendChild(newRow);
+
+    // Increment TOTAL_FORMS
+    totalForms.value = formIdx + 1;
+});
+
+// Remove task
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-task")) {
+        const row = e.target.closest("tr");
+        const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+        if (deleteCheckbox) deleteCheckbox.checked = true; // marks for deletion
+        row.style.display = "none"; // hide visually
+    }
+});
 </script>
 
 {% endblock %}

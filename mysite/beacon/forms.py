@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson, Classroom
+from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.db import models
@@ -59,12 +59,18 @@ class CourseForm(forms.ModelForm):
         queryset=Instructor.instructor.all(),
         required=True,
         label="Course Director",
-        empty_label="Select Instructor"
+        empty_label="Select Instructor",
+        widget=forms.Select(attrs={"class": "form-select"})
     )
 
     class Meta:
         model = Course
         fields = ["course_id", "title", "status", "instructor"]
+        widgets = {
+            "course_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. CRS-001"}),
+            "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Course Title"}),
+            "status": forms.Select(attrs={"class": "form-select"}),
+        }
 
 class LessonForm(forms.ModelForm):
     class Meta:
@@ -78,22 +84,18 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ['title', 'lesson_id', 'description', 'objective', 'effort_per_week', 'assignment', 'status', 'lesson_point', 'prerequisites']
+        fields = ['status', 'lesson_id', 'title', 'lesson_point', 'description', 'objective', 'assignment', 'prerequisites', 'effort_per_week']
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-            'objective': forms.Textarea(attrs={'rows': 3}),
-            'assignment': forms.Textarea(attrs={'rows': 3}),
-            'prerequisites': forms.CheckboxSelectMultiple(),
+            "lesson_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. LSN-001"}),
+            "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Write a short description"}),
+            "objective": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Learning objectives"}),
+            "effort_per_week": forms.NumberInput(attrs={"class": "form-control", "placeholder": "Hours per week"}),
+            "assignment": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Assignment details"}),
+            "status": forms.Select(attrs={"class": "form-select"}),
+            "lesson_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
+            "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
         }
-    lesson_point = forms.IntegerField(
-        min_value=0,
-        max_value=30,
-        widget=forms.NumberInput(attrs={
-            "class": "form-control",
-            "min": 0,
-            "max": 30
-        })
-    )
 
     def __init__(self, *args, **kwargs):
         self.course = kwargs.pop("course", None)
@@ -129,6 +131,24 @@ class LessonDetailForm(forms.ModelForm):
                 f"Total credit points for this course cannot exceed 30 (currently {total_existing})."
             )
         return lesson_point
+
+class LessonForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ["title", "description"]
+
+
+class LessonTaskForm(forms.ModelForm):
+    class Meta:
+        model = LessonTask
+        fields = ["description", "estimated_time"]
+
+LessonTaskFormSet = inlineformset_factory(
+    Lesson, LessonTask,
+    form=LessonTaskForm,
+    extra=1,
+    can_delete=True
+)
         
 class ReadingItemForm(forms.ModelForm):
     class Meta:
