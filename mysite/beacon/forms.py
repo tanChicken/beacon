@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson, Classroom
+from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.db import models
@@ -59,12 +59,18 @@ class CourseForm(forms.ModelForm):
         queryset=Instructor.instructor.all(),
         required=True,
         label="Course Director",
-        empty_label="Select Instructor"
+        empty_label="Select Instructor",
+        widget=forms.Select(attrs={"class": "form-select"})
     )
 
     class Meta:
         model = Course
         fields = ["course_id", "title", "status", "instructor"]
+        widgets = {
+            "course_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. CRS-001"}),
+            "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Course Title"}),
+            "status": forms.Select(attrs={"class": "form-select"}),
+        }
 
 class LessonForm(forms.ModelForm):
     class Meta:
@@ -78,7 +84,7 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ['title', 'lesson_id', 'description', 'objective', 'effort_per_week', 'assignment', 'status', 'lesson_point', 'prerequisites']
+        fields = ['status', 'lesson_id', 'title', 'lesson_point', 'description', 'objective', 'assignment', 'prerequisites', 'effort_per_week']
         widgets = {
             "lesson_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. LSN-001"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
@@ -125,6 +131,24 @@ class LessonDetailForm(forms.ModelForm):
                 f"Total credit points for this course cannot exceed 30 (currently {total_existing})."
             )
         return lesson_point
+
+class LessonForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ["title", "description"]
+
+
+class LessonTaskForm(forms.ModelForm):
+    class Meta:
+        model = LessonTask
+        fields = ["description", "estimated_time"]
+
+LessonTaskFormSet = inlineformset_factory(
+    Lesson, LessonTask,
+    form=LessonTaskForm,
+    extra=1,
+    can_delete=True
+)
         
 class ReadingItemForm(forms.ModelForm):
     class Meta:
