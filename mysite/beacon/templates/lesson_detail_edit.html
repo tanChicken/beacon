@@ -154,6 +154,15 @@ input[name$="-DELETE"] {
         {% endif %}
     </div>
 
+    <!-- <h4>Reading List</h4>
+    {% for item in lesson.reading_items.all %}
+    <div class="mb-2">
+        <input type="text" class="form-control" name="reading_item_{{ item.id }}" value="{{ item.title }}">
+    </div> -->
+        <!-- {% empty %}
+    <p class="text-muted">No items yet.</p>
+    {% endfor %} -->
+
     <h4>Reading List</h4>
         {% for item in lesson.reading_items.all %}
             <div class="mb-2">
