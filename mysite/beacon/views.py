@@ -189,13 +189,11 @@ def create_course(request):
         if form.is_valid():
             with transaction.atomic():
                 course = form.save(commit=False)
-                # course.instructor = request.user
-                course.credit_points = 30  
                 course.save()
 
                 for title in lesson_titles:
                     if title.strip():
-                        Lesson.objects.create(course=course, designer=request.user, title=title)
+                        Lesson.objects.create(course=course, designer=request.user, title=title, objective='', assignment='')
 
             messages.success(request, "Course created successfully!")
             return redirect("course_detail", pk=course.pk)
@@ -233,6 +231,7 @@ def delete_course(request, pk):
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = course.lessons.all()
+    classrooms = Classroom.objects.filter(course_id=course)  # FIXED
 
     students_progress = []
     for student in course.students.all():
@@ -256,6 +255,7 @@ def course_detail(request, pk):
         "course": course,
         "form": CourseForm(instance=course),
         "lessons": lessons,
+        "classrooms": classrooms,
         "students_progress": students_progress,
     })
 
@@ -350,6 +350,7 @@ def enrol_lesson(request, lesson_id):
     Enrolment.objects.get_or_create(student=student, lesson=lesson)
     messages.success(request, f"You are now enrolled in {lesson.title}.")
     return redirect("student_lesson_details", pk=lesson.id)
+
 @login_required
 def instructor_classroom(request):
     classrooms = Classroom.objects.prefetch_related("lessons").all()
@@ -376,10 +377,8 @@ def edit_classroom(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Classroom updated successfully.")
-            # Redirect wherever makes sense in your app:
-            # - to details
-            return redirect("student_classroom_details", pk=classroom.pk)
-            # - or to list: return redirect("classroom_list")
+            return redirect("course_detail", pk=classroom.course_id.pk)
+
         else:
             messages.error(request, "Please fix the errors below.")
     else:

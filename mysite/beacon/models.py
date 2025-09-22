@@ -52,7 +52,7 @@ class Classroom(models.Model):
     online_link = models.URLField(blank=True, null=True)
 
     def __str__(self):
-        return f"Classroom {self.id} for {self.course.course_code} ({self.duration_weeks} weeks)"
+        return f"Classroom {self.classroom_id} for {self.course_id.course_id} ({self.duration_weeks} weeks)"
 
     def location_display(self):
         if self.online_link:
