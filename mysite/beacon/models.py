@@ -194,6 +194,14 @@ class Lesson(models.Model):
 
     def __str__(self):
         return f"{self.lesson_id} - {self.title}"
+    
+class LessonTask(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="tasks")
+    description = models.CharField(max_length=255)
+    estimated_time = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.lesson.title} - {self.description}"
 
 class StudentReadingListItem(models.Model):
     lesson = models.ForeignKey(Lesson, related_name="reading_items", on_delete=models.CASCADE)
