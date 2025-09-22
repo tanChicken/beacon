@@ -440,37 +440,3 @@ def create_classroom(request, pk=None):
         form = ClassroomForm(request=request, preselected_course=preselected_course)
 
     return render(request, "create_classroom.html", {"form": form, "course": preselected_course})
-
-
-# @login_required
-# def delete_classroom(request, pk):
-#     from .models import Classroom
-
-#     # Get classroom and ensure instructor owns the related course
-#     classroom = get_object_or_404(Classroom, pk=pk, course_id__instructor=request.user)
-
-#     if request.method == "POST":
-#         # Count affected lessons before deletion
-#         affected_lessons = classroom.lessons.all()
-#         lesson_count = affected_lessons.count()
-
-#         # Store classroom info for success message
-#         classroom_info = f"Classroom {classroom.classroom_id}"
-
-#         # Delete classroom (lessons will be automatically unassigned due to SET_NULL)
-#         classroom.delete()
-
-#         # Success message with lesson info
-#         if lesson_count > 0:
-#             messages.success(request, f"{classroom_info} deleted successfully! {lesson_count} lesson(s) unassigned from this classroom.")
-#         else:
-#             messages.success(request, f"{classroom_info} deleted successfully!")
-
-#         return redirect("instructor_dashboard")
-
-#     # GET request - show confirmation page
-#     affected_lessons = classroom.lessons.all()
-#     return render(request, "classroom_confirm_delete.html", {
-#         "classroom": classroom,
-#         "affected_lessons": affected_lessons,
-#     })
