@@ -4,7 +4,9 @@
 {% block content %}
 <div class="container mt-4" style="max-width: 720px;">
   <h1 class="mb-3">Classroom</h1>
-  <form method="post" novalidate>
+
+  <!-- Update classroom form -->
+  <form method="post" novalidate class="mb-3">
     {% csrf_token %}
     {{ form.non_field_errors }}
 
@@ -44,11 +46,18 @@
       {{ form.online_link }} {{ form.online_link.errors }}
     </div>
 
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary">Save changes</button>
-      <a href="#" class="btn btn-danger">Delete Classroom</a>
-      <a href="{% url 'instructor_classroom'%}" class="btn btn-outline-secondary">Cancel</a>
-    </div>
+    <button type="submit" class="btn btn-primary">Save changes</button>
   </form>
+
+  <!-- Delete classroom form -->
+  <form action="{% url 'delete_classroom' classroom.pk %}" method="POST" class="d-inline">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger"
+            onclick="return confirm('Are you sure you want to delete this classroom?');">
+        Delete Classroom
+    </button>
+  </form>
+
+  <a href="{% url 'course_detail' classroom.course_id.pk %}" class="btn btn-outline-secondary">Cancel</a>
 </div>
 {% endblock %}

@@ -39,41 +39,51 @@
       margin-bottom: 10px;
     }
 
-    .checklist {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 20px;
+    .checklist { 
+        display:flex; 
+        flex-direction:column; 
+        gap:12px; 
+        margin-bottom:20px; 
+        width:100%; 
     }
 
-    .check-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    .check-item { 
+        display:flex; 
+        align-items:center; 
+        justify-content:space-between; 
+        gap:12px;
+    }
+    
+    .check-item .desc-box { 
+        flex:1; margin-right:12px; 
+        border:1px solid #000; 
+        padding:8px; min-width:0; /* allow truncation */ 
     }
 
-    .check-item .desc-box {
-    flex: 1;
-    margin-right: 10px;
-    border: 1px solid #000;
-    padding: 8px;
+    .check-wrap { 
+        display:flex; 
+        align-items:center; 
+        justify-content:flex-end; 
+        min-width:54px; 
     }
+
+    input[type="checkbox"] { width:22px; height:22px; accent-color:#41ca7c; }
+
+    /* if Bootstrap's .list-group-item interferes, add specificity */   
+    .lesson-page .check-item { display:flex !important; }
+
+    /* Optional: make description text wrap nicely */
+    .check-item .desc-box a { text-decoration:none; color:inherit; display:inline-block; width:100%; }
 
     .effort-section {
-    text-align: center;
-    margin: 30px 0;
+        text-align: center;
+        margin: 30px 0;
     }
 
     .effort-section p {
         font-weight: bold;
         font-size: 16px;
         margin: 10px 0;
-    }
-
-    input[type="checkbox"] {
-    width: 24px;
-    height: 24px;
-    accent-color: #41ca7c;
     }
 </style>
 
@@ -196,18 +206,33 @@
 
     {# Assignments section #}
     <h3>Assignments</h3>
-    {% if lesson.assignments.all %}
-        <ul>
-        {% for assignment in lesson.assignments.all %}
+    {% if assignments %}
+        <div class="checklist">
+        {% for assignment in assignments %}
             <div class="check-item">
-                <div class="desc-box">{{ assignment.title }}</div>
-                <input type="checkbox" name="assignment-{{ assignment.id }}">
+            <div class="desc-box">{{ assignment.title }}{% if assignment.description %} — {{ assignment.description }}{% endif %}</div>
+            <div class="check-wrap">
+                <input id="assignment-{{ assignment.id }}" type="checkbox" name="assignment_{{ assignment.id }}" {% if assignment.id in assignment_done_ids %}checked{% endif %}>
+                <label for="assignment-{{ assignment.id }}" class="sr-only">Mark assignment completed</label>
+            </div>
             </div>
         {% endfor %}
-        </ul>
+        </div>
     {% else %}
-        {# Message if there are no assignments #}
+        {# If you're using Lesson.assignment (TextField) instead, render that: #}
+        {% if lesson.assignment %}
+        <div class="checklist">
+            <div class="check-item">
+            <div class="desc-box">{{ lesson.assignment }}</div>
+            <div class="check-wrap">
+                <input id="assignment_single" type="checkbox" name="assignment_single" {% if assignment_completed %}checked{% endif %}>
+                <label for="assignment_single" class="sr-only">Mark assignment completed</label>
+            </div>
+            </div>
+        </div>
+        {% else %}
         <p class="text-muted">No assignments yet.</p>
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}
