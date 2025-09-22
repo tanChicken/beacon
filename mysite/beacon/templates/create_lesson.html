@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% block title %}Create Lesson{% endblock %}
 
@@ -9,60 +8,70 @@
         &larr; Back
     </a>
     </div>
+    
     <h2>Create Lesson for {{ course.title }}</h2>
-
     <form method="POST">
+        <!-- {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
+            {{ form.title }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.lesson_id.id_for_label }}" class="form-label fw-semibold">Lesson ID</label>
+            {{ form.lesson_id }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+            {{ form.status }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.lesson_point.id_for_label }}" class="form-label">Lesson Point</label>
+            {{ form.lesson_point }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+            {{ form.description }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.objective.id_for_label }}" class="form-label">Objective</label>
+            {{ form.objective }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.effort_per_week.id_for_label }}" class="form-label">Effort per Week (hours)</label>
+            {{ form.effort_per_week }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.assignment.id_for_label }}" class="form-label">Assignment</label>
+            {{ form.assignment }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.prerequisites.id_for_label }}" class="form-label">Prerequisites</label>
+            {{ form.prerequisites }}
+        </div> -->
         {% csrf_token %}
 
-        <div class="mb-3">
-            <label for="id_title" class="form-label">Title</label>
-            <input type="text" name="title" id="id_title" class="form-control">
-        </div>
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
 
+        {% for field in form %}
         <div class="mb-3">
-            <label class="form-label fw-semibold">Lesson ID</label>
-            <input type="text" class="form-control" value="{{ next_lesson_id }}" readonly>
+            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+                <div class="text-danger">{{ field.errors }}</div>
+            {% endif %}
         </div>
-
-        <div class="mb-3">
-            <label for="id_status" class="form-label">Status</label>
-            <select name="status" id="id_status" class="form-select">
-                <option value="DRAFT">Draft</option>
-                <option value="PUBLISHED">Published</option>
-                <option value="ARCHIVED">Archived</option>
-            </select>
-        </div>
-
-        <div class="mb-3">
-        <label for="id_lesson_point" class="form-label">Lesson Point</label>
-        <input type="number" name="lesson_point" id="id_lesson_point" 
-                class="form-control" min="0" max="30">
-        </div>
-
-        <div class="mb-3">
-            <label for="id_description" class="form-label">Description</label>
-            <textarea name="description" id="id_description" class="form-control" rows="3"></textarea>
-        </div>
-
-        <div class="mb-3">
-            <label for="id_objective" class="form-label">Objective</label>
-            <textarea name="objective" id="id_objective" class="form-control" rows="3"></textarea>
-        </div>
-
-        <div class="mb-3">
-            <label for="id_effort_per_week" class="form-label">Effort per Week (hours)</label>
-            <input type="number" name="effort_per_week" id="id_effort_per_week" class="form-control">
-        </div>
-
-        <div class="mb-3">
-            <label for="id_assignment" class="form-label">Assignment</label>
-            <textarea name="assignment" id="id_assignment" class="form-control" rows="3"></textarea>
-        </div>
-
-        <div class="mb-3">
-            <label for="id_prerequisites" class="form-label">Prerequisites</label>
-            {{ form.prerequisites }}
-        </div>
+        {% endfor %}
 
         <button type="submit" class="btn btn-success">Create Lesson</button>
         <a href="{% url 'course_detail' course.pk %}" class="btn btn-secondary">Cancel</a>

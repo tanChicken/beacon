@@ -2,7 +2,6 @@
 {% block title %}Edit Lesson: {{ lesson.title }}{% endblock %}
 
 {% block content %}
-
 {% if messages %}
   {% for message in messages %}
     <div class="alert alert-success">{{ message }}</div>
@@ -11,79 +10,38 @@
 
 <div class="container mt-4">
     <div class="mb-3">
-      <a href="{% url 'course_detail' lesson.course.pk %}" class="btn btn-outline-secondary">
-        &larr; Back
-      </a>
+      <a href="{% url 'course_detail' lesson.course.pk %}" class="btn btn-outline-secondary">&larr; Back</a>
     </div>
 
-    <h2 class="mb-4">Edit Lesson: {{ lesson.title }}</h2>
-
-    <form method="POST" enctype="multipart/form-data" 
-      onsubmit="return confirm('Are you sure you want to save the lesson details?');">
+    <form method="POST" enctype="multipart/form-data" onsubmit="return confirm('Are you sure you want to save the lesson details?');">
     {% csrf_token %}
-
-    <!-- Title + Created/Updated -->
-    <div class="mb-3 row align-items-center">
-        <div class="col-md-6">
-            <label for="{{ lesson_form.title.id_for_label }}" class="form-label fw-semibold">Title</label>
-            {{ lesson_form.title }}
-            <p>Lesson ID: {{ lesson.lesson_id }}</p>
+    
+    <div class="row align-items-center mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-0">Lesson: {{ lesson.title }}</h2>
         </div>
-
-        <div class="col-md-6">
-            <label for="{{ lesson_form.lesson_point.id_for_label }}" class="form-label">Lesson Point</label>
-            {{ lesson_form.lesson_point }}
-        </div>
-
-        <div class="col-md-6 text-end">
-            <p>
-                <strong>Created At: </strong>{{ lesson.created_at|date:"M d, Y H:i" }}<br>
-                <strong>Last Updated: </strong>{{ lesson.updated_at|date:"M d, Y H:i" }}
+        <div class="col-md-4 text-end">
+            <p class="mb-0">
+                <strong>Created At:</strong> {{ lesson.created_at|date:"M d, Y H:i" }}<br>
+                <strong>Last Updated:</strong> {{ lesson.updated_at|date:"M d, Y H:i" }}
             </p>
         </div>
     </div>
 
-    <div class="mb-3 row align-items-center">
-        <div class="col-md-6">
-            <label for="{{ lesson_form.status.id_for_label }}" class="form-label fw-semibold">Status</label>
-            {{ lesson_form.status }}
-        </div>
-    </div>
+    {% if lesson_form.non_field_errors %}
+        <div class="alert alert-danger">{{ lesson_form.non_field_errors }}</div>
+    {% endif %}
 
-    <!-- Description -->
+    {% for field in lesson_form %}
     <div class="mb-3">
-        <label for="{{ lesson_form.description.id_for_label }}" class="form-label fw-semibold">Description</label>
-        <textarea name="{{ lesson_form.description.name }}" class="form-control" rows="2">{{ lesson_form.description.value }}</textarea>
+        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+            <div class="text-danger">{{ field.errors }}</div>
+        {% endif %}
     </div>
+    {% endfor %}
 
-    <!-- Objective -->
-    <div class="mb-3">
-        <label for="{{ lesson_form.objective.id_for_label }}" class="form-label fw-semibold">Objective</label>
-        <textarea name="{{ lesson_form.objective.name }}" class="form-control" rows="2">{{ lesson_form.objective.value }}</textarea>
-    </div>
-
-    <!-- Effort -->
-    <div class="mb-3">
-        <label for="{{ lesson_form.effort_per_week.id_for_label }}" class="form-label fw-semibold">Effort per Week (hours)</label>
-        {{ lesson_form.effort_per_week }}
-    </div>
-
-    <!-- Assignment -->
-    <div class="mb-3">
-        <label for="{{ lesson_form.assignment.id_for_label }}" class="form-label fw-semibold">Assignment Details</label>
-        <textarea name="{{ lesson_form.assignment.name }}" class="form-control" rows="2">{{ lesson_form.assignment.value }}</textarea>
-    </div>
-
-    <!-- Prerequisites -->
-    <div class="mb-3">
-        <label for="{{ lesson_form.prerequisites.id_for_label }}" class="form-label fw-semibold">Prerequisites</label>
-        {{ lesson_form.prerequisites }}
-        <small class="form-text text-muted">
-            Select the lessons that must be completed before this one.
-        </small>
-    </div>
-
-    <!-- Reading List -->
     <h4>Reading List</h4>
     {% for item in lesson.reading_items.all %}
     <div class="mb-2">
