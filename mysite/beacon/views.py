@@ -293,11 +293,9 @@ def lesson_detail_edit(request, pk):
 @login_required
 def create_lesson(request, course_pk):
     course = get_object_or_404(Course, pk=course_pk, instructor=request.user)
-    next_count = course.lessons.count() + 1
-    next_lesson_id = f"L{next_count:03d}"
 
     if request.method == "POST":
-        form = LessonDetailForm(request.POST)
+        form = LessonDetailForm(request.POST, course=course) 
         if form.is_valid():
             lesson = form.save(commit=False)
             lesson.course = course
@@ -307,16 +305,16 @@ def create_lesson(request, course_pk):
             messages.success(request, f"Lesson '{lesson.title}' created successfully!")
             return redirect('course_detail', pk=course.pk)
     else:
-        form = LessonDetailForm()
+        form = LessonDetailForm(course=course) 
 
     return render(
-        request, 'create_lesson.html',
+        request, 'create_lesson.html', 
         {
-        'form': form,
-        'course': course,
-        'action': 'Create',
-        'next_lesson_id': next_lesson_id,
-    })
+            'form': form, 
+            'course': course, 
+            'action': 'Create',
+        }
+    )
 
 @login_required
 def delete_lesson(request, pk):

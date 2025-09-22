@@ -172,7 +172,7 @@ def ensure_profiles(sender, instance, created, **kwargs):
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name="lessons")
-    lesson_id = models.CharField(max_length=10, unique=False, editable=False)  
+    lesson_id = models.CharField(max_length=20, unique=True)
     title = models.CharField(max_length=200)
     description = models.TextField()
     objective = models.TextField(blank=True, null=True)
@@ -191,12 +191,6 @@ class Lesson(models.Model):
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,default="DRAFT")
     prerequisites = models.ManyToManyField("self", symmetrical=False, blank=True, related_name="unlocking_lessons")
-
-    def save(self, *args, **kwargs):
-        if not self.lesson_id:
-            count = Lesson.objects.filter(course=self.course).count() + 1
-            self.lesson_id = f"L{count:03d}"   
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.lesson_id} - {self.title}"
