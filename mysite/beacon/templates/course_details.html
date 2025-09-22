@@ -17,7 +17,7 @@
 
     <div class="row align-items-center mb-4">
       <div class="col-md-8">
-        <h2>Edit Course: {{ course.title }}</h2>
+        <h2>Course: {{ course.title }}</h2>
         {{ form.as_p }}
       </div>
       <div class="col-md-4">
@@ -44,7 +44,18 @@
       </a>
     </div>
 
-    <h4>Classroom</h4>
+    <h4>Classrooms</h4>
+    <div class="list-group mb-3">
+      {% for classroom in classrooms %}
+        <a href="{% url 'edit_classroom' classroom.pk %}" class="list-group-item list-group-item-action">
+          <strong>{{ classroom.classroom_id }}</strong> 
+          – {{ classroom.get_duration_weeks_display }} 
+        </a>
+      {% empty %}
+        <p class="text-muted">No classrooms yet.</p>
+      {% endfor %}
+    </div>
+
     <div class="mb-3">
       <a href="{% url 'create_classroom' course.pk %}" class="btn btn-sm btn-outline-primary">
         + Add Classroom
