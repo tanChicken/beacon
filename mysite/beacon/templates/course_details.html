@@ -17,7 +17,8 @@
 
     <div class="row align-items-center mb-4">
       <div class="col-md-8">
-        <h2>Course: {{ course.title }}</h2>
+        <h1>Course: {{ course }}</h1>
+        <hr>
         {{ form.as_p }}
       </div>
       <div class="col-md-4">
@@ -38,6 +39,8 @@
       </div>
     </div>
 
+    <hr>
+
     <h4>Lessons</h4>
     <div class="list-group mb-3">
       {% for lesson in lessons %}
@@ -54,6 +57,8 @@
         Add Lesson
       </a>
     </div>
+
+    <hr>
 
     <h4>Classrooms</h4>
     <div class="list-group mb-3">
