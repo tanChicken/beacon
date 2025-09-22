@@ -375,7 +375,7 @@ def edit_classroom(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Classroom updated successfully.")
-            return redirect("course_detail", pk=classroom.course_id.pk)
+            return redirect("instructor_classroom")
 
         else:
             messages.error(request, "Please fix the errors below.")
