@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
-from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm, EditClassroomForm
+from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
@@ -280,11 +280,19 @@ def course_detail(request, pk):
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
     course = lesson.course
+    available_classrooms = Classroom.objects.filter(
+    course_id=course  # or course_id_id=course.id
+    ).order_by("classroom_id")
 
     if request.method == "POST":
-        form = LessonDetailForm(request.POST, instance=lesson, course=course)
-        if form.is_valid():
-            form.save()
+        form = LessonDetailForm(request.POST, instance=lesson, course=course, request=request)
+        formset = LessonTaskFormSet(request.POST, instance=lesson)
+        
+        if form.is_valid() and formset.is_valid():
+            # form.save()
+            lesson = form.save()
+            formset.instance = lesson
+            formset.save()
 
             for item in lesson.reading_items.all():
                 key = f"reading_item_{item.id}"
@@ -300,11 +308,16 @@ def lesson_detail_edit(request, pk):
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("course_detail", pk=lesson.course.pk)
     else:
-        form = LessonDetailForm(instance=lesson, course=course)
+        form = LessonDetailForm(instance=lesson, course=course, request=request)
+        formset = LessonTaskFormSet(instance=lesson)
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
-        "lesson_form": form
+        "lesson_form": form,
+        "formset": formset,
+        "course": course,
+        "empty_form": formset.empty_form, 
+        "available_classrooms": available_classrooms  # <-- pass this
     })
 
 @login_required

@@ -94,16 +94,40 @@ class LessonDetailForm(forms.ModelForm):
             "assignment": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Assignment details"}),
             "status": forms.Select(attrs={"class": "form-select"}),
             "lesson_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
-            "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
+            "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"})
         }
 
     def __init__(self, *args, **kwargs):
         self.course = kwargs.pop("course", None)
         self.instance = kwargs.get("instance", None)
+        request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
         if self.course:
             self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
+
+        fld = self.fields.get("classroom")
+        if fld:
+            fld.required = False
+            # Nice placeholder option
+            fld.empty_label = "-- No classroom assigned --"
+
+            qs = Classroom.objects.all()
+
+            # Typically: only classrooms belonging to this course
+            if self.course:
+                # qs = qs.filter(course=self.course)
+                qs = qs.filter(course_id=self.course)
+
+
+            # Optional: further restrict to classrooms owned by the logged-in instructor
+            if request and getattr(request, "user", None) and request.user.is_authenticated:
+                # Only if your Classroom ties to Course.instructor
+                # qs = qs.filter(course__instructor=request.user)
+                qs = qs.filter(course_id__instructor=request.user)
+
+
+            fld.queryset = qs.order_by("classroom_id")
 
     def clean_lesson_id(self):
         lesson_id = self.cleaned_data.get("lesson_id")
