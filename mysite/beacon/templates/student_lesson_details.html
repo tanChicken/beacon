@@ -132,28 +132,32 @@
 
     <hr class="my-2">
     
-    {# Effort estimation#}
-    <div class="effort-section">
-        <p>Effort Estimated per Week: {{ lesson.effort_per_week }} hours</p>
+    {# Effort estimation #}
+    <div class="effort-section mb-3">
+        <strong>Effort Estimated per Week:</strong> {{ lesson.effort_per_week }} hours
     </div>
 
-    <table class="task-table">
-    <thead>
-        <tr>
-        <th>Tasks</th>
-        <th>Estimated Time</th>
-        </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td>Task 1 description goes here</td>
-        <td>2 hours</td>
-    </tr>
-    <tr>
-        <td>Task 2 description goes here</td>
-        <td>1.5 hours</td>
-    </tr>
-    </tbody>
+    {# Task list #}
+    <h5>Tasks</h5>
+    <table class="task-table table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Task Description</th>
+                <th>Estimated Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in lesson.tasks.all %}
+            <tr>
+                <td>{{ task.description }}</td>
+                <td>{{ task.estimated_time }} hours</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2" class="text-center text-muted">No tasks assigned yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 
     <hr class="my-2">
