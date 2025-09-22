@@ -80,20 +80,16 @@ class LessonDetailForm(forms.ModelForm):
         model = Lesson
         fields = ['title', 'lesson_id', 'description', 'objective', 'effort_per_week', 'assignment', 'status', 'lesson_point', 'prerequisites']
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-            'objective': forms.Textarea(attrs={'rows': 3}),
-            'assignment': forms.Textarea(attrs={'rows': 3}),
-            'prerequisites': forms.CheckboxSelectMultiple(),
+            "lesson_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. LSN-001"}),
+            "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Write a short description"}),
+            "objective": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Learning objectives"}),
+            "effort_per_week": forms.NumberInput(attrs={"class": "form-control", "placeholder": "Hours per week"}),
+            "assignment": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Assignment details"}),
+            "status": forms.Select(attrs={"class": "form-select"}),
+            "lesson_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
+            "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
         }
-    lesson_point = forms.IntegerField(
-        min_value=0,
-        max_value=30,
-        widget=forms.NumberInput(attrs={
-            "class": "form-control",
-            "min": 0,
-            "max": 30
-        })
-    )
 
     def __init__(self, *args, **kwargs):
         self.course = kwargs.pop("course", None)
