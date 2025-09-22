@@ -281,8 +281,7 @@ def lesson_detail_edit(request, pk):
                 if title.strip():
                     StudentReadingListItem.objects.create(lesson=lesson, title=title.strip())
 
-            messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
-            return redirect("course_detail", pk=lesson.course.pk)
+            messages.success(request, f"Lesson '{lesson}' updated successfully!")
     else:
         form = LessonDetailForm(instance=lesson, course=course)
 
