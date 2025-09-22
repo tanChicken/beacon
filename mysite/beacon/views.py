@@ -396,17 +396,6 @@ def instructor_classroom(request):
 @login_required
 def edit_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
-
-    # Authorization: only supervisor or instructors can edit
-    # user = request.user
-    # can_edit = (
-    #     getattr(user, "role", None) == "INSTRUCTOR"
-    #     or user == classroom.supervisor
-    #     or user.has_perm("beacon.change_classroom")
-    # )
-    # if not can_edit:
-    #     raise PermissionDenied("You do not have permission to edit this classroom.")
-
     if request.method == "POST":
         form = EditClassroomForm(request.POST, instance=classroom, request=request)
         if form.is_valid():
@@ -440,3 +429,16 @@ def create_classroom(request, pk=None):
         form = ClassroomForm(request=request, preselected_course=preselected_course)
 
     return render(request, "create_classroom.html", {"form": form, "course": preselected_course})
+
+@login_required
+def delete_classroom(request, pk):
+    classroom = get_object_or_404(Classroom, pk=pk)
+    course_pk = classroom.course_id.pk   # store course id before deletion
+    
+    if request.method == "POST":  # safety: only allow POST
+        classroom.delete()
+        messages.success(request, "Classroom deleted successfully!")
+        return redirect("course_detail", pk=course_pk)
+
+    # optional confirmation page if you want
+    return render(request, "confirm_delete.html", {"object": classroom})
