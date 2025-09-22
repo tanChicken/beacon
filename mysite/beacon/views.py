@@ -1,13 +1,12 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
-from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, LessonForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm, EditClassroomForm
+from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
+from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ReadingItemForm, ClassroomForm, EditClassroomForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 
-from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
-from .forms import LessonForm, LessonTaskFormSet
+from .models import Course, Student, StudentProfile, User  # note: import Student & StudentProfile
 
 
 def home(request):
@@ -105,8 +104,7 @@ def enrol_course(request, course_id):
 @login_required
 def student_course_details(request,pk):
     course = get_object_or_404(Course, pk=pk)
-    lessons = Lesson.objects.filter(course=course, status="PUBLISHED")
-
+    lessons = Lesson.objects.filter(course=course)
 
     lesson_status = []
     for lesson in lessons:
@@ -141,36 +139,9 @@ def student_lessons(request):
 
 @login_required()
 def student_lesson_details(request, pk):    
-    lesson = get_object_or_404(Lesson, pk=pk)
-    student = request.user  
 
-    # Check if already enrolled
-    is_enrolled = Enrolment.objects.filter(student=student, lesson=lesson).exists()
-
-    # Check prerequisites
-    prereqs = lesson.prerequisites.all()
-    missing_prereqs = [
-        p for p in prereqs
-        if not Enrolment.objects.filter(student=student, lesson=p).exists()
-    ]
-    prereqs_met = (len(missing_prereqs) == 0)
-
-    # Can enroll if:
-    #   - Student is enrolled in the parent course
-    #   - Not already enrolled in this lesson
-    #   - All prerequisites are met
-    can_enroll = (
-        lesson.course in student.courses_enroling.all()
-        and not is_enrolled
-        and prereqs_met
-    )
-
-    return render(request, "student_lesson_details.html", {
-        "lesson": lesson,
-        "is_enrolled": is_enrolled,
-        "can_enroll": can_enroll,
-        "missing_prereqs": missing_prereqs,  # optional: useful to show in template
-    })
+    lesson = get_object_or_404(Lesson, pk=pk) 
+    return render(request, "student_lesson_details.html", {"lesson": lesson})
 
 
 @login_required
@@ -260,7 +231,23 @@ def delete_course(request, pk):
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = course.lessons.all()
-    classrooms = Classroom.objects.filter(course_id=course)  # FIXED
+    classrooms = Classroom.objects.filter(course_id=course)
+
+    if request.method == "POST":
+        # Handle new inline lessons
+        new_titles = request.POST.getlist("new_lesson_title")
+        for title in new_titles:
+            if title.strip():
+                Lesson.objects.create(
+                    course=course,
+                    title=title.strip(),
+                    designer=request.user,
+                    lesson_point=0,  # default, or adjust as needed
+                    status="DRAFT"
+                )
+        if new_titles:
+            messages.success(request, f"{len(new_titles)} lesson(s) added successfully!")
+            return redirect("course_detail", pk=course.pk)
 
     students_progress = []
     for student in course.students.all():
@@ -288,6 +275,7 @@ def course_detail(request, pk):
         "students_progress": students_progress,
     })
 
+
 @login_required
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
@@ -295,13 +283,8 @@ def lesson_detail_edit(request, pk):
 
     if request.method == "POST":
         form = LessonDetailForm(request.POST, instance=lesson, course=course)
-        formset = LessonTaskFormSet(request.POST, instance=lesson)
-        
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid():
             form.save()
-            lesson = form.save()
-            formset.instance = lesson
-            formset.save()
 
             for item in lesson.reading_items.all():
                 key = f"reading_item_{item.id}"
@@ -314,17 +297,14 @@ def lesson_detail_edit(request, pk):
                 if title.strip():
                     StudentReadingListItem.objects.create(lesson=lesson, title=title.strip())
 
-            messages.success(request, f"Lesson '{lesson}' updated successfully!")
+            messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
+            return redirect("course_detail", pk=lesson.course.pk)
     else:
         form = LessonDetailForm(instance=lesson, course=course)
-        formset = LessonTaskFormSet(instance=lesson)
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
-        "lesson_form": form,
-        "formset": formset,
-        "course": course,
-        "empty_form": formset.empty_form,   # <-- pass this
+        "lesson_form": form
     })
 
 @login_required
@@ -441,36 +421,12 @@ def create_classroom(request, pk=None):
 
     return render(request, "create_classroom.html", {"form": form, "course": preselected_course})
 
-
-# @login_required
-# def delete_classroom(request, pk):
-#     from .models import Classroom
-
-#     # Get classroom and ensure instructor owns the related course
-#     classroom = get_object_or_404(Classroom, pk=pk, course_id__instructor=request.user)
-
-#     if request.method == "POST":
-#         # Count affected lessons before deletion
-#         affected_lessons = classroom.lessons.all()
-#         lesson_count = affected_lessons.count()
-
-#         # Store classroom info for success message
-#         classroom_info = f"Classroom {classroom.classroom_id}"
-
-#         # Delete classroom (lessons will be automatically unassigned due to SET_NULL)
-#         classroom.delete()
-
-#         # Success message with lesson info
-#         if lesson_count > 0:
-#             messages.success(request, f"{classroom_info} deleted successfully! {lesson_count} lesson(s) unassigned from this classroom.")
-#         else:
-#             messages.success(request, f"{classroom_info} deleted successfully!")
-
-#         return redirect("instructor_dashboard")
-
-#     # GET request - show confirmation page
-#     affected_lessons = classroom.lessons.all()
-#     return render(request, "classroom_confirm_delete.html", {
-#         "classroom": classroom,
-#         "affected_lessons": affected_lessons,
-#     })
+@login_required
+def delete_classroom(request, pk):
+    classroom = get_object_or_404(Classroom, pk=pk)
+    course_pk = classroom.course_id.pk   
+    
+    if request.method == "POST":  
+        classroom.delete()
+        messages.success(request, "Classroom deleted successfully!")
+        return redirect("course_detail", pk=course_pk)
