@@ -140,9 +140,36 @@ def student_lessons(request):
 
 @login_required()
 def student_lesson_details(request, pk):    
+    lesson = get_object_or_404(Lesson, pk=pk)
+    student = request.user  
 
-    lesson = get_object_or_404(Lesson, pk=pk) 
-    return render(request, "student_lesson_details.html", {"lesson": lesson})
+    # Check if already enrolled
+    is_enrolled = Enrolment.objects.filter(student=student, lesson=lesson).exists()
+
+    # Check prerequisites
+    prereqs = lesson.prerequisites.all()
+    missing_prereqs = [
+        p for p in prereqs
+        if not Enrolment.objects.filter(student=student, lesson=p).exists()
+    ]
+    prereqs_met = (len(missing_prereqs) == 0)
+
+    # Can enroll if:
+    #   - Student is enrolled in the parent course
+    #   - Not already enrolled in this lesson
+    #   - All prerequisites are met
+    can_enroll = (
+        lesson.course in student.courses_enroling.all()
+        and not is_enrolled
+        and prereqs_met
+    )
+
+    return render(request, "student_lesson_details.html", {
+        "lesson": lesson,
+        "is_enrolled": is_enrolled,
+        "can_enroll": can_enroll,
+        "missing_prereqs": missing_prereqs,  # optional: useful to show in template
+    })
 
 
 @login_required

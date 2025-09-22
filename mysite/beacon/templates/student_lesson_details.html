@@ -78,34 +78,42 @@
 </style>
 
 <div class="container mt-4">
+    <div class="mb-3">
+      <a href="{% url 'student_course_details' lesson.course.pk %}" class="btn btn-outline-secondary">&larr; Back</a>
+    </div>
 
     <div class="lesson-header">
         <h2>{{ lesson.lesson_id }}</h2>
         <h2 class="mb-5">{{ lesson.title }}</h2>
 
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
         <!-- Student Enrollment Status and Actions -->
         {% if user.role == "STUDENT" %}
         <div class="enrollment-status mb-3">
             {% if is_enrolled %}
-                <div class="alert alert-success" role="alert">
-                    You are enrolled in this lesson
-                </div>
-                <form method="POST" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" name="unenroll_lesson" class="btn btn-outline-danger">Unenroll from Lesson</button>
-                </form>
             {% elif can_enroll %}
                 <div class="alert alert-info" role="alert">
-                    You can enroll in this lesson
+                        You can enroll in this lesson
                 </div>
-                <form method="POST" style="display: inline;">
+                <form method="POST" action="{% url 'enrol_lesson' lesson.id %}" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit" name="enroll_lesson" class="btn btn-primary">Enroll in Lesson</button>
                 </form>
             {% else %}
-                <div class="alert alert-warning" role="alert">
-                    You must be enrolled in the course to access this lesson
-                </div>
+            <div class="alert alert-warning" role="alert">
+                You must complete the following prerequisites before enrolling:
+                <ul>
+                    {% for prereq in missing_prereqs %}
+                    <p>{{ prereq }}</p>
+                    {% endfor %}
+                </ul>
+            </div>
             {% endif %}
         </div>
         {% endif %}
@@ -113,11 +121,11 @@
 
     <div class="d-flex justify-content-between">
         <div>
-            <p>Status: {{ lesson.status }}</p>
-            <p>Designed by: {{ lesson.designer }} on {{ lesson.created_at|date:"j/n/Y" }}</p>
+            <p>Credit Point: {{ lesson.lesson_point }}</p>
+            <p>Designed by: {{ lesson.designer }}</p>
         </div>
         <div>
-            <p>Credit Point: {{ lesson.credit_point }}</p>
+            <p>Created on: {{ lesson.created_at|date:"j/n/Y"  }}</p>
             <p>Last updated: {{ lesson.updated_at|date:"M d, Y H:i" }}</p>
         </div>
     </div>
@@ -178,8 +186,9 @@
             <li class="list-group-item text-muted">No reading list provided.</li>
         {% endfor %}
         </ul>
-        <button type="submit" class="btn btn-primary mt-2">Save Progress</button>
     </form>
+
+    <hr>
 
     {# Assignments section #}
     <h3>Assignments</h3>
