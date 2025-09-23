@@ -169,10 +169,6 @@ def student_lesson_details(request, pk):
     ]
     prereqs_met = (len(missing_prereqs) == 0)
 
-    # Can enroll if:
-    #   - Student is enrolled in the parent course
-    #   - Not already enrolled in this lesson
-    #   - All prerequisites are met
     can_enroll = (
         lesson.course in student.courses_enroling.all()
         and not is_enrolled
@@ -220,11 +216,11 @@ def instructor_login(request):
 
 @login_required
 def instructor_dashboard(request):
-    # Get courses created by this instructor
-    courses = Course.objects.filter(instructor=request.user)
-    return render(request, "instructor_dashboard.html", {
-        "courses": courses,
-    })
+    courses = (
+        Course.objects.filter(instructor=request.user)
+        .order_by("status", "title") 
+    )
+    return render(request, "instructor_dashboard.html", {"courses": courses})
 
 @login_required
 def create_course(request):
