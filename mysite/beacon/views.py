@@ -108,24 +108,37 @@ def student_course_details(request,pk):
 
     lesson_status = []
     for lesson in lessons:
-        enrolled = Enrolment.objects.filter(student=request.user, lesson=lesson).exists()
+        enrolment = Enrolment.objects.filter(student=request.user, lesson=lesson).first()
+        completed = enrolment.completed if enrolment else False
+        enrolled = enrolment is not None and not completed
         prereqs = lesson.prerequisites.all()
 
-        missing = [p for p in prereqs if not Enrolment.objects.filter(student=request.user, lesson=p).exists()]
+        missing = [p for p in prereqs if not Enrolment.objects.filter(student=request.user, lesson=p, completed=True).exists()]
         prereqs_met = (len(missing) == 0)
 
+        can_enroll = prereqs_met and not enrolled and not completed
         lesson_status.append(
             {
                 "lesson": lesson,
                 "enrolled": enrolled,
-                "can_enroll": prereqs_met and not enrolled,
+                "can_enroll": can_enroll,
                 "missing_prereqs": missing,
+                "completed" : completed,
             }
         )
+    
+    # Sort by a custom key
+    lesson_status_sorted = sorted(
+        lesson_status,
+        key=lambda s: (
+            # Use numbers so lower comes first
+            0 if s["completed"] else 1 if s["enrolled"] else 2 if s["can_enroll"] else 3
+        )
+    )
 
     return render(request, "student_course_details.html", {
         "course": course,
-        "lesson_status": lesson_status,
+        "lesson_status": lesson_status_sorted,
     })
 
 @login_required
@@ -140,8 +153,40 @@ def student_lessons(request):
 @login_required()
 def student_lesson_details(request, pk):    
 
-    lesson = get_object_or_404(Lesson, pk=pk) 
-    return render(request, "student_lesson_details.html", {"lesson": lesson})
+    lesson = get_object_or_404(Lesson, pk=pk)
+    student = request.user  
+
+    # Check if already enrolled
+    enrolment_obj = Enrolment.objects.filter(student=student, lesson=lesson).first()
+    is_enrolled = enrolment_obj is not None and not enrolment_obj.completed
+    is_completed = enrolment_obj.completed if enrolment_obj else False
+
+    # Check prerequisites
+    prereqs = lesson.prerequisites.all()
+    missing_prereqs = [
+        p for p in prereqs
+        if not Enrolment.objects.filter(student=student, lesson=p, completed=True).exists()
+    ]
+    prereqs_met = (len(missing_prereqs) == 0)
+
+    # Can enroll if:
+    #   - Student is enrolled in the parent course
+    #   - Not already enrolled in this lesson
+    #   - All prerequisites are met
+    can_enroll = (
+        lesson.course in student.courses_enroling.all()
+        and not is_enrolled
+        and prereqs_met
+    )
+
+    return render(request, "student_lesson_details.html", {
+        "lesson": lesson,
+        "is_enrolled": is_enrolled,
+        "can_enroll": can_enroll,
+        "missing_prereqs": missing_prereqs,  # optional: useful to show in template
+        "is_completed": is_completed,
+    })
+
 
 
 @login_required

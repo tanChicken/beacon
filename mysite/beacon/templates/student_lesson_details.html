@@ -106,7 +106,11 @@
         <!-- Student Enrollment Status and Actions -->
         {% if user.role == "STUDENT" %}
         <div class="enrollment-status mb-3">
-            {% if is_enrolled %}
+            {% if is_completed %}
+                <div class="alert alert-dark" role="alert">
+                    You have completed this lesson.
+                </div>
+            {% elif is_enrolled %}
             {% elif can_enroll %}
                 <div class="alert alert-info" role="alert">
                         You can enroll in this lesson
