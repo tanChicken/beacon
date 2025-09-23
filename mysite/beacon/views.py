@@ -191,7 +191,16 @@ def student_lesson_details(request, pk):
 
 @login_required
 def student_classroom(request):
-    classrooms = Classroom.objects.prefetch_related("lessons").all()
+    # classrooms = Classroom.objects.prefetch_related("lessons").all()
+    # classrooms = Classroom.objects.filter(...).exclude(students=student)
+    student = request.user
+    classrooms = (
+        Classroom.objects
+        .select_related("course_id")          # FK field name is course_id
+        .prefetch_related("lessons")
+        .filter(course_id__students=student)  # <-- traverse via course_id
+        .distinct()
+    )
     return render(request, "student_classroom.html", {"classrooms": classrooms})
 
 @login_required
@@ -426,7 +435,15 @@ def enrol_lesson(request, lesson_id):
 
 @login_required
 def instructor_classroom(request):
-    classrooms = Classroom.objects.prefetch_related("lessons").all()
+    instructor = request.user
+    classrooms = (
+        Classroom.objects
+        .select_related("course_id")
+        .prefetch_related("lessons")
+        .filter(course_id__instructor=instructor)   # 🔑 only classrooms whose course is taught by this instructor
+        .distinct()
+    )
+
     return render(request, "instructor_classroom.html", {
         "classrooms": classrooms,
     })
@@ -434,17 +451,6 @@ def instructor_classroom(request):
 @login_required
 def edit_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
-
-    # Authorization: only supervisor or instructors can edit
-    # user = request.user
-    # can_edit = (
-    #     getattr(user, "role", None) == "INSTRUCTOR"
-    #     or user == classroom.supervisor
-    #     or user.has_perm("beacon.change_classroom")
-    # )
-    # if not can_edit:
-    #     raise PermissionDenied("You do not have permission to edit this classroom.")
-
     if request.method == "POST":
         form = EditClassroomForm(request.POST, instance=classroom, request=request)
         if form.is_valid():

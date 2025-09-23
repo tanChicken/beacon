@@ -231,6 +231,7 @@ class EditClassroomForm(forms.ModelForm):
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
         }
+        
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop("request", None)
@@ -241,3 +242,4 @@ class EditClassroomForm(forms.ModelForm):
         choices += list(instructors.values_list("email", "email"))
         self.fields["supervisor"].choices = choices
         self.fields["course_id"].disabled = True
+        self.fields["duration_weeks"].disabled = True
