@@ -34,7 +34,7 @@
     <div class="list-group mb-3">
       {% for lesson in lessons %}
         <a href="{% url 'lesson_detail_edit' lesson.pk %}" class="list-group-item list-group-item-action d-flex align-items-center">
-          <strong>{{ lesson.lesson_id }}</strong>: {{ lesson.title }}
+          <strong>{{ lesson.lesson_id }}</strong>: {{ lesson.title }} ({{ lesson.status }})
         </a>
       {% empty %}
         <p class="text-muted">No lessons yet.</p>
