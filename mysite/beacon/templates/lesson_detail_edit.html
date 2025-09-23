@@ -65,7 +65,14 @@ input[name$="-DELETE"] {
     <div class="mb-3">
         <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
 
-        {% if field.name == "prerequisites" %}
+        {% if field.name == "lesson_point" %}
+            {{ field }}
+            <div class="form-text">
+                <p><strong>Total Allocated Lesson Points  (all lessons):</strong> {{ total_points }}/30</p>
+                <p><strong>Remaining Lesson Points:</strong> {{ remaining_points }}</p>
+            </div>
+            
+        {% elif field.name == "prerequisites" %}
             {% for checkbox in field %}
                 <div class="form-check">
                     {{ checkbox.tag }}
@@ -83,6 +90,7 @@ input[name$="-DELETE"] {
         {% endif %}
     </div>
     {% endfor %}
+
 
      <h4>Tasks</h4>
     <table class="task-table">
@@ -163,6 +171,20 @@ input[name$="-DELETE"] {
             </div>
         {% endfor %}
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addReadingItem()">+ Add Reading Item</button>
+
+    <h4>Enrolled Students</h4>
+    {% if enrolled_students %}
+    <ul class="list-group mb-4">
+        {% for student in enrolled_students %}
+        <li class="list-group-item">
+            {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
+            <small class="text-muted">({{ student.email }})</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">No students enrolled in this lesson yet.</p>
+    {% endif %}
 
     <div class="mt-4 d-flex justify-content-between">
         <button type="submit" class="btn btn-primary">Save Lesson</button>
