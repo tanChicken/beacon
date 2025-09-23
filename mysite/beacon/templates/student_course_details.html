@@ -43,25 +43,23 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <a href="{% url 'student_lesson_details' pk=status.lesson.pk %}">
-                            {{ status.lesson.title }}
+                            {{ status.lesson }}
                         </a>
-                        <strong>{{ status.lesson.lesson_id }}</strong>
                         <div class="small text-muted">
                             Credit Point: {{ status.lesson.lesson_point }}
                         </div>
                     </div>
                     <div>
-                        {% if status.enrolled %}
+                        {% if status.completed %}
+                            <span class="badge bg-info">Completed</span>
+                        {% elif status.enrolled %}
                             <span class="badge bg-success">Enrolled</span>
                         {% elif status.can_enroll %}
                             <a href="{% url 'enrol_lesson' status.lesson.id %}" 
                                class="btn btn-sm btn-primary">Enroll</a>
                         {% else %}
                             <button class="btn btn-sm btn-secondary" disabled>
-                                Locked - prerequisites:
-                                {% for p in status.missing_prereqs %}
-                                    {{ p.title }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
+                                Locked
                             </button>
                         {% endif %}
                     </div>

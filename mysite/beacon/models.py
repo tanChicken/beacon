@@ -232,11 +232,18 @@ class Enrolment(models.Model):
         on_delete=models.CASCADE,
         related_name="enrolments"
     )
+    completed = models.BooleanField(default=False)  
     enrolled_at = models.DateTimeField(auto_now_add=True)
     credit_earned = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ("student", "lesson")
 
+    def mark_completed(self):
+        self.completed = True
+        self.completed_at = timezone.now()
+        self.save()
+
     def __str__(self):
-        return f"{self.student.email} enrolled in {self.lesson.title}"
+        status = "Completed" if self.completed else "In Progress"
+        return f"{self.student.email} enrolled in {self.lesson.title} ({status})"
