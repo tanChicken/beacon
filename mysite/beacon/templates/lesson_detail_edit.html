@@ -50,6 +50,9 @@ input[name$="-DELETE"] {
                     <label class="form-label">Last Updated:</label>
                     <input type="text" class="form-control" value="{{ lesson.updated_at|date:'M d, Y H:i'  }}" readonly>
                 </div>
+                <p>
+                    Designed by: {{ lesson.designer.get_full_name|default:lesson.designer.email }}
+                </p>
             </p>
         </div>
     </div>
@@ -106,7 +109,6 @@ input[name$="-DELETE"] {
     </tbody>
     </table>
 
-    <!-- Hidden empty row for cloning -->
     <table style="display:none;">
     <tr id="empty-form">
         <td>{{ empty_form.description }}</td>
@@ -154,15 +156,6 @@ input[name$="-DELETE"] {
         {% endif %}
     </div>
 
-    <!-- <h4>Reading List</h4>
-    {% for item in lesson.reading_items.all %}
-    <div class="mb-2">
-        <input type="text" class="form-control" name="reading_item_{{ item.id }}" value="{{ item.title }}">
-    </div> -->
-        <!-- {% empty %}
-    <p class="text-muted">No items yet.</p>
-    {% endfor %} -->
-
     <h4>Reading List</h4>
         {% for item in lesson.reading_items.all %}
             <div class="mb-2">
@@ -195,36 +188,31 @@ const taskRows = document.getElementById("task-rows");
 const addTaskBtn = document.getElementById("add-task");
 const totalForms = document.getElementById("id_tasks-TOTAL_FORMS");
 
-// Add new task
+
 addTaskBtn.addEventListener("click", function () {
     const formIdx = parseInt(totalForms.value);
-    
-    // Clone empty form row
+
     const newRow = document.getElementById("empty-form").cloneNode(true);
     newRow.removeAttribute("id");
     newRow.style.display = "";
 
-    // Replace __prefix__ with current index in all input/select/textarea
     newRow.querySelectorAll("input, select, textarea").forEach(function(input) {
         if (input.name) input.name = input.name.replace(/__prefix__/g, formIdx);
         if (input.id) input.id = input.id.replace(/__prefix__/g, formIdx);
         if (input.type === "checkbox") input.checked = false; // reset DELETE checkbox
     });
 
-    // Append to table
     taskRows.appendChild(newRow);
 
-    // Increment TOTAL_FORMS
     totalForms.value = formIdx + 1;
 });
 
-// Remove task
 document.addEventListener("click", function(e) {
     if (e.target.classList.contains("remove-task")) {
         const row = e.target.closest("tr");
         const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
         if (deleteCheckbox) deleteCheckbox.checked = true; // marks for deletion
-        row.style.display = "none"; // hide visually
+        row.style.display = "none"; 
     }
 });
 </script>
