@@ -279,6 +279,12 @@ def course_detail(request, pk):
     classrooms = Classroom.objects.filter(course_id=course)
 
     if request.method == "POST":
+        form = CourseForm(request.POST, instance=course)
+
+        if form.is_valid():
+            form.save()  # <-- actually save course changes
+            messages.success(request, "Course updated successfully!")
+
         # Handle new inline lessons
         new_titles = request.POST.getlist("new_lesson_title")
         for title in new_titles:
@@ -287,23 +293,25 @@ def course_detail(request, pk):
                     course=course,
                     title=title.strip(),
                     designer=request.user,
-                    lesson_point=0,  # default, or adjust as needed
+                    lesson_point=0,
                     status="DRAFT"
                 )
         if new_titles:
             messages.success(request, f"{len(new_titles)} lesson(s) added successfully!")
-            return redirect("course_detail", pk=course.pk)
 
+        return redirect("instructor_dashboard")
+
+    else:
+        form = CourseForm(instance=course)
+
+    # Student progress
     students_progress = []
     for student in course.students.all():
         total_items = StudentReadingListItem.objects.filter(lesson__course=course).count()
         completed_items = StudentReadingListProgress.objects.filter(
             student=student, completed=True, item__lesson__course=course
         ).count()
-
-        percent_complete = 0
-        if total_items > 0:
-            percent_complete = int((completed_items / total_items) * 100)
+        percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
 
         students_progress.append({
             "student": student,
@@ -314,12 +322,11 @@ def course_detail(request, pk):
 
     return render(request, "course_details.html", {
         "course": course,
-        "form": CourseForm(instance=course),
+        "form": form,
         "lessons": lessons,
         "classrooms": classrooms,
         "students_progress": students_progress,
     })
-
 
 @login_required
 def lesson_detail_edit(request, pk):

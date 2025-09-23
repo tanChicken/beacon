@@ -89,10 +89,16 @@
         <p class="text-muted">No students enrolled yet.</p>
     {% endif %}
 
-    <!-- Form Buttons -->
+    <!-- Save & Delete Buttons -->
     <div class="d-flex justify-content-between mt-4">
-      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <!-- Save button -->
+      <form method="POST" action="{% url 'course_detail' course.pk %}" 
+            onsubmit="return confirm('Are you sure you want to save the course changes?');" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </form>
 
+      <!-- Delete button -->
       <form action="{% url 'delete_course' course.pk %}" method="POST" class="d-inline">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger" 
@@ -101,7 +107,6 @@
         </button>
       </form>
     </div>
-  </form>
 </div>
 
 <script>
