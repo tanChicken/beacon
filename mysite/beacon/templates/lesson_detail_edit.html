@@ -35,7 +35,7 @@ input[name$="-DELETE"] {
 
     <form method="POST" enctype="multipart/form-data" onsubmit="return confirm('Are you sure you want to save the lesson details?');">
     {% csrf_token %}
-    
+
     <div class="row align-items-center mb-4">
         <div class="col-md-8">
             <h1 class="mb-0">Lesson: {{ lesson }}</h1>
@@ -71,7 +71,7 @@ input[name$="-DELETE"] {
                 <p><strong>Total Allocated Lesson Points  (all lessons):</strong> {{ total_points }}/30</p>
                 <p><strong>Remaining Lesson Points:</strong> {{ remaining_points }}</p>
             </div>
-            
+
         {% elif field.name == "prerequisites" %}
             {% for checkbox in field %}
                 <div class="form-check">
@@ -91,8 +91,8 @@ input[name$="-DELETE"] {
     </div>
     {% endfor %}
 
-
-     <h4>Tasks</h4>
+    <!-- Tasks -->
+    <h4>Tasks</h4>
     <table class="task-table">
     <thead>
         <tr>
@@ -106,6 +106,7 @@ input[name$="-DELETE"] {
         {{ formset.management_form }}
         {% for form in formset %}
         <tr>
+            {{ form.id }}  <!-- hidden ID field for existing tasks -->
             <td>{{ form.description }}</td>
             <td>{{ form.estimated_time }}</td>
             <td>
@@ -119,6 +120,7 @@ input[name$="-DELETE"] {
 
     <table style="display:none;">
     <tr id="empty-form">
+        {{ empty_form.id }}  <!-- hidden ID for new tasks -->
         <td>{{ empty_form.description }}</td>
         <td>{{ empty_form.estimated_time }}</td>
         <td>
@@ -131,7 +133,7 @@ input[name$="-DELETE"] {
 
     <hr>
 
-    <!-- Classroom Allocation Section -->
+    <!-- Classroom Allocation -->
     <div class="mb-4 p-3 border rounded bg-light">
         <h5 class="fw-semibold">Classroom Allocation</h5>
         <p class="text-muted small">Assign this lesson to a classroom</p>
@@ -164,6 +166,7 @@ input[name$="-DELETE"] {
         {% endif %}
     </div>
 
+    <!-- Reading List -->
     <h4>Reading List</h4>
     <div id="reading-items">
         {% for item in reading_items %}
@@ -174,8 +177,9 @@ input[name$="-DELETE"] {
             </div>
         {% endfor %}
     </div>
-    <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addReadingItem()">+ Add Reading Item</button>
+    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-reading-item">+ Add Reading Item</button>
 
+    <!-- Assignments -->
     <h4>Assignments</h4>
     <div id="assignment-items">
         {% for item in assignment_items %}
@@ -186,9 +190,9 @@ input[name$="-DELETE"] {
             </div>
         {% endfor %}
     </div>
-    <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addAssignmentItem()">+ Add Assignment</button>
+    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-assignment-item">+ Add Assignment</button>
 
-    <!-- Enrolled Students Progress -->
+    <!-- Enrolled Students -->
     <h4>Enrolled Students</h4>
     {% if enrolled_students %}
     <ul class="list-group mb-4">
@@ -213,31 +217,15 @@ input[name$="-DELETE"] {
         <a href="{% url 'course_detail' lesson.course.pk %}" class="btn btn-secondary">Cancel</a>
     </div>
 </form>
-
 </div>
 
 <script>
-function addReadingItem() {
-    const container = document.getElementById('reading-items');
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-control mb-2';
-    input.name = 'new_reading_item';
-    container.appendChild(input);
-}
-
-function addAssignmentItem() {
-    const container = document.getElementById('assignment-items');
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-control mb-2';
-    input.name = 'new_assignment_item';
-    container.appendChild(input);
-}
+const addTaskBtn = document.getElementById("add-task");
+const taskRows = document.getElementById("task-rows");
+const totalForms = document.querySelector('#id_form-TOTAL_FORMS');
 
 addTaskBtn.addEventListener("click", function () {
     const formIdx = parseInt(totalForms.value);
-
     const newRow = document.getElementById("empty-form").cloneNode(true);
     newRow.removeAttribute("id");
     newRow.style.display = "";
@@ -245,11 +233,11 @@ addTaskBtn.addEventListener("click", function () {
     newRow.querySelectorAll("input, select, textarea").forEach(function(input) {
         if (input.name) input.name = input.name.replace(/__prefix__/g, formIdx);
         if (input.id) input.id = input.id.replace(/__prefix__/g, formIdx);
-        if (input.type === "checkbox") input.checked = false; // reset DELETE checkbox
+        if (input.type === "checkbox") input.checked = false;
+        if (input.type === "hidden" && input.name.endsWith("-id")) input.value = ""; // reset ID for new
     });
 
     taskRows.appendChild(newRow);
-
     totalForms.value = formIdx + 1;
 });
 
@@ -257,9 +245,29 @@ document.addEventListener("click", function(e) {
     if (e.target.classList.contains("remove-task")) {
         const row = e.target.closest("tr");
         const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-        if (deleteCheckbox) deleteCheckbox.checked = true; // marks for deletion
+        if (deleteCheckbox) deleteCheckbox.checked = true;
         row.style.display = "none"; 
     }
+});
+
+// Dynamic Reading Items
+document.getElementById("add-reading-item").addEventListener("click", function() {
+    const container = document.getElementById('reading-items');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control mb-2';
+    input.name = 'new_reading_item';
+    container.appendChild(input);
+});
+
+// Dynamic Assignment Items
+document.getElementById("add-assignment-item").addEventListener("click", function() {
+    const container = document.getElementById('assignment-items');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control mb-2';
+    input.name = 'new_assignment_item';
+    container.appendChild(input);
 });
 </script>
 
