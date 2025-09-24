@@ -1,13 +1,13 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentChecklistProgress, Student, StudentProfile, User, StudentChecklistItem, Instructor, InstructorProfile, Enrolment
+from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
 from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 
-from .models import Course, Student, StudentProfile, User  # note: import Student & StudentProfile
-
+from .models import Course, Student, StudentProfile, User
+from django.db import models
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -293,7 +293,7 @@ def course_detail(request, pk):
                     status="DRAFT"
                 )
         if new_titles:
-            messages.success(request, f"{len(new_titles)} lesson(s) added successfully!")
+            messages.success(request, "Lesson(s) added successfully!")
 
         return redirect("instructor_dashboard")
 
@@ -303,8 +303,8 @@ def course_detail(request, pk):
     # Student progress
     students_progress = []
     for student in course.students.all():
-        total_items = StudentChecklistItem.objects.filter(lesson__course=course).count()
-        completed_items = StudentChecklistProgress.objects.filter(
+        total_items = StudentReadingListItem.objects.filter(lesson__course=course).count()
+        completed_items = StudentReadingListProgress.objects.filter(
             student=student, completed=True, item__lesson__course=course
         ).count()
         percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
@@ -324,20 +324,26 @@ def course_detail(request, pk):
         "students_progress": students_progress,
     })
 
+from django.db.models import Sum
+
 @login_required
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
     course = lesson.course
-    available_classrooms = Classroom.objects.filter(
-    course_id=course  # or course_id_id=course.id
-    ).order_by("classroom_id")
+    available_classrooms = Classroom.objects.filter(course_id=course).order_by("classroom_id")
+
+    # Always calculate totals for the whole course
+    lessons = course.lessons.all()
+    total_points = lessons.aggregate(total=Sum("lesson_point"))["total"] or 0
+    remaining_points = 30 - total_points
+    enrolments = Enrolment.objects.filter(lesson=lesson).select_related("student")
+    enrolled_students = [enr.student for enr in enrolments]
 
     if request.method == "POST":
         form = LessonDetailForm(request.POST, instance=lesson, course=course, request=request)
         formset = LessonTaskFormSet(request.POST, instance=lesson)
-        
+
         if form.is_valid() and formset.is_valid():
-            # form.save()
             lesson = form.save()
             formset.instance = lesson
             formset.save()
@@ -351,7 +357,9 @@ def lesson_detail_edit(request, pk):
             new_items = request.POST.getlist("new_reading_item")
             for title in new_items:
                 if title.strip():
-                    StudentChecklistItem.objects.create(lesson=lesson, title=title.strip())
+                    StudentReadingListItem.objects.create(lesson=lesson, title=title.strip())
+            total_points = course.lessons.aggregate(total=Sum("lesson_point"))["total"] or 0
+            remaining_points = 30 - total_points
 
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("course_detail", pk=lesson.course.pk)
@@ -367,8 +375,8 @@ def lesson_detail_edit(request, pk):
     # Student progress
     students_progress = []
     for student in students:
-        total_items = StudentChecklistItem.objects.filter(lesson__course=course).count()
-        completed_items = StudentChecklistProgress.objects.filter(
+        total_items = StudentReadingListItem.objects.filter(lesson__course=course).count()
+        completed_items = StudentReadingListProgress.objects.filter(
             student=student, completed=True, item__lesson__course=course
         ).count()
         percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
@@ -385,8 +393,11 @@ def lesson_detail_edit(request, pk):
         "lesson_form": form,
         "formset": formset,
         "course": course,
-        "empty_form": formset.empty_form, 
-        "available_classrooms": available_classrooms,  # <-- pass this
+        "empty_form": formset.empty_form,
+        "available_classrooms": available_classrooms,
+        "total_points": total_points,
+        "remaining_points": remaining_points,
+        "enrolled_students": enrolled_students, 
         "students_progress": students_progress,
     })
 
