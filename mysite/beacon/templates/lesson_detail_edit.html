@@ -62,34 +62,39 @@ input[name$="-DELETE"] {
     {% endif %}
 
     {% for field in lesson_form %}
-    <div class="mb-3">
-        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+        {% if field.name != "classroom" %}
+        <div class="mb-3">
+            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
 
-        {% if field.name == "lesson_point" %}
-            {{ field }}
-            <div class="form-text">
-                <p><strong>Total Allocated Lesson Points  (all lessons):</strong> {{ total_points }}/30</p>
-                <p><strong>Remaining Lesson Points:</strong> {{ remaining_points }}</p>
-            </div>
-
-        {% elif field.name == "prerequisites" %}
-            {% for checkbox in field %}
-                <div class="form-check">
-                    {{ checkbox.tag }}
-                    <label class="form-check-label" for="{{ checkbox.id_for_label }}">
-                        {{ checkbox.choice_label }}
-                    </label>
+            {% if field.name == "lesson_point" %}
+                {{ field }}
+                <div class="form-text">
+                    <p><strong>Total Allocated Lesson Points  (all lessons):</strong> {{ total_points }}/30</p>
+                    <p><strong>Remaining Lesson Points:</strong> {{ remaining_points }}</p>
                 </div>
-            {% endfor %}
-        {% else %}
-            {{ field }}
-        {% endif %}
 
-        {% if field.errors %}
-            <div class="text-danger">{{ field.errors }}</div>
+            {% elif field.name == "prerequisites" %}
+                {% for checkbox in field %}
+                    <div class="form-check">
+                        {{ checkbox.tag }}
+                        <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                            {{ checkbox.choice_label }}
+                        </label>
+                    </div>
+                {% endfor %}
+            {% else %}
+                {{ field }}
+            {% endif %}
+
+            {% if field.errors %}
+                <div class="text-danger">{{ field.errors }}</div>
+            {% endif %}
+        </div>
+        {% else %}
+            {{ field }} {# still render hidden input, but no label #}
         {% endif %}
-    </div>
     {% endfor %}
+
 
     <!-- Tasks -->
     <h4>Tasks</h4>

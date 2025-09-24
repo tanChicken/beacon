@@ -294,7 +294,6 @@ def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = course.lessons.all()
     classrooms = Classroom.objects.filter(course_id=course)
-
     if request.method == "POST":
         form = CourseForm(request.POST, instance=course)
 

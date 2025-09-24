@@ -84,7 +84,7 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ['status', 'lesson_id', 'title', 'lesson_point', 'description', 'objective', 'prerequisites', 'effort_per_week']
+        fields = ['status', 'lesson_id', 'title', 'lesson_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom']
         widgets = {
             "lesson_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. LSN-001"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
@@ -93,7 +93,8 @@ class LessonDetailForm(forms.ModelForm):
             "effort_per_week": forms.NumberInput(attrs={"class": "form-control", "placeholder": "Hours per week"}),
             "status": forms.Select(attrs={"class": "form-select"}),
             "lesson_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
-            "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"})
+            "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
+            "classroom": forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
