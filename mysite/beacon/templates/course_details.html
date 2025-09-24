@@ -5,11 +5,7 @@
 <div class="container mt-4">
   <!-- Back Button -->
   <div class="mb-3">
-    {% if user.role == "INSTRUCTOR" %}
       <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
-    {% else %}
-      <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
-    {% endif %}
   </div>
 
   <!-- Course Form -->
