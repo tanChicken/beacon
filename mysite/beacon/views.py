@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.http import JsonResponse
 
 from .models import Course, Student, StudentProfile, User
 from django.db import models
@@ -187,15 +188,35 @@ def student_lesson_details(request, pk):
         and prereqs_met
     )
 
+    completed_item_ids = StudentChecklistProgress.objects.filter(
+        student=student, completed=True, item__lesson=lesson
+    ).values_list("item_id", flat=True)
+
     return render(request, "student_lesson_details.html", {
         "lesson": lesson,
         "is_enrolled": is_enrolled,
         "can_enroll": can_enroll,
         "missing_prereqs": missing_prereqs,  # optional: useful to show in template
         "is_completed": is_completed,
+        "completed_item_ids": list(completed_item_ids),
     })
 
+from django.http import JsonResponse
 
+@login_required
+def toggle_checklist_item(request, item_id):
+    item = get_object_or_404(StudentChecklistItem, id=item_id)
+    student = request.user
+
+    progress, _ = StudentChecklistProgress.objects.get_or_create(
+        student=student,
+        item=item,
+    )
+
+    progress.completed = not progress.completed
+    progress.save()
+
+    return JsonResponse({"completed": progress.completed})
 
 @login_required
 def student_classroom(request):
@@ -504,7 +525,7 @@ def instructor_classroom(request):
         Classroom.objects
         .select_related("course_id")
         .prefetch_related("lessons")
-        .filter(course_id__instructor=instructor)   # 🔑 only classrooms whose course is taught by this instructor
+        .filter(course_id__instructor=instructor)  
         .distinct()
     )
 
