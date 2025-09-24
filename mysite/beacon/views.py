@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
+from .models import Classroom, Course, Lesson, StudentChecklistProgress, Student, StudentProfile, User, StudentChecklistItem, Instructor, InstructorProfile, Enrolment
 from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
@@ -305,7 +305,7 @@ def course_detail(request, pk):
                     status="DRAFT"
                 )
         if new_titles:
-            messages.success(request, "Lesson(s) added successfully!")
+            messages.success(request, f"{len(new_titles)} lesson(s) added successfully!")
 
         return redirect("instructor_dashboard")
 
@@ -315,8 +315,8 @@ def course_detail(request, pk):
     # Student progress
     students_progress = []
     for student in course.students.all():
-        total_items = StudentReadingListItem.objects.filter(lesson__course=course).count()
-        completed_items = StudentReadingListProgress.objects.filter(
+        total_items = StudentChecklistItem.objects.filter(lesson__course=course).count()
+        completed_items = StudentChecklistProgress.objects.filter(
             student=student, completed=True, item__lesson__course=course
         ).count()
         percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
@@ -360,21 +360,43 @@ def lesson_detail_edit(request, pk):
             formset.instance = lesson
             formset.save()
 
-            for item in lesson.reading_items.all():
+            # Update existing Reading Items
+            for item in lesson.checklist_items.filter(item_type="READING"):
                 key = f"reading_item_{item.id}"
                 if key in request.POST:
                     item.title = request.POST[key]
                     item.save()
 
-            new_items = request.POST.getlist("new_reading_item")
-            for title in new_items:
+            # --- Add new reading items ---
+            new_readings = request.POST.getlist("new_reading_item")
+            for title in new_readings:
                 if title.strip():
-                    StudentReadingListItem.objects.create(lesson=lesson, title=title.strip())
+                    StudentChecklistItem.objects.create(
+                        lesson=lesson,
+                        title=title.strip(),
+                        item_type="READING"
+                    )
+            
+            # Update existing Assignments
+            for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
+                key = f"assignment_item_{item.id}"
+                if key in request.POST:
+                    item.title = request.POST[key]
+                    item.save()
+
+            # --- Add new assignment items ---
+            new_assignments = request.POST.getlist("new_assignment_item")
+            for title in new_assignments:
+                if title.strip():
+                    StudentChecklistItem.objects.create(
+                        lesson=lesson,
+                        title=title.strip(),
+                        item_type="ASSIGNMENT"
+                    )
             total_points = course.lessons.aggregate(total=Sum("lesson_point"))["total"] or 0
             remaining_points = 30 - total_points
 
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
-            return redirect("course_detail", pk=lesson.course.pk)
     else:
         form = LessonDetailForm(instance=lesson, course=course, request=request)
         formset = LessonTaskFormSet(instance=lesson)
@@ -387,8 +409,8 @@ def lesson_detail_edit(request, pk):
     # Student progress
     students_progress = []
     for student in students:
-        total_items = StudentReadingListItem.objects.filter(lesson__course=course).count()
-        completed_items = StudentReadingListProgress.objects.filter(
+        total_items = StudentChecklistItem.objects.filter(lesson__course=course).count()
+        completed_items = StudentChecklistProgress.objects.filter(
             student=student, completed=True, item__lesson__course=course
         ).count()
         percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
@@ -399,6 +421,9 @@ def lesson_detail_edit(request, pk):
             "total": total_items,
             "percent": percent_complete,
         })
+
+    reading_items = lesson.checklist_items.filter(item_type="READING")
+    assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
@@ -411,6 +436,8 @@ def lesson_detail_edit(request, pk):
         "remaining_points": remaining_points,
         "enrolled_students": enrolled_students, 
         "students_progress": students_progress,
+        "reading_items": reading_items,
+        "assignment_items": assignment_items,
     })
 
 @login_required

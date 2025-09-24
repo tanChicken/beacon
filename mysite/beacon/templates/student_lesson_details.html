@@ -192,56 +192,59 @@
     <h3>Lesson Objective</h3>
     <div class="big-box">{{ lesson.objective }}</div>
     </div>
-
-    {# Reading list checklist form #}
-    <h3>Reading List</h3>
-    <form method="post">
-        {% csrf_token %}  {# CSRF token for security #}
-        <ul class="list-group">
-        {% for item in reading_items %}
-            <li class="list-group-item">
-                {# Checkbox for each reading item, checked if completed #}
-                <input type="checkbox" name="{{ item.id }}" {% if item.id in progress %}checked{% endif %}>
-                <label for="reading-{{ item.id }}">{{ item.title }}</label>
-            </li>
-        {% empty %}
-            {# Message if there are no reading items #}
-            <li class="list-group-item text-muted">No reading list provided.</li>
-        {% endfor %}
-        </ul>
     </form>
 
     <hr>
 
-    {# Assignments section #}
-    <h3>Assignments</h3>
-    {% if assignments %}
+    <div class="container mt-4">
+
+    <section class="mb-4">
+        <h3 class="mb-3">Reading List</h3>
         <div class="checklist">
-        {% for assignment in assignments %}
+        {% for item in lesson.checklist_items.all %}
+            {% if item.item_type == "READING" %}
             <div class="check-item">
-            <div class="desc-box">{{ assignment.title }}{% if assignment.description %} — {{ assignment.description }}{% endif %}</div>
+            <div class="desc-box">{{ item.title }}</div>
             <div class="check-wrap">
-                <input id="assignment-{{ assignment.id }}" type="checkbox" name="assignment_{{ assignment.id }}" {% if assignment.id in assignment_done_ids %}checked{% endif %}>
-                <label for="assignment-{{ assignment.id }}" class="sr-only">Mark assignment completed</label>
+                <input
+                type="checkbox"
+                class="check-toggle"
+                data-item-id="{{ item.id }}"
+                {% if item.id in completed_item_ids %}checked{% endif %}
+                >
             </div>
             </div>
+            {% endif %}
+        {% empty %}
+            <p class="text-muted small">No reading items yet.</p>
         {% endfor %}
         </div>
-    {% else %}
-        {# If you're using Lesson.assignment (TextField) instead, render that: #}
-        {% if lesson.assignment %}
+    </section>
+
+    <section class="mb-4">
+        <h3 class="mb-3">Assignments</h3>
         <div class="checklist">
+        {% for item in lesson.checklist_items.all %}
+            {% if item.item_type == "ASSIGNMENT" %}
             <div class="check-item">
-            <div class="desc-box">{{ lesson.assignment }}</div>
+            <div class="desc-box">{{ item.title }}</div>
             <div class="check-wrap">
-                <input id="assignment_single" type="checkbox" name="assignment_single" {% if assignment_completed %}checked{% endif %}>
-                <label for="assignment_single" class="sr-only">Mark assignment completed</label>
+                <input
+                type="checkbox"
+                class="check-toggle"
+                data-item-id="{{ item.id }}"
+                {% if item.id in completed_item_ids %}checked{% endif %}
+                >
             </div>
             </div>
+            {% endif %}
+        {% empty %}
+            <p class="text-muted small">No assignments yet.</p>
+        {% endfor %}
         </div>
-        {% else %}
-        <p class="text-muted">No assignments yet.</p>
-        {% endif %}
-    {% endif %}
+    </section>
+
+    </div>
+
 </div>
 {% endblock %}
