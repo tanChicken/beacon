@@ -351,85 +351,67 @@ from django.db.models import Sum
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
     course = lesson.course
-    available_classrooms = Classroom.objects.filter(course_id=course).order_by("classroom_id")
+    available_classrooms = Classroom.objects.filter(course_id_id=course.pk).order_by("classroom_id")
 
-    # Always calculate totals for the whole course
-    lessons = course.lessons.all()
-    total_points = lessons.aggregate(total=Sum("lesson_point"))["total"] or 0
+    total_points = course.lessons.aggregate(total=Sum("lesson_point"))["total"] or 0
     remaining_points = 30 - total_points
-    enrolments = Enrolment.objects.filter(lesson=lesson).select_related("student")
-    enrolled_students = [enr.student for enr in enrolments]
 
     if request.method == "POST":
+        # Main lesson form
         form = LessonDetailForm(request.POST, instance=lesson, course=course, request=request)
+
+        # Formset for lesson tasks
         formset = LessonTaskFormSet(request.POST, instance=lesson)
 
         if form.is_valid() and formset.is_valid():
+            # Save lesson
             lesson = form.save()
+
+            # Save tasks
             formset.instance = lesson
             formset.save()
 
-            # Update existing Reading Items
+            # Update existing reading items
             for item in lesson.checklist_items.filter(item_type="READING"):
                 key = f"reading_item_{item.id}"
                 if key in request.POST:
-                    item.title = request.POST[key]
+                    item.title = request.POST[key].strip()
                     item.save()
 
-            # --- Add new reading items ---
-            new_readings = request.POST.getlist("new_reading_item")
-            for title in new_readings:
+            # Add new reading items
+            for title in request.POST.getlist("new_reading_item"):
                 if title.strip():
                     StudentChecklistItem.objects.create(
                         lesson=lesson,
                         title=title.strip(),
                         item_type="READING"
                     )
-            
-            # Update existing Assignments
+
+            # Update existing assignment items
             for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
                 key = f"assignment_item_{item.id}"
                 if key in request.POST:
-                    item.title = request.POST[key]
+                    item.title = request.POST[key].strip()
                     item.save()
 
-            # --- Add new assignment items ---
-            new_assignments = request.POST.getlist("new_assignment_item")
-            for title in new_assignments:
+            # Add new assignment items
+            for title in request.POST.getlist("new_assignment_item"):
                 if title.strip():
                     StudentChecklistItem.objects.create(
                         lesson=lesson,
                         title=title.strip(),
                         item_type="ASSIGNMENT"
                     )
-            total_points = course.lessons.aggregate(total=Sum("lesson_point"))["total"] or 0
-            remaining_points = 30 - total_points
 
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
+        else:
+            messages.error(request, f"Please fix the errors below.")
+            print("Form errors:", form.errors)
+            print("Formset errors:", formset.errors)
     else:
         form = LessonDetailForm(instance=lesson, course=course, request=request)
         formset = LessonTaskFormSet(instance=lesson)
-
-    # get all enrolments for this lesson
-    enrolments = lesson.enrolments.all()
-
-    # get all students (as User instances)
-    students = [enrol.student for enrol in enrolments]
-    # Student progress
-    students_progress = []
-    for student in students:
-        total_items = StudentChecklistItem.objects.filter(lesson__course=course).count()
-        completed_items = StudentChecklistProgress.objects.filter(
-            student=student, completed=True, item__lesson__course=course
-        ).count()
-        percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
-
-        students_progress.append({
-            "student": student,
-            "completed": completed_items,
-            "total": total_items,
-            "percent": percent_complete,
-        })
 
     reading_items = lesson.checklist_items.filter(item_type="READING")
     assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
@@ -439,12 +421,9 @@ def lesson_detail_edit(request, pk):
         "lesson_form": form,
         "formset": formset,
         "course": course,
-        "empty_form": formset.empty_form,
         "available_classrooms": available_classrooms,
         "total_points": total_points,
         "remaining_points": remaining_points,
-        "enrolled_students": enrolled_students, 
-        "students_progress": students_progress,
         "reading_items": reading_items,
         "assignment_items": assignment_items,
     })
