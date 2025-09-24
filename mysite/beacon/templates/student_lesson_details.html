@@ -111,6 +111,11 @@
                     You have completed this lesson.
                 </div>
             {% elif is_enrolled %}
+                <a href="{% url 'unenrol_lesson' lesson.id %}" 
+                        class="btn btn-sm btn-danger ms-2"
+                        onclick="return confirm('Are you sure you want to unenroll from this lesson?');">
+                        Unenroll
+                </a>
             {% elif can_enroll %}
                 <div class="alert alert-info" role="alert">
                         You can enroll in this lesson
