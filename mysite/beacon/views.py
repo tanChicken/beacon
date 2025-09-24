@@ -102,6 +102,18 @@ def enrol_course(request, course_id):
     return redirect("student_dashboard")
 
 @login_required
+def unenrol_course(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    student = request.user
+    
+    # remove the student from the course enrolments
+    if course.students.filter(id=student.id).exists():
+        course.students.remove(student)
+    
+    return redirect("student_dashboard")  
+
+
+@login_required
 def student_course_details(request,pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = Lesson.objects.filter(course=course)
@@ -459,6 +471,16 @@ def enrol_lesson(request, lesson_id):
     Enrolment.objects.get_or_create(student=student, lesson=lesson)
     messages.success(request, f"You are now enrolled in {lesson.title}.")
     return redirect("student_lesson_details", pk=lesson.id)
+
+@login_required
+def unenrol_lesson(request, pk):
+    lesson = get_object_or_404(Lesson, pk=pk)
+    student = request.user
+    
+    enrolment = Enrolment.objects.filter(student=student, lesson=lesson, completed=False).first()
+    if enrolment:
+        enrolment.delete()  
+    return redirect("student_course_details", pk=lesson.course.pk)
 
 @login_required
 def instructor_classroom(request):
