@@ -50,9 +50,10 @@ input[name$="-DELETE"] {
                     <label class="form-label">Last Updated:</label>
                     <input type="text" class="form-control" value="{{ lesson.updated_at|date:'M d, Y H:i'  }}" readonly>
                 </div>
-                <p>
-                    Designed by: {{ lesson.designer.get_full_name|default:lesson.designer.email }}
-                </p>
+                <div class="mb-2">
+                    <label class="form-label">Designed by:</label>
+                    <input type="text" class="form-control" value="{{ lesson.designer.get_full_name|default:lesson.designer.email }}" readonly>
+                </div>
             </p>
         </div>
     </div>
@@ -172,19 +173,30 @@ input[name$="-DELETE"] {
         {% endfor %}
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addReadingItem()">+ Add Reading Item</button>
 
+    <!-- Enrolled Students Progress -->
     <h4>Enrolled Students</h4>
-    {% if enrolled_students %}
-    <ul class="list-group mb-4">
-        {% for student in enrolled_students %}
-        <li class="list-group-item">
-            {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
-            <small class="text-muted">({{ student.email }})</small>
-        </li>
-        {% endfor %}
-    </ul>
+    {% if students_progress %}
+        <ul class="list-group mb-4">
+            {% for sp in students_progress %}
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>{{ sp.student.studentprofile.first_name }} {{ sp.student.studentprofile.last_name }}</span>
+                    <small>{{ sp.completed }}/{{ sp.total }} completed</small>
+                </div>
+                <div class="progress mt-2">
+                    <div class="progress-bar progress-{{ sp.percent|floatformat:0 }}"
+                        role="progressbar"
+                        aria-valuenow="{{ sp.percent }}" aria-valuemin="0" aria-valuemax="100">
+                        {{ sp.percent }}%
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
     {% else %}
-    <p class="text-muted">No students enrolled in this lesson yet.</p>
+        <p class="text-muted">No students enrolled yet.</p>
     {% endif %}
+
 
     <div class="mt-4 d-flex justify-content-between">
         <button type="submit" class="btn btn-primary">Save Lesson</button>
