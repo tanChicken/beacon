@@ -166,12 +166,29 @@ input[name$="-DELETE"] {
     </div>
 
     <h4>Reading List</h4>
-        {% for item in lesson.reading_items.all %}
+    <div id="reading-items">
+        {% for item in lesson.checklist_items.filter(item_type="READING") %}
             <div class="mb-2">
-                <input type="text" class="form-control" name="reading_item_{{ item.id }}" value="{{ item.title }}">
+                <input type="text" class="form-control" 
+                    name="reading_item_{{ item.id }}" 
+                    value="{{ item.title }}">
             </div>
         {% endfor %}
+    </div>
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addReadingItem()">+ Add Reading Item</button>
+
+    <h4>Assignments</h4>
+    <div id="assignment-items">
+        {% for item in lesson.checklist_items.filter(item_type="ASSIGNMENT") %}
+            <div class="mb-2">
+                <input type="text" class="form-control" 
+                    name="assignment_item_{{ item.id }}" 
+                    value="{{ item.title }}">
+            </div>
+        {% endfor %}
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addAssignmentItem()">+ Add Assignment</button>
+
 
     <!-- Enrolled Students Progress -->
     <h4>Enrolled Students</h4>
@@ -213,15 +230,22 @@ input[name$="-DELETE"] {
 
 <script>
 function addReadingItem() {
-    const container = document.createElement('div');
-    container.classList.add('mb-2');
-    container.innerHTML = '<input type="text" class="form-control" name="new_reading_item" placeholder="Reading item title">';
-    document.querySelector('form').insertBefore(container, document.querySelector('button[onclick="addReadingItem()"]'));
+    const container = document.getElementById('reading-items');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control mb-2';
+    input.name = 'new_reading_item';
+    container.appendChild(input);
 }
-const taskRows = document.getElementById("task-rows");
-const addTaskBtn = document.getElementById("add-task");
-const totalForms = document.getElementById("id_tasks-TOTAL_FORMS");
 
+function addAssignmentItem() {
+    const container = document.getElementById('assignment-items');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control mb-2';
+    input.name = 'new_assignment_item';
+    container.appendChild(input);
+}
 
 addTaskBtn.addEventListener("click", function () {
     const formIdx = parseInt(totalForms.value);

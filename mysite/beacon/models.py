@@ -221,16 +221,24 @@ class LessonTask(models.Model):
     def __str__(self):
         return f"{self.lesson.title} - {self.description}"
 
-class StudentReadingListItem(models.Model):
-    lesson = models.ForeignKey(Lesson, related_name="reading_items", on_delete=models.CASCADE)
+
+class StudentChecklistItem(models.Model):
+    CHECKLIST_TYPE_CHOICES = [
+        ("READING", "Reading"),
+        ("ASSIGNMENT", "Assignment"),
+        ("OTHER", "Other"),
+    ]
+
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="checklist_items")
     title = models.CharField(max_length=255)
+    item_type = models.CharField(max_length=20, choices=CHECKLIST_TYPE_CHOICES, default="OTHER")
 
     def __str__(self):
-        return f"{self.lesson.title} - {self.title}"
+        return f"{self.title} ({self.item_type})"
 
-class StudentReadingListProgress(models.Model):
+class StudentChecklistProgress(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    item = models.ForeignKey(StudentReadingListItem, on_delete=models.CASCADE)
+    item = models.ForeignKey(StudentChecklistItem, on_delete=models.CASCADE)
     completed = models.BooleanField(default=False)
 
     class Meta:

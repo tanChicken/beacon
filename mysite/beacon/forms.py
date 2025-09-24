@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
+from .models import Course, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.db import models
@@ -174,9 +174,9 @@ LessonTaskFormSet = inlineformset_factory(
     can_delete=True
 )
         
-class ReadingItemForm(forms.ModelForm):
+class ChecklistItemForm(forms.ModelForm):
     class Meta:
-        model = StudentReadingListItem
+        model = StudentChecklistItem
         fields = ["title"]
 
 DURATION_CHOICES = [(2, "2 weeks"), (3, "3 weeks"), (4, "4 weeks")]
