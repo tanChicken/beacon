@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentChecklistProgress, Student, StudentProfile, User, StudentChecklistItem, Instructor, InstructorProfile, Enrolment
+from .models import Classroom, Course, Lesson, StudentReadingListProgress, Student, StudentProfile, User, StudentReadingListItem, Instructor, InstructorProfile, Enrolment
 from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
@@ -303,8 +303,8 @@ def course_detail(request, pk):
     # Student progress
     students_progress = []
     for student in course.students.all():
-        total_items = StudentChecklistItem.objects.filter(lesson__course=course).count()
-        completed_items = StudentChecklistProgress.objects.filter(
+        total_items = StudentReadingListItem.objects.filter(lesson__course=course).count()
+        completed_items = StudentReadingListProgress.objects.filter(
             student=student, completed=True, item__lesson__course=course
         ).count()
         percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
@@ -357,7 +357,7 @@ def lesson_detail_edit(request, pk):
             new_items = request.POST.getlist("new_reading_item")
             for title in new_items:
                 if title.strip():
-                    StudentChecklistItem.objects.create(lesson=lesson, title=title.strip())
+                    StudentReadingListItem.objects.create(lesson=lesson, title=title.strip())
             total_points = course.lessons.aggregate(total=Sum("lesson_point"))["total"] or 0
             remaining_points = 30 - total_points
 
@@ -375,8 +375,8 @@ def lesson_detail_edit(request, pk):
     # Student progress
     students_progress = []
     for student in students:
-        total_items = StudentChecklistItem.objects.filter(lesson__course=course).count()
-        completed_items = StudentChecklistProgress.objects.filter(
+        total_items = StudentReadingListItem.objects.filter(lesson__course=course).count()
+        completed_items = StudentReadingListProgress.objects.filter(
             student=student, completed=True, item__lesson__course=course
         ).count()
         percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
