@@ -8,6 +8,7 @@ from django.db import transaction
 
 from .models import Course, Student, StudentProfile, User
 from django.db import models
+from.authz import role_required
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -84,13 +85,13 @@ def student_dashboard(request):
         "student": student
     })
     
-@login_required
+@role_required("STUDENT")
 def enrolment_page(request):
     student = request.user
     available_courses = Course.objects.filter(status="active").exclude(students=student)
     return render(request, "enrolment.html", {"available_courses": available_courses, "student": student})
 
-@login_required
+@role_required("STUDENT")
 def enrol_course(request, course_id):
     student = request.user
 
@@ -101,7 +102,7 @@ def enrol_course(request, course_id):
     messages.success(request, f"You have enrolled in {course.title}!")
     return redirect("student_dashboard")
 
-@login_required
+@role_required("STUDENT")
 def unenrol_course(request, pk):
     course = get_object_or_404(Course, pk=pk)
     student = request.user
@@ -113,7 +114,7 @@ def unenrol_course(request, pk):
     return redirect("student_dashboard")  
 
 
-@login_required
+@role_required("STUDENT")
 def student_course_details(request,pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = Lesson.objects.filter(course=course)
@@ -153,7 +154,7 @@ def student_course_details(request,pk):
         "lesson_status": lesson_status_sorted,
     })
 
-@login_required
+@role_required("STUDENT")
 def student_lessons(request):
     if not request.user.role == "STUDENT":
         return render(request, "403.html")
@@ -162,7 +163,7 @@ def student_lessons(request):
 
     return render(request, "student_lessons.html", {"lessons": lessons})
 
-@login_required()
+@role_required("STUDENT")
 def student_lesson_details(request, pk):    
 
     lesson = get_object_or_404(Lesson, pk=pk)
@@ -197,7 +198,7 @@ def student_lesson_details(request, pk):
 
 
 
-@login_required
+@role_required("STUDENT")
 def student_classroom(request):
     # classrooms = Classroom.objects.prefetch_related("lessons").all()
     # classrooms = Classroom.objects.filter(...).exclude(students=student)
@@ -211,7 +212,7 @@ def student_classroom(request):
     )
     return render(request, "student_classroom.html", {"classrooms": classrooms})
 
-@login_required
+@role_required("STUDENT")
 def student_classroom_details(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
     return render(request, 'student_classroom_details.html', {'classroom': classroom})
@@ -235,7 +236,7 @@ def instructor_login(request):
             messages.error(request, "This account is not an instructor. Please use the student login.")
     return render(request, "instructor_login.html")
 
-@login_required
+@role_required("INSTRUCTOR")
 def instructor_dashboard(request):
     courses = (
         Course.objects.filter(instructor=request.user)
@@ -243,7 +244,7 @@ def instructor_dashboard(request):
     )
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
-@login_required
+@role_required("INSTRUCTOR")
 def create_course(request):
     if request.method == "POST":
         form = CourseForm(request.POST)
@@ -264,7 +265,7 @@ def create_course(request):
 
     return render(request, "course_form.html", {"form": form, "action": "Create"})
 
-@login_required
+@role_required("INSTRUCTOR")
 def edit_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
     if request.method == "POST":
@@ -282,14 +283,14 @@ def edit_course(request, pk):
         "action": "Edit",
     })
 
-@login_required
+@role_required("INSTRUCTOR")
 def delete_course(request, pk):
     course = get_object_or_404(Course, pk=pk, instructor=request.user)
     course.delete()
     messages.success(request, "Course deleted successfully!")
     return redirect("instructor_dashboard")
 
-@login_required
+@role_required("INSTRUCTOR")
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = course.lessons.all()
@@ -346,7 +347,7 @@ def course_detail(request, pk):
 
 from django.db.models import Sum
 
-@login_required
+@role_required("INSTRUCTOR")
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
     course = lesson.course
@@ -427,7 +428,7 @@ def lesson_detail_edit(request, pk):
         "assignment_items": assignment_items,
     })
 
-@login_required
+@role_required("INSTRUCTOR")
 def create_lesson(request, course_pk):
     course = get_object_or_404(Course, pk=course_pk, instructor=request.user)
 
@@ -453,7 +454,7 @@ def create_lesson(request, course_pk):
         }
     )
 
-@login_required
+@role_required("INSTRUCTOR")
 def delete_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk, designer=request.user)
     course_pk = lesson.course.pk
@@ -461,7 +462,7 @@ def delete_lesson(request, pk):
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
 
-@login_required
+@role_required("INSTRUCTOR")
 def enrol_lesson(request, lesson_id):
     student = request.user
     lesson = get_object_or_404(Lesson, id=lesson_id)
@@ -486,7 +487,7 @@ def enrol_lesson(request, lesson_id):
     messages.success(request, f"You are now enrolled in {lesson.title}.")
     return redirect("student_lesson_details", pk=lesson.id)
 
-@login_required
+@role_required("INSTRUCTOR")
 def unenrol_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
     student = request.user
@@ -496,7 +497,7 @@ def unenrol_lesson(request, pk):
         enrolment.delete()  
     return redirect("student_course_details", pk=lesson.course.pk)
 
-@login_required
+@role_required("INSTRUCTOR")
 def instructor_classroom(request):
     instructor = request.user
     classrooms = (
@@ -511,7 +512,7 @@ def instructor_classroom(request):
         "classrooms": classrooms,
     })
 
-@login_required
+@role_required("INSTRUCTOR")
 def edit_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
     if request.method == "POST":
@@ -528,7 +529,7 @@ def edit_classroom(request, pk):
 
     return render(request, "edit_classroom.html", {"classroom": classroom, "form": form})
 
-@login_required
+@role_required("INSTRUCTOR")
 def create_classroom(request, pk=None):
     # ID, course ID, duration [2/3/4 weeks], classroom supervisor
     preselected_course = get_object_or_404(Course, pk=pk) if pk is not None else None
@@ -548,7 +549,7 @@ def create_classroom(request, pk=None):
 
     return render(request, "create_classroom.html", {"form": form, "course": preselected_course})
 
-@login_required
+@role_required("INSTRUCTOR")
 def delete_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
     course_pk = classroom.course_id.pk   
