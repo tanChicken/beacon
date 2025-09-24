@@ -19,15 +19,28 @@
 
     <div class="row align-items-center mb-4">
       <div class="col-md-8">
-        <h2>Course: {{ course.title }}</h2>
+        <h1>Course: {{ course }}</h1>
+        <hr>
         {{ form.as_p }}
       </div>
       <div class="col-md-4">
-        <p><strong>Credit Points:</strong> {{ course.credit_points }}</p>
-        <p><strong>Created At:</strong> {{ course.created_at|date:"M d, Y H:i" }}</p>
-        <p><strong>Last Updated:</strong> {{ course.updated_at|date:"M d, Y H:i" }}</p>
+        <div class="mb-2">
+          <label class="form-label">Created On:</label>
+          <input type="text" class="form-control" value="{{ course.created_at|date:'j/n/Y' }}" readonly>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label">Last Updated:</label>
+          <input type="text" class="form-control" value="{{ course.updated_at|date:'M d, Y H:i' }}" readonly>
+        </div>
+
+        <div>
+          <label class="form-label">Credit Points:</label>
+          <input type="number" class="form-control" value="{{ course.credit_points }}" readonly>
+        </div>
       </div>
     </div>
+
 
     <!-- Lessons Section -->
     <h4>Lessons</h4>
