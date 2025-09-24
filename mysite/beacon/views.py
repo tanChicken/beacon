@@ -422,6 +422,9 @@ def lesson_detail_edit(request, pk):
             "percent": percent_complete,
         })
 
+    reading_items = lesson.checklist_items.filter(item_type="READING")
+    assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
+
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
         "lesson_form": form,
@@ -433,6 +436,8 @@ def lesson_detail_edit(request, pk):
         "remaining_points": remaining_points,
         "enrolled_students": enrolled_students, 
         "students_progress": students_progress,
+        "reading_items": reading_items,
+        "assignment_items": assignment_items,
     })
 
 @login_required

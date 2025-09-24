@@ -166,7 +166,7 @@ input[name$="-DELETE"] {
 
     <h4>Reading List</h4>
     <div id="reading-items">
-        {% for item in lesson.checklist_items.filter(item_type="READING") %}
+        {% for item in reading_items %}
             <div class="mb-2">
                 <input type="text" class="form-control" 
                     name="reading_item_{{ item.id }}" 
@@ -178,7 +178,7 @@ input[name$="-DELETE"] {
 
     <h4>Assignments</h4>
     <div id="assignment-items">
-        {% for item in lesson.checklist_items.filter(item_type="ASSIGNMENT") %}
+        {% for item in assignment_items %}
             <div class="mb-2">
                 <input type="text" class="form-control" 
                     name="assignment_item_{{ item.id }}" 
@@ -187,7 +187,6 @@ input[name$="-DELETE"] {
         {% endfor %}
     </div>
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addAssignmentItem()">+ Add Assignment</button>
-
 
     <!-- Enrolled Students Progress -->
     <h4>Enrolled Students</h4>
