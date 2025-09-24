@@ -22,12 +22,6 @@ input[name$="-DELETE"] {
 }
 </style>
 
-{% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-success">{{ message }}</div>
-  {% endfor %}
-{% endif %}
-
 <div class="container mt-4">
     <div class="mb-3">
       <a href="{% url 'course_detail' lesson.course.pk %}" class="btn btn-outline-secondary">&larr; Back</a>

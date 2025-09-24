@@ -117,7 +117,7 @@ def unenrol_course(request, pk):
 @role_required("STUDENT")
 def student_course_details(request,pk):
     course = get_object_or_404(Course, pk=pk)
-    lessons = Lesson.objects.filter(course=course)
+    lessons = Lesson.objects.filter(course=course, status="PUBLISHED")
 
     lesson_status = []
     for lesson in lessons:
