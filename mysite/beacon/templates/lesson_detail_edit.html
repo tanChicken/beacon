@@ -22,12 +22,6 @@ input[name$="-DELETE"] {
 }
 </style>
 
-{% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-success">{{ message }}</div>
-  {% endfor %}
-{% endif %}
-
 <div class="container mt-4">
     <div class="mb-3">
       <a href="{% url 'course_detail' lesson.course.pk %}" class="btn btn-outline-secondary">&larr; Back</a>
@@ -35,7 +29,7 @@ input[name$="-DELETE"] {
 
     <form method="POST" enctype="multipart/form-data" onsubmit="return confirm('Are you sure you want to save the lesson details?');">
     {% csrf_token %}
-    
+
     <div class="row align-items-center mb-4">
         <div class="col-md-8">
             <h1 class="mb-0">Lesson: {{ lesson }}</h1>
@@ -50,6 +44,9 @@ input[name$="-DELETE"] {
                     <label class="form-label">Last Updated:</label>
                     <input type="text" class="form-control" value="{{ lesson.updated_at|date:'M d, Y H:i'  }}" readonly>
                 </div>
+                <p>
+                    Designed by: {{ lesson.designer.get_full_name|default:lesson.designer.email }}
+                </p>
             </p>
         </div>
     </div>
@@ -59,29 +56,42 @@ input[name$="-DELETE"] {
     {% endif %}
 
     {% for field in lesson_form %}
-    <div class="mb-3">
-        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+        {% if field.name != "classroom" %}
+        <div class="mb-3">
+            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
 
-        {% if field.name == "prerequisites" %}
-            {% for checkbox in field %}
-                <div class="form-check">
-                    {{ checkbox.tag }}
-                    <label class="form-check-label" for="{{ checkbox.id_for_label }}">
-                        {{ checkbox.choice_label }}
-                    </label>
+            {% if field.name == "lesson_point" %}
+                {{ field }}
+                <div class="form-text">
+                    <p><strong>Total Allocated Lesson Points  (all lessons):</strong> {{ total_points }}/30</p>
+                    <p><strong>Remaining Lesson Points:</strong> {{ remaining_points }}</p>
                 </div>
-            {% endfor %}
-        {% else %}
-            {{ field }}
-        {% endif %}
 
-        {% if field.errors %}
-            <div class="text-danger">{{ field.errors }}</div>
+            {% elif field.name == "prerequisites" %}
+                {% for checkbox in field %}
+                    <div class="form-check">
+                        {{ checkbox.tag }}
+                        <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                            {{ checkbox.choice_label }}
+                        </label>
+                    </div>
+                {% endfor %}
+            {% else %}
+                {{ field }}
+            {% endif %}
+
+            {% if field.errors %}
+                <div class="text-danger">{{ field.errors }}</div>
+            {% endif %}
+        </div>
+        {% else %}
+            {{ field }} {# still render hidden input, but no label #}
         {% endif %}
-    </div>
     {% endfor %}
 
-     <h4>Tasks</h4>
+
+    <!-- Tasks -->
+    <h4>Tasks</h4>
     <table class="task-table">
     <thead>
         <tr>
@@ -95,6 +105,7 @@ input[name$="-DELETE"] {
         {{ formset.management_form }}
         {% for form in formset %}
         <tr>
+            {{ form.id }}  <!-- hidden ID field for existing tasks -->
             <td>{{ form.description }}</td>
             <td>{{ form.estimated_time }}</td>
             <td>
@@ -106,9 +117,9 @@ input[name$="-DELETE"] {
     </tbody>
     </table>
 
-    <!-- Hidden empty row for cloning -->
     <table style="display:none;">
     <tr id="empty-form">
+        {{ empty_form.id }}  <!-- hidden ID for new tasks -->
         <td>{{ empty_form.description }}</td>
         <td>{{ empty_form.estimated_time }}</td>
         <td>
@@ -121,7 +132,7 @@ input[name$="-DELETE"] {
 
     <hr>
 
-    <!-- Classroom Allocation Section -->
+    <!-- Classroom Allocation -->
     <div class="mb-4 p-3 border rounded bg-light">
         <h5 class="fw-semibold">Classroom Allocation</h5>
         <p class="text-muted small">Assign this lesson to a classroom</p>
@@ -154,22 +165,46 @@ input[name$="-DELETE"] {
         {% endif %}
     </div>
 
-    <!-- <h4>Reading List</h4>
-    {% for item in lesson.reading_items.all %}
-    <div class="mb-2">
-        <input type="text" class="form-control" name="reading_item_{{ item.id }}" value="{{ item.title }}">
-    </div> -->
-        <!-- {% empty %}
-    <p class="text-muted">No items yet.</p>
-    {% endfor %} -->
-
+    <!-- Reading List -->
     <h4>Reading List</h4>
-        {% for item in lesson.reading_items.all %}
+    <div id="reading-items">
+        {% for item in reading_items %}
             <div class="mb-2">
-                <input type="text" class="form-control" name="reading_item_{{ item.id }}" value="{{ item.title }}">
+                <input type="text" class="form-control" 
+                    name="reading_item_{{ item.id }}" 
+                    value="{{ item.title }}">
             </div>
         {% endfor %}
-    <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addReadingItem()">+ Add Reading Item</button>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-reading-item">+ Add Reading Item</button>
+
+    <!-- Assignments -->
+    <h4>Assignments</h4>
+    <div id="assignment-items">
+        {% for item in assignment_items %}
+            <div class="mb-2">
+                <input type="text" class="form-control" 
+                    name="assignment_item_{{ item.id }}" 
+                    value="{{ item.title }}">
+            </div>
+        {% endfor %}
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-assignment-item">+ Add Assignment</button>
+
+    <!-- Enrolled Students -->
+    <h4>Enrolled Students</h4>
+    {% if enrolled_students %}
+    <ul class="list-group mb-4">
+        {% for student in enrolled_students %}
+        <li class="list-group-item">
+            {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
+            <small class="text-muted">({{ student.email }})</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">No students enrolled in this lesson yet.</p>
+    {% endif %}
 
     <div class="mt-4 d-flex justify-content-between">
         <button type="submit" class="btn btn-primary">Save Lesson</button>
@@ -181,51 +216,57 @@ input[name$="-DELETE"] {
         <a href="{% url 'course_detail' lesson.course.pk %}" class="btn btn-secondary">Cancel</a>
     </div>
 </form>
-
 </div>
 
 <script>
-function addReadingItem() {
-    const container = document.createElement('div');
-    container.classList.add('mb-2');
-    container.innerHTML = '<input type="text" class="form-control" name="new_reading_item" placeholder="Reading item title">';
-    document.querySelector('form').insertBefore(container, document.querySelector('button[onclick="addReadingItem()"]'));
-}
-const taskRows = document.getElementById("task-rows");
 const addTaskBtn = document.getElementById("add-task");
-const totalForms = document.getElementById("id_tasks-TOTAL_FORMS");
+const taskRows = document.getElementById("task-rows");
+const totalForms = document.querySelector('#id_form-TOTAL_FORMS');
 
-// Add new task
 addTaskBtn.addEventListener("click", function () {
     const formIdx = parseInt(totalForms.value);
-    
-    // Clone empty form row
     const newRow = document.getElementById("empty-form").cloneNode(true);
     newRow.removeAttribute("id");
     newRow.style.display = "";
 
-    // Replace __prefix__ with current index in all input/select/textarea
     newRow.querySelectorAll("input, select, textarea").forEach(function(input) {
         if (input.name) input.name = input.name.replace(/__prefix__/g, formIdx);
         if (input.id) input.id = input.id.replace(/__prefix__/g, formIdx);
-        if (input.type === "checkbox") input.checked = false; // reset DELETE checkbox
+        if (input.type === "checkbox") input.checked = false;
+        if (input.type === "hidden" && input.name.endsWith("-id")) input.value = ""; // reset ID for new
     });
 
-    // Append to table
     taskRows.appendChild(newRow);
-
-    // Increment TOTAL_FORMS
     totalForms.value = formIdx + 1;
 });
 
-// Remove task
 document.addEventListener("click", function(e) {
     if (e.target.classList.contains("remove-task")) {
         const row = e.target.closest("tr");
         const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-        if (deleteCheckbox) deleteCheckbox.checked = true; // marks for deletion
-        row.style.display = "none"; // hide visually
+        if (deleteCheckbox) deleteCheckbox.checked = true;
+        row.style.display = "none"; 
     }
+});
+
+// Dynamic Reading Items
+document.getElementById("add-reading-item").addEventListener("click", function() {
+    const container = document.getElementById('reading-items');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control mb-2';
+    input.name = 'new_reading_item';
+    container.appendChild(input);
+});
+
+// Dynamic Assignment Items
+document.getElementById("add-assignment-item").addEventListener("click", function() {
+    const container = document.getElementById('assignment-items');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control mb-2';
+    input.name = 'new_assignment_item';
+    container.appendChild(input);
 });
 </script>
 

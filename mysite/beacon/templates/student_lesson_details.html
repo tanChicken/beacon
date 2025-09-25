@@ -106,7 +106,16 @@
         <!-- Student Enrollment Status and Actions -->
         {% if user.role == "STUDENT" %}
         <div class="enrollment-status mb-3">
-            {% if is_enrolled %}
+            {% if is_completed %}
+                <div class="alert alert-dark" role="alert">
+                    You have completed this lesson.
+                </div>
+            {% elif is_enrolled %}
+                <a href="{% url 'unenrol_lesson' lesson.id %}" 
+                        class="btn btn-sm btn-danger ms-2"
+                        onclick="return confirm('Are you sure you want to unenroll from this lesson?');">
+                        Unenroll
+                </a>
             {% elif can_enroll %}
                 <div class="alert alert-info" role="alert">
                         You can enroll in this lesson
@@ -183,56 +192,91 @@
     <h3>Lesson Objective</h3>
     <div class="big-box">{{ lesson.objective }}</div>
     </div>
-
-    {# Reading list checklist form #}
-    <h3>Reading List</h3>
-    <form method="post">
-        {% csrf_token %}  {# CSRF token for security #}
-        <ul class="list-group">
-        {% for item in reading_items %}
-            <li class="list-group-item">
-                {# Checkbox for each reading item, checked if completed #}
-                <input type="checkbox" name="{{ item.id }}" {% if item.id in progress %}checked{% endif %}>
-                <label for="reading-{{ item.id }}">{{ item.title }}</label>
-            </li>
-        {% empty %}
-            {# Message if there are no reading items #}
-            <li class="list-group-item text-muted">No reading list provided.</li>
-        {% endfor %}
-        </ul>
     </form>
 
     <hr>
 
-    {# Assignments section #}
-    <h3>Assignments</h3>
-    {% if assignments %}
+    <div class="container mt-4">
+
+    <section class="mb-4">
+        <h3 class="mb-3">Reading List</h3>
         <div class="checklist">
-        {% for assignment in assignments %}
+        {% for item in lesson.checklist_items.all %}
+            {% if item.item_type == "READING" %}
             <div class="check-item">
-            <div class="desc-box">{{ assignment.title }}{% if assignment.description %} — {{ assignment.description }}{% endif %}</div>
+            <div class="desc-box">{{ item.title }}</div>
             <div class="check-wrap">
-                <input id="assignment-{{ assignment.id }}" type="checkbox" name="assignment_{{ assignment.id }}" {% if assignment.id in assignment_done_ids %}checked{% endif %}>
-                <label for="assignment-{{ assignment.id }}" class="sr-only">Mark assignment completed</label>
+                <input
+                type="checkbox"
+                class="check-toggle"
+                data-item-id="{{ item.id }}"
+                {% if item.id in completed_item_ids %}checked{% endif %}
+                >
             </div>
             </div>
+            {% endif %}
+        {% empty %}
+            <p class="text-muted small">No reading items yet.</p>
         {% endfor %}
         </div>
-    {% else %}
-        {# If you're using Lesson.assignment (TextField) instead, render that: #}
-        {% if lesson.assignment %}
+    </section>
+
+    <section class="mb-4">
+        <h3 class="mb-3">Assignments</h3>
         <div class="checklist">
+        {% for item in lesson.checklist_items.all %}
+            {% if item.item_type == "ASSIGNMENT" %}
             <div class="check-item">
-            <div class="desc-box">{{ lesson.assignment }}</div>
+            <div class="desc-box">{{ item.title }}</div>
             <div class="check-wrap">
-                <input id="assignment_single" type="checkbox" name="assignment_single" {% if assignment_completed %}checked{% endif %}>
-                <label for="assignment_single" class="sr-only">Mark assignment completed</label>
+                <input
+                type="checkbox"
+                class="check-toggle"
+                data-item-id="{{ item.id }}"
+                {% if item.id in completed_item_ids %}checked{% endif %}
+                >
             </div>
             </div>
+            {% endif %}
+        {% empty %}
+            <p class="text-muted small">No assignments yet.</p>
+        {% endfor %}
         </div>
-        {% else %}
-        <p class="text-muted">No assignments yet.</p>
-        {% endif %}
-    {% endif %}
+    </section>
+
+    </div>
+
 </div>
+<script>
+document.querySelectorAll('.check-toggle').forEach(cb => {
+  cb.addEventListener('change', function() {
+    fetch(`/toggle-checklist/${this.dataset.itemId}/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Saved:", data);
+    });
+  });
+});
+
+// helper to grab CSRF token from cookies
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
 {% endblock %}

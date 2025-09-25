@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, StudentReadingListItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
+from .models import Course, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.db import models
@@ -84,17 +84,17 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ['status', 'lesson_id', 'title', 'lesson_point', 'description', 'objective', 'assignment', 'prerequisites', 'effort_per_week']
+        fields = ['status', 'lesson_id', 'title', 'lesson_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom']
         widgets = {
             "lesson_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. LSN-001"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Write a short description"}),
             "objective": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Learning objectives"}),
             "effort_per_week": forms.NumberInput(attrs={"class": "form-control", "placeholder": "Hours per week"}),
-            "assignment": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Assignment details"}),
             "status": forms.Select(attrs={"class": "form-select"}),
             "lesson_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
-            "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"})
+            "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
+            "classroom": forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
@@ -174,9 +174,9 @@ LessonTaskFormSet = inlineformset_factory(
     can_delete=True
 )
         
-class ReadingItemForm(forms.ModelForm):
+class ChecklistItemForm(forms.ModelForm):
     class Meta:
-        model = StudentReadingListItem
+        model = StudentChecklistItem
         fields = ["title"]
 
 DURATION_CHOICES = [(2, "2 weeks"), (3, "3 weeks"), (4, "4 weeks")]
@@ -231,6 +231,7 @@ class EditClassroomForm(forms.ModelForm):
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
         }
+        
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop("request", None)
@@ -241,3 +242,4 @@ class EditClassroomForm(forms.ModelForm):
         choices += list(instructors.values_list("email", "email"))
         self.fields["supervisor"].choices = choices
         self.fields["course_id"].disabled = True
+        self.fields["duration_weeks"].disabled = True

@@ -119,25 +119,16 @@
 
       {% if user.is_authenticated %}
         {% if user.role|upper == "STUDENT" %}
-          <a href="{% url 'student_dashboard' %}">Courses</a>
+            <a href="{% url 'student_dashboard' %}">Courses</a>
+            <a href="{% url 'student_classroom' %}">Classroom</a>
         {% elif user.role|upper == "INSTRUCTOR" %}
-          <a href="{% url 'instructor_dashboard' %}">Courses</a>
-        {% else %}
-          <!-- Fallback: Default to student sidebar for unknown roles -->
-          <a href="{% url 'student_dashboard' %}">Courses</a>
-          <a href="{% url 'enrolment_page' %}">Enrolment</a>
+            <a href="{% url 'instructor_dashboard' %}">Courses</a>
+            <a href="{% url 'instructor_classroom' %}">Classroom</a>
+            <a href="#">Student</a>
+            <a href="#">Report</a>
         {% endif %}
-
-        {% if user.role == "STUDENT" %}
-          <a href="{% url 'student_classroom' %}">Classroom</a>
-        {% elif user.role == "INSTRUCTOR" %}
-          <a href="{% url 'instructor_classroom' %}">Classroom</a>
-        {% endif %}
-
-        <a href="#">Student</a>
-        <a href="#">Report</a>
       {% else %}
-        <a href="{% url 'home' %}"> Home</a>
+          <a href="{% url 'home' %}">Home</a>
       {% endif %}
     </div>
 

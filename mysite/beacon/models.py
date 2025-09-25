@@ -172,7 +172,7 @@ def ensure_profiles(sender, instance, created, **kwargs):
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name="lessons")
-    lesson_id = models.CharField(max_length=20, unique=True)
+    lesson_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
     title = models.CharField(max_length=200)
     description = models.TextField()
     objective = models.TextField(blank=True, null=True)
@@ -195,6 +195,24 @@ class Lesson(models.Model):
     def __str__(self):
         return f"{self.lesson_id} - {self.title}"
     
+    def save(self, *args, **kwargs):
+        if not self.lesson_id and self.course:
+            existing_ids = (
+                Lesson.objects.filter(course=self.course).values_list("lesson_id", flat=True)
+            )
+            used_numbers = [
+                int(lid.split("-")[-1])
+                for lid in existing_ids if lid and "-" in lid and lid.split("-")[-1].isdigit()
+            ]
+
+
+            n = 1
+            while n in used_numbers:
+                n += 1
+
+            self.lesson_id = f"{self.course.course_id}-{n}"
+        super().save(*args, **kwargs)
+    
 class LessonTask(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="tasks")
     description = models.CharField(max_length=255)
@@ -203,16 +221,24 @@ class LessonTask(models.Model):
     def __str__(self):
         return f"{self.lesson.title} - {self.description}"
 
-class StudentReadingListItem(models.Model):
-    lesson = models.ForeignKey(Lesson, related_name="reading_items", on_delete=models.CASCADE)
+
+class StudentChecklistItem(models.Model):
+    CHECKLIST_TYPE_CHOICES = [
+        ("READING", "Reading"),
+        ("ASSIGNMENT", "Assignment"),
+        ("OTHER", "Other"),
+    ]
+
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="checklist_items")
     title = models.CharField(max_length=255)
+    item_type = models.CharField(max_length=20, choices=CHECKLIST_TYPE_CHOICES, default="OTHER")
 
     def __str__(self):
-        return f"{self.lesson.title} - {self.title}"
+        return f"{self.title} ({self.item_type})"
 
-class StudentReadingListProgress(models.Model):
+class StudentChecklistProgress(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    item = models.ForeignKey(StudentReadingListItem, on_delete=models.CASCADE)
+    item = models.ForeignKey(StudentChecklistItem, on_delete=models.CASCADE)
     completed = models.BooleanField(default=False)
 
     class Meta:
@@ -232,11 +258,18 @@ class Enrolment(models.Model):
         on_delete=models.CASCADE,
         related_name="enrolments"
     )
+    completed = models.BooleanField(default=False)  
     enrolled_at = models.DateTimeField(auto_now_add=True)
     credit_earned = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ("student", "lesson")
 
+    def mark_completed(self):
+        self.completed = True
+        self.completed_at = timezone.now()
+        self.save()
+
     def __str__(self):
-        return f"{self.student.email} enrolled in {self.lesson.title}"
+        status = "Completed" if self.completed else "In Progress"
+        return f"{self.student.email} enrolled in {self.lesson.title} ({status})"
