@@ -48,7 +48,7 @@
     </div>
 
     <button type="submit" class="btn btn-primary">Create Classroom</button>
-    <a href="{% if course %}{% url 'course_detail' course.pk %}{% else %}#{% endif %}" class="btn btn-secondary ms-2">Cancel</a>
+    <a href="{% if course %}{% url 'course_detail' course.pk %}{% else %}{% url 'instructor_classroom' %}{% endif %}" class="btn btn-secondary ms-2">Cancel</a>
   </form>
 </div>
 {% endblock %}
