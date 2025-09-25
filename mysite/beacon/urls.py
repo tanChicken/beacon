@@ -31,4 +31,5 @@ urlpatterns = [
     path("student/lesson/<int:lesson_id>/enrol/", views.enrol_lesson, name="enrol_lesson"),
     path("instructor/classroom/<int:pk>/delete/", views.delete_classroom, name="delete_classroom"),
     path("toggle-checklist/<int:item_id>/", views.toggle_checklist_item, name="toggle_checklist"),
+    path("instructor/classroom/add/", views.create_classroom, name="create_classroom"),
     ]
