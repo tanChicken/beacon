@@ -483,7 +483,7 @@ def delete_lesson(request, pk):
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
 
-@role_required("INSTRUCTOR")
+@role_required("STUDENT")
 def enrol_lesson(request, lesson_id):
     student = request.user
     lesson = get_object_or_404(Lesson, id=lesson_id)
