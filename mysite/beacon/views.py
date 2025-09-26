@@ -1,15 +1,13 @@
-from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentChecklistProgress, Student, StudentProfile, User, StudentChecklistItem, Instructor, InstructorProfile, Enrolment
-from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment
+from .forms import CourseForm, LessonDetailForm, StudentSignupForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
-
-from .models import Course, Student, StudentProfile, User
-from django.db import models
 from.authz import role_required
+from django.db.models import Sum
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -202,8 +200,6 @@ def student_lesson_details(request, pk):
         "completed_item_ids": list(completed_item_ids),
     })
 
-from django.http import JsonResponse
-
 @login_required
 def toggle_checklist_item(request, item_id):
     item = get_object_or_404(StudentChecklistItem, id=item_id)
@@ -221,8 +217,6 @@ def toggle_checklist_item(request, item_id):
 
 @role_required("STUDENT")
 def student_classroom(request):
-    # classrooms = Classroom.objects.prefetch_related("lessons").all()
-    # classrooms = Classroom.objects.filter(...).exclude(students=student)
     student = request.user
     classrooms = (
         Classroom.objects
@@ -366,8 +360,6 @@ def course_detail(request, pk):
         "students_progress": students_progress,
     })
 
-from django.db.models import Sum
-
 @role_required("INSTRUCTOR")
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
@@ -508,7 +500,7 @@ def enrol_lesson(request, lesson_id):
     messages.success(request, f"You are now enrolled in {lesson.title}.")
     return redirect("student_lesson_details", pk=lesson.id)
 
-@role_required("INSTRUCTOR")
+@role_required("STUDENT")
 def unenrol_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
     student = request.user
@@ -580,3 +572,7 @@ def delete_classroom(request, pk):
         classroom.delete()
         messages.success(request, "Classroom deleted successfully!")
         return redirect("course_detail", pk=course_pk)
+
+def student_profile(request):
+    profile = get_object_or_404(StudentProfile, user=request.user)
+    return render(request, "student_profile.html", {"profile": profile})
