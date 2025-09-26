@@ -42,6 +42,10 @@
         color: white;
       }
 
+      .sidebar h2 a:hover {
+        color: white !important;
+      }
+
       /* Instructor (Orange Theme) */
       .instructor-sidebar {
         background-color: #fae3d3;
@@ -121,6 +125,8 @@
         {% if user.role|upper == "STUDENT" %}
             <a href="{% url 'student_dashboard' %}">Courses</a>
             <a href="{% url 'student_classroom' %}">Classroom</a>
+            <a href="{% url 'student_profile' %}">Student</a>
+            <a href="#">Report</a>
         {% elif user.role|upper == "INSTRUCTOR" %}
             <a href="{% url 'instructor_dashboard' %}">Courses</a>
             <a href="{% url 'instructor_classroom' %}">Classroom</a>
