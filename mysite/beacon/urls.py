@@ -41,5 +41,8 @@ urlpatterns = [
     path('classroom/<int:pk>/', views.student_classroom_details, name='student_classroom_details'),
     # student profile
     path("student/profile/", views.student_profile, name="student_profile"),
+    # student report
+    path("student/report/course", views.student_report_course, name="student_report_course"),
+
 
     ]

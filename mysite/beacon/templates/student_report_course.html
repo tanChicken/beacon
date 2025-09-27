@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Allocate Classroom{% endblock %}
+
+{% block content %}
+<style>
+.toggle-container {
+  display: flex;
+}
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #f8f9fa;
+}
+.toggle-btn.active {
+  background: #34a464;
+  color: white;
+}
+h1 { font-weight: bold; }
+
+.card-grid {
+display: flex;
+flex-wrap: wrap;
+gap: 24px;
+margin-top: 20px;
+}
+
+.card-col {
+width: 400px;
+min-width: 220px;
+}
+
+.course-oval {
+box-sizing: border-box;
+width: 100%;
+height: 220px;
+border-radius: 40px;
+border: 2px solid #41ca7c;
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+align-items: center;
+padding: 15px;
+text-align: center;
+}
+
+.course-id {
+font-size: 0.85rem;
+text-transform: uppercase;
+letter-spacing: 1px;
+margin: 0;
+text-align: center;
+}
+
+.course-title {
+font-size: 1.45rem;
+font-weight: 700;
+margin: 0 0 8px 0;
+padding-bottom: 6px;
+border-bottom: 3px solid rgba(0,0,0,0.85);
+width: 70%;
+margin-top: 25px;
+}
+
+.course-meta {
+font-size: 0.95rem;
+margin-top: 12px;
+line-height: 1.3;
+color: #333;
+}
+
+.course-meta .label {
+display: block;
+margin-top: 6px;
+font-weight: 600;
+}
+</style>
+
+<div class="toggle-container">
+  <button class="toggle-btn active" onclick="showTab('course')">Course</button>
+  <button class="toggle-btn" onclick="showTab('student')">Student</button>
+</div>
+
+<div id="course" class="tab-content">
+    <div class="container mt-4">
+    <!-- Course content -->
+    <div class="row card-grid">
+        {% for course in courses %}
+        <div class="col-md-5 mb-5">
+        <div class="card-col">
+            <a href="{% url 'student_course_details' course.pk %}" class="text-decoration-none text-dark">
+            <div class="course-oval">
+                <div class="course-id">{{ course.course_id }}</div>
+                <div class="course-title">{{ course.title }}</div>
+                <div class="course-meta">
+                <span class="label">Instructor: {{ course.instructor.email }}</span>
+                </div>
+            </div>
+            </a>
+        </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No courses enrolled yet.</p>
+        {% endfor %}
+    </div>
+
+</div>
+<div id="student" class="tab-content" style="display:none;">
+    <!-- Student content -->
+</div>
+
+<script>
+function showTab(tab) {
+  document.getElementById("course").style.display = (tab === "course") ? "block" : "none";
+  document.getElementById("student").style.display = (tab === "student") ? "block" : "none";
+
+  document.querySelectorAll(".toggle-btn").forEach(btn => btn.classList.remove("active"));
+  event.target.classList.add("active");
+}
+</script>
+
+{% endblock %}
