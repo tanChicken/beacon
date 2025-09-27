@@ -576,3 +576,10 @@ def delete_classroom(request, pk):
 def student_profile(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
     return render(request, "student_profile.html", {"profile": profile})
+
+@role_required("STUDENT")
+def student_report_course(request):
+    student = request.user
+    enrolled = student.courses_enroling.all()
+
+    return render(request, "student_report_course.html", {"courses":enrolled})
