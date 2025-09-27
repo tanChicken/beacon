@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Instructor Dashboard{% endblock %}
+
+{% block content %}
+<style>
+  h1, h3 { font-weight: bold; }
+  h3 { margin-top: 20px; }
+</style>
+
+<div class="mb-3">
+    <a href="{% url 'student_report_course' %}" class="btn btn-outline-secondary">&larr; Back</a>  
+</div>
+<h1>Your {{ course }} Journey</h1>
+{% endblock %}

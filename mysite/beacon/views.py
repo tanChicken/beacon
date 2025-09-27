@@ -583,3 +583,9 @@ def student_report_course(request):
     enrolled = student.courses_enroling.all()
 
     return render(request, "student_report_course.html", {"courses":enrolled})
+
+@role_required("STUDENT")
+def student_report_course_details(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+
+    return render(request, "student_report_course_details.html", {"course": course})
