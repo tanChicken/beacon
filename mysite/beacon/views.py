@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment
-from .forms import CourseForm, LessonDetailForm, StudentSignupForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile
+from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, get_user_model
+from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
@@ -608,3 +608,20 @@ def student_report_course(request):
     enrolled = student.courses_enroling.all()
 
     return render(request, "student_report_course.html", {"courses":enrolled})
+
+@login_required
+def student_change_password(request):
+    if request.method == "POST":
+        form = StudentPasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            new_password = form.cleaned_data["new_password"]
+            request.user.set_password(new_password)
+            request.user.save()
+            update_session_auth_hash(request, request.user)  
+            messages.success(request, "Your password has been changed successfully.")
+            return redirect("student_profile")  
+        else:
+            messages.error(request, "Unable to change password. Please correct the errors below.")
+    else:
+        form = StudentPasswordChangeForm(request.user)
+    return render(request, "student_change_password.html", {"form": form})
