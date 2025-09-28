@@ -89,7 +89,7 @@ font-weight: 600;
         {% for course in courses %}
         <div class="col-md-5 mb-5">
         <div class="card-col">
-            <a href="{% url 'student_course_details' course.pk %}" class="text-decoration-none text-dark">
+            <a href="{% url 'student_report_course_details' course.pk %}" class="text-decoration-none text-dark">
             <div class="course-oval">
                 <div class="course-id">{{ course.course_id }}</div>
                 <div class="course-title">{{ course.title }}</div>

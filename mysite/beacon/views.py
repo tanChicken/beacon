@@ -583,3 +583,49 @@ def student_report_course(request):
     enrolled = student.courses_enroling.all()
 
     return render(request, "student_report_course.html", {"courses":enrolled})
+
+@role_required("STUDENT")
+def student_report_course_details(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    student = request.user
+
+    # Only active lessons
+    active_lessons = course.lessons.filter(status="PUBLISHED")
+
+    # Checklist items by type
+    reading_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="READING")
+    assignment_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="ASSIGNMENT")
+
+    # Student progress for checklist
+    reading_done = StudentChecklistProgress.objects.filter(student=student, item__in=reading_items, completed=True).count()
+    assignment_done = StudentChecklistProgress.objects.filter(student=student, item__in=assignment_items, completed=True).count()
+
+    # Totals
+    total_readings = reading_items.count()
+    total_assignments = assignment_items.count()
+
+    reading_left = total_readings - reading_done
+    assignment_left = total_assignments - assignment_done
+
+    reading_percent = (reading_done / total_readings * 100) if total_readings else 0
+    assignment_percent = (assignment_done / total_assignments * 100) if total_assignments else 0
+
+    total_item = total_readings + total_assignments
+    total_done = reading_done + assignment_done
+    total_percentage = (total_done / total_item * 100) if total_item else 0
+
+    context = {
+        "course": course,
+        "reading_percent": round(reading_percent, 1),
+        "assignment_percent": round(assignment_percent, 1),
+        "total_readings": total_readings,
+        "total_assignments": total_assignments,
+        "reading_done": reading_done,
+        "assignment_done": assignment_done,
+        "reading_left": reading_left,
+        "assignment_left": assignment_left,
+        "total_item": total_readings + total_assignments,
+        "total_done": total_done,
+        "total_percent": total_percentage,
+    }
+    return render(request, "student_report_course_details.html", context)
