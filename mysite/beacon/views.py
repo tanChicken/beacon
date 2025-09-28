@@ -573,9 +573,34 @@ def delete_classroom(request, pk):
         messages.success(request, "Classroom deleted successfully!")
         return redirect("course_detail", pk=course_pk)
 
+from collections import defaultdict
+
+@login_required
 def student_profile(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
-    return render(request, "student_profile.html", {"profile": profile})
+
+    # All courses the student enrolled in
+    courses = Course.objects.filter(students=request.user).prefetch_related("lessons")
+
+    # All enrolments
+    enrolments = Enrolment.objects.filter(student=request.user).select_related("lesson")
+
+    # Map enrolments by lesson id
+    enrolments_map = {e.lesson.id: e for e in enrolments}
+
+    # Attach enrolment object directly to each lesson
+    for course in courses:
+        for lesson in course.lessons.all():
+            lesson.enrolment = enrolments_map.get(lesson.id)
+
+    total_credit = sum(e.credit_earned for e in enrolments)
+
+    return render(request, "student_profile.html", {
+        "profile": profile,
+        "courses": courses,
+        "total_credit": total_credit,
+    })
+
 
 @role_required("STUDENT")
 def student_report_course(request):
