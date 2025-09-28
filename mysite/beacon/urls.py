@@ -44,6 +44,6 @@ urlpatterns = [
     path("student/change-password/", views.student_change_password, name="student_change_password"),
     # student report
     path("student/report/course", views.student_report_course, name="student_report_course"),
-
+    path("student/report/course/<int:pk>/", views.student_report_course_details, name="student_report_course_details"),
 
     ]

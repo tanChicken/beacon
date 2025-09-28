@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Course Report{% endblock %}
+
+{% block content %}
+<style>
+  h1, h3 { font-weight: bold; }
+  h3 { margin-top: 20px; }
+</style>
+
+<div class="mb-3">
+    <a href="{% url 'student_report_course' %}" class="btn btn-outline-secondary">&larr; Back</a>  
+</div>
+
+<h1 class="fw-bold">Your {{ course }} Journey</h1> 
+
+<hr>
+
+<h3>Current Progress: {{total_percent}}%</h3>
+<!-- Progress bar section --> 
+ <div class="mt-4"> 
+    <div class="d-flex justify-content-between"> 
+        <span>0</span> 
+        <span>{{ total_item|default:0 }}</span> 
+    </div> 
+    <div class="progress" style="height: 25px;"> 
+        <div class="progress-bar bg-success" role="progressbar" 
+            style="width: {{ total_percent }}%" 
+            aria-valuenow="{{ total_percent }}" 
+            aria-valuemin="0" 
+            aria-valuemax="100"> 
+            {{ total_percent }}% 
+        </div> 
+    </div> 
+</div> 
+
+<!-- Remaining message --> 
+<div class="mt-4 alert alert-info"> 
+    There are {{ reading_left }} more to read and {{ assignment_left }} more assignment to complete for {{ course }} 
+</div>
+
+<hr>
+
+<h3>Progress Breakdown</h3>
+
+ <div class="progress-section mt-4">
+    <!-- Stats section --> 
+    <div class="row mt-4"> 
+        <div class="col-md-6"> 
+            <p><strong>Reading List:</strong> {{ reading_done }}/{{ total_readings }} 
+                ({{ reading_percent }}%)</p>
+            <div class="progress mb-3">
+                <div class="progress-bar bg-info" role="progressbar" 
+                    style="width: {{ reading_percent }}%" 
+                    aria-valuenow="{{ reading_percent }}" aria-valuemin="0" aria-valuemax="100">
+                {{ reading_percent }}%
+                </div>
+            </div>
+            <h5>Total Reading List: {{ total_readings }}</h5> 
+            <h5>Completed Reading List: {{ reading_done }}</h5> 
+        </div> 
+        <div class="col-md-6"> 
+            <p><strong>Assignments:</strong> {{ assignment_done }}/{{ total_assignments }} 
+                ({{ assignment_percent }}%)</p>
+            <div class="progress mb-3">
+                <div class="progress-bar bg-warning" role="progressbar" 
+                    style="width: {{ assignment_percent }}%" 
+                    aria-valuenow="{{ assignment_percent }}" aria-valuemin="0" aria-valuemax="100">
+                {{ assignment_percent }}%
+                </div>
+            </div>
+            <h5>Total Assignments: {{ total_assignments }}</h5> 
+            <h5>Completed Assignments: {{ assignment_done }}</h5> 
+        </div> 
+    </div> 
+</div>
+{% endblock %}
