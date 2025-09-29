@@ -58,19 +58,19 @@
             {% if course.lessons.all %}
               <ul class="list-group list-group-flush">
                 {% for lesson in course.lessons.all %}
-                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                    {{ lesson.title }}
-                    {% if lesson.enrolment %}
-                      {% if lesson.enrolment.completed %}
-                        <span class="badge badge-success">Completed</span>
-                      {% else %}
-                        <span class="badge badge-warning text-dark">In Progress</span>
-                      {% endif %}
-                    {% else %}
-                      <span class="badge badge-secondary">Not Enrolled</span>
-                    {% endif %}
-                  </li>
-                {% endfor %}
+                <li>
+                  {{ lesson.title }}
+                  {% if lesson.status == "Completed" %}
+                    <span class="badge badge-success">Completed</span>
+                  {% elif lesson.status == "In Progress" %}
+                    <span class="badge badge-warning text-dark">In Progress</span>
+                  {% elif lesson.status == "Not Started" %}
+                    <span class="badge badge-secondary">Not Started</span>
+                  {% else %}
+                    <span class="badge badge-secondary">Not Enrolled</span>
+                  {% endif %}
+                </li>
+              {% endfor %}
               </ul>
             {% else %}
               <p class="text-muted">No lessons in this course yet.</p>
