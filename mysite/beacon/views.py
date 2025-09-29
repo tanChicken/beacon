@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment
-from .forms import CourseForm, LessonDetailForm, StudentSignupForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile
+from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, get_user_model
+from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
@@ -563,6 +563,7 @@ def create_classroom(request, pk=None):
         "form": form,
         "course": preselected_course,
     })
+
 @role_required("INSTRUCTOR")
 def delete_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
@@ -573,9 +574,26 @@ def delete_classroom(request, pk):
         messages.success(request, "Classroom deleted successfully!")
         return redirect("course_detail", pk=course_pk)
 
+@role_required("STUDENT")
 def student_profile(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
-    return render(request, "student_profile.html", {"profile": profile})
+    courses = Course.objects.filter(students=request.user).prefetch_related("lessons")
+    enrolments = Enrolment.objects.filter(student=request.user).select_related("lesson")
+    enrolments_map = {e.lesson.id: e for e in enrolments}
+
+    # Attach enrolment object directly to each lesson
+    for course in courses:
+        for lesson in course.lessons.all():
+            lesson.enrolment = enrolments_map.get(lesson.id)
+
+    total_credit = sum(e.credit_earned for e in enrolments)
+
+    return render(request, "student_profile.html", {
+        "profile": profile,
+        "courses": courses,
+        "total_credit": total_credit,
+    })
+
 
 @role_required("STUDENT")
 def student_report_course(request):
@@ -629,3 +647,20 @@ def student_report_course_details(request, pk):
         "total_percent": total_percentage,
     }
     return render(request, "student_report_course_details.html", context)
+
+@role_required("STUDENT")
+def student_change_password(request):
+    if request.method == "POST":
+        form = StudentPasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            new_password = form.cleaned_data["new_password"]
+            request.user.set_password(new_password)
+            request.user.save()
+            update_session_auth_hash(request, request.user)  
+            messages.success(request, "Your password has been changed successfully.")
+            return redirect("student_profile")  
+        else:
+            messages.error(request, "Unable to change password. Please correct the errors below.")
+    else:
+        form = StudentPasswordChangeForm(request.user)
+    return render(request, "student_change_password.html", {"form": form})
