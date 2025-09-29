@@ -43,6 +43,6 @@ urlpatterns = [
     path("student/profile/", views.student_profile, name="student_profile"),
     # student report
     path("student/report/course", views.student_report_course, name="student_report_course"),
-
+    path("student/report/course/<int:pk>/", views.student_report_course_details, name="student_report_course_details"),
 
     ]
