@@ -204,6 +204,7 @@ def student_lesson_details(request, pk):
 def toggle_checklist_item(request, item_id):
     item = get_object_or_404(StudentChecklistItem, id=item_id)
     student = request.user
+    lesson = item.lesson
 
     progress, _ = StudentChecklistProgress.objects.get_or_create(
         student=student,
@@ -212,6 +213,25 @@ def toggle_checklist_item(request, item_id):
 
     progress.completed = not progress.completed
     progress.save()
+
+    total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
+    completed_items = StudentChecklistProgress.objects.filter(
+        student=student, item__lesson=lesson, completed=True
+    ).count()
+
+    if total_items > 0 and total_items == completed_items:
+        # Student finished all checklist items → mark enrolment completed
+        enrolment, _ = Enrolment.objects.get_or_create(student=student, lesson=lesson)
+        enrolment.completed = True
+        enrolment.credit_earned = lesson.lesson_point  # award credits
+        enrolment.save()
+    else:
+        # If not fully complete, keep enrolment but reset completion/credits
+        enrolment = Enrolment.objects.filter(student=student, lesson=lesson).first()
+        if enrolment:
+            enrolment.completed = False
+            enrolment.credit_earned = 0
+            enrolment.save()
 
     return JsonResponse({"completed": progress.completed})
 
@@ -577,10 +597,7 @@ def delete_classroom(request, pk):
 from django.db.models import Prefetch
 @login_required
 def student_profile(request):
-    # Student profile
     profile = get_object_or_404(StudentProfile, user=request.user)
-
-    # Only courses the student is enrolled in
     courses = Course.objects.filter(students=request.user)
 
     # Prefetch only published lessons for each course
@@ -588,7 +605,6 @@ def student_profile(request):
         Prefetch("lessons", queryset=Lesson.objects.filter(status="PUBLISHED"))
     )
 
-    # Get enrolments for the current student
     enrolments = Enrolment.objects.filter(student=request.user).select_related("lesson")
     enrolments_map = {e.lesson.id: e for e in enrolments}
 
