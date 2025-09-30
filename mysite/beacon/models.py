@@ -180,7 +180,7 @@ class Lesson(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="lessons"
     )
     effort_per_week = models.PositiveIntegerField(default=0)
-    lesson_point = models.IntegerField(default=0)
+    credit_point = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     assignment = models.TextField(blank=True, null=True)
