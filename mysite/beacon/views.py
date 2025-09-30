@@ -223,7 +223,7 @@ def toggle_checklist_item(request, item_id):
         # Student finished all checklist items → mark enrolment completed
         enrolment, _ = Enrolment.objects.get_or_create(student=student, lesson=lesson)
         enrolment.completed = True
-        enrolment.credit_earned = lesson.lesson_point  # award credits
+        enrolment.credit_earned = lesson.credit_point  # award credits
         enrolment.save()
     else:
         # If not fully complete, keep enrolment but reset completion/credits
@@ -345,7 +345,7 @@ def course_detail(request, pk):
                     course=course,
                     title=title.strip(),
                     designer=request.user,
-                    lesson_point=0,
+                    credit_point=0,
                     status="DRAFT"
                 )
         if new_titles:
@@ -386,7 +386,7 @@ def lesson_detail_edit(request, pk):
     course = lesson.course
     available_classrooms = Classroom.objects.filter(course_id_id=course.pk).order_by("classroom_id")
 
-    total_points = course.lessons.aggregate(total=Sum("lesson_point"))["total"] or 0
+    total_points = course.lessons.aggregate(total=Sum("credit_point"))["total"] or 0
     remaining_points = 30 - total_points
 
     if request.method == "POST":

@@ -84,7 +84,7 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ['status', 'lesson_id', 'title', 'lesson_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom']
+        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom']
         widgets = {
             "lesson_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. LSN-001"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
@@ -92,7 +92,7 @@ class LessonDetailForm(forms.ModelForm):
             "objective": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Learning objectives"}),
             "effort_per_week": forms.NumberInput(attrs={"class": "form-control", "placeholder": "Hours per week"}),
             "status": forms.Select(attrs={"class": "form-select"}),
-            "lesson_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
+            "credit_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
             "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
             "classroom": forms.HiddenInput(),
         }
@@ -137,24 +137,24 @@ class LessonDetailForm(forms.ModelForm):
             raise forms.ValidationError("This lesson ID already exists. Please choose a different one.")
         return lesson_id
     
-    def clean_lesson_point(self):
-        lesson_point = self.cleaned_data.get("lesson_point", 0)
+    def clean_credit_point(self):
+        credit_point = self.cleaned_data.get("credit_point", 0)
 
         if self.course:
             total_existing = (
                 Lesson.objects.filter(course=self.course)
                 .exclude(pk=self.instance.pk if self.instance else None)
-                .aggregate(total=models.Sum("lesson_point"))["total"] or 0
+                .aggregate(total=models.Sum("credit_point"))["total"] or 0
             )
         else:
             total_existing = 0
 
-        total_after = total_existing + lesson_point
+        total_after = total_existing + credit_point
         if total_after > 30:
             raise forms.ValidationError(
                 f"Total credit points for this course cannot exceed 30 (currently {total_existing})."
             )
-        return lesson_point
+        return credit_point
 
 class LessonForm(forms.ModelForm):
     class Meta:

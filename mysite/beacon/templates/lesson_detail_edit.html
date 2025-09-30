@@ -58,9 +58,9 @@ input[name$="-DELETE"] {
     {% for field in lesson_form %}
         {% if field.name != "classroom" %}
         <div class="mb-3">
-            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">Credit Point</label>
+            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
 
-            {% if field.name == "lesson_point" %}
+            {% if field.name == "credit_point" %}
                 {{ field }}
                 <div class="form-text">
                     <p><strong>Total Allocated Credit Points  (all lessons):</strong> {{ total_points }}/30</p>
