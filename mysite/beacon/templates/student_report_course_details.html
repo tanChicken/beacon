@@ -3,8 +3,18 @@
 
 {% block content %}
 <style>
-  h1, h3 { font-weight: bold; }
-  h3 { margin-top: 20px; }
+  h1, h3 {
+    font-weight: bold;
+  }
+  h3 {
+    margin-top: 20px;
+  }
+
+  /* Progress bar dynamic width */
+  .progress-bar {
+    --progress: 0%;
+    width: var(--progress);
+  }
 </style>
 
 <div class="mb-3">
@@ -15,20 +25,22 @@
 
 <hr>
 
-<h3>Current Progress: {{total_percent}}%</h3>
+<h3>Current Progress: {{ total_percent }}%</h3>
+
 <!-- Progress bar section --> 
- <div class="mt-4"> 
+<div class="mt-4"> 
     <div class="d-flex justify-content-between"> 
         <span>0</span> 
         <span>{{ total_item|default:0 }}</span> 
     </div> 
     <div class="progress" style="height: 25px;"> 
-        <div class="progress-bar bg-success" role="progressbar" 
-            style="width: {{ total_percent }}%" 
-            aria-valuenow="{{ total_percent }}" 
-            aria-valuemin="0" 
-            aria-valuemax="100"> 
-            {{ total_percent }}% 
+        <div class="progress-bar bg-success"
+             role="progressbar"
+             style="--progress: {{ total_percent }}%;"
+             aria-valuenow="{{ total_percent }}"
+             aria-valuemin="0"
+             aria-valuemax="100">
+            {{ total_percent }}%
         </div> 
     </div> 
 </div> 
@@ -42,30 +54,35 @@
 
 <h3>Progress Breakdown</h3>
 
- <div class="progress-section mt-4">
+<div class="progress-section mt-4">
     <!-- Stats section --> 
     <div class="row mt-4"> 
         <div class="col-md-6"> 
-            <p><strong>Reading List:</strong> {{ reading_done }}/{{ total_readings }} 
-                ({{ reading_percent }}%)</p>
+            <p><strong>Reading List:</strong> {{ reading_done }}/{{ total_readings }} ({{ reading_percent }}%)</p>
             <div class="progress mb-3">
-                <div class="progress-bar bg-info" role="progressbar" 
-                    style="width: {{ reading_percent }}%" 
-                    aria-valuenow="{{ reading_percent }}" aria-valuemin="0" aria-valuemax="100">
-                {{ reading_percent }}%
+                <div class="progress-bar bg-info"
+                     role="progressbar"
+                     style="--progress: {{ reading_percent }}%;"
+                     aria-valuenow="{{ reading_percent }}"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                    {{ reading_percent }}%
                 </div>
             </div>
             <h5>Total Reading List: {{ total_readings }}</h5> 
             <h5>Completed Reading List: {{ reading_done }}</h5> 
         </div> 
+
         <div class="col-md-6"> 
-            <p><strong>Assignments:</strong> {{ assignment_done }}/{{ total_assignments }} 
-                ({{ assignment_percent }}%)</p>
+            <p><strong>Assignments:</strong> {{ assignment_done }}/{{ total_assignments }} ({{ assignment_percent }}%)</p>
             <div class="progress mb-3">
-                <div class="progress-bar bg-warning" role="progressbar" 
-                    style="width: {{ assignment_percent }}%" 
-                    aria-valuenow="{{ assignment_percent }}" aria-valuemin="0" aria-valuemax="100">
-                {{ assignment_percent }}%
+                <div class="progress-bar bg-warning"
+                     role="progressbar"
+                     style="--progress: {{ assignment_percent }}%;"
+                     aria-valuenow="{{ assignment_percent }}"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                    {{ assignment_percent }}%
                 </div>
             </div>
             <h5>Total Assignments: {{ total_assignments }}</h5> 
@@ -73,4 +90,15 @@
         </div> 
     </div> 
 </div>
+
+<script>
+  // Apply CSS variable from style attr for progress bars
+  document.querySelectorAll('.progress-bar').forEach(bar => {
+      const val = bar.getAttribute('aria-valuenow');
+      if (val !== null) {
+          bar.style.setProperty('--progress', val + '%');
+      }
+  });
+</script>
+
 {% endblock %}
