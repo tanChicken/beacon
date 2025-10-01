@@ -204,6 +204,7 @@ def student_lesson_details(request, pk):
 def toggle_checklist_item(request, item_id):
     item = get_object_or_404(StudentChecklistItem, id=item_id)
     student = request.user
+    lesson = item.lesson
 
     progress, _ = StudentChecklistProgress.objects.get_or_create(
         student=student,
@@ -212,6 +213,25 @@ def toggle_checklist_item(request, item_id):
 
     progress.completed = not progress.completed
     progress.save()
+
+    total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
+    completed_items = StudentChecklistProgress.objects.filter(
+        student=student, item__lesson=lesson, completed=True
+    ).count()
+
+    if total_items > 0 and total_items == completed_items:
+        # Student finished all checklist items → mark enrolment completed
+        enrolment, _ = Enrolment.objects.get_or_create(student=student, lesson=lesson)
+        enrolment.completed = True
+        enrolment.credit_earned = lesson.credit_point  # award credits
+        enrolment.save()
+    else:
+        # If not fully complete, keep enrolment but reset completion/credits
+        enrolment = Enrolment.objects.filter(student=student, lesson=lesson).first()
+        if enrolment:
+            enrolment.completed = False
+            enrolment.credit_earned = 0
+            enrolment.save()
 
     return JsonResponse({"completed": progress.completed})
 
@@ -325,7 +345,7 @@ def course_detail(request, pk):
                     course=course,
                     title=title.strip(),
                     designer=request.user,
-                    lesson_point=0,
+                    credit_point=0,
                     status="DRAFT"
                 )
         if new_titles:
@@ -366,7 +386,7 @@ def lesson_detail_edit(request, pk):
     course = lesson.course
     available_classrooms = Classroom.objects.filter(course_id_id=course.pk).order_by("classroom_id")
 
-    total_points = course.lessons.aggregate(total=Sum("lesson_point"))["total"] or 0
+    total_points = course.lessons.aggregate(total=Sum("credit_point"))["total"] or 0
     remaining_points = 30 - total_points
 
     if request.method == "POST":
@@ -574,18 +594,47 @@ def delete_classroom(request, pk):
         messages.success(request, "Classroom deleted successfully!")
         return redirect("course_detail", pk=course_pk)
 
-@role_required("STUDENT")
+from django.db.models import Prefetch
+@login_required
 def student_profile(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
-    courses = Course.objects.filter(students=request.user).prefetch_related("lessons")
+    courses = Course.objects.filter(students=request.user)
+
+    # Prefetch only published lessons for each course
+    courses = courses.prefetch_related(
+        Prefetch("lessons", queryset=Lesson.objects.filter(status="PUBLISHED"))
+    )
+
     enrolments = Enrolment.objects.filter(student=request.user).select_related("lesson")
     enrolments_map = {e.lesson.id: e for e in enrolments}
 
-    # Attach enrolment object directly to each lesson
+    # Attach status to each published lesson
     for course in courses:
-        for lesson in course.lessons.all():
+        for lesson in course.lessons.all():  # only published lessons
             lesson.enrolment = enrolments_map.get(lesson.id)
 
+            # Total checklist items for this lesson
+            total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
+
+            # Completed checklist items by student
+            completed_items = StudentChecklistProgress.objects.filter(
+                student=request.user,
+                item__lesson=lesson,
+                completed=True
+            ).count()
+
+            # Decide lesson status
+            if total_items > 0 and completed_items == total_items:
+                lesson.status = "Completed"
+            elif completed_items > 0:
+                lesson.status = "In Progress"
+            else:
+                if lesson.enrolment:
+                    lesson.status = "Not Started"
+                else:
+                    lesson.status = "Not Enrolled"
+
+    # Calculate total credit earned
     total_credit = sum(e.credit_earned for e in enrolments)
 
     return render(request, "student_profile.html", {
