@@ -65,7 +65,7 @@ class CourseForm(forms.ModelForm):
 
     class Meta:
         model = Course
-        fields = ["course_id", "title", "status", "instructor"]
+        fields = ["title", "status", "instructor"]
         widgets = {
             "course_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. CRS-001"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Course Title"}),
@@ -186,7 +186,7 @@ class ClassroomForm(forms.ModelForm):
 
     class Meta:
         model = Classroom
-        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor",
+        fields = ["course_id", "duration_weeks", "supervisor",
                   "building", "room", "online_link"]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. CLS-001"}),
@@ -220,7 +220,7 @@ class EditClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
     class Meta:
         model = Classroom
-        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor",
+        fields = ["course_id", "duration_weeks", "supervisor",
                   "building", "room", "online_link"]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control"}),
