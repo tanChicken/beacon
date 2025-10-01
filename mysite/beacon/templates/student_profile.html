@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Student Profile{% endblock %}
 {% block content %}
+<style>
+.course-card-header {
+  background-color: #549257;
+}
+</style>
 <div class="container mt-4">
-  <h2 class="mb-4 text-success"><strong>Your Profile</strong></h2>
+  <h1 class="mb-4"><strong>YOUR PROFILE</strong></h1>
 
   <!-- Profile Information -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="text-success mb-0">Personal Information</h4>
+        <h4 class="mb-0">Personal Information</h4>
         <a href="{% url 'student_change_password' %}" class="btn btn-outline-success btn-sm">
           Change Password
         </a>
@@ -39,19 +44,20 @@
   <!-- Academic Information + Courses -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
-      <h4 class="text-success mb-3">Academic Information</h4>
+      <h4 class="mb-3">Academic Information</h4>
 
       <!-- Academic summary -->
-      <p class="lead mb-4">
+      <p class="mb-4">
         <strong>Total Credit Accumulated:</strong>
         <span class="text-dark">{{ total_credit }}</span>
       </p>
 
       <!-- Courses and lessons -->
-      <h5 class="text-success">Enrolled Courses & Lessons</h5>
+      <h5>Enrolled Courses & Lessons</h5>
       {% for course in courses %}
         <div class="card mb-3 shadow-sm">
-          <div class="card-header bg-success text-white">
+          <!-- <div class="card-header bg-success text-white"> -->
+          <div class="card-header course-card-header text-white">
             <strong>{{ course.title }}</strong> ({{ course.course_id }})
           </div>
           <div class="card-body">
@@ -59,7 +65,7 @@
               <ul class="list-group list-group-flush">
                 {% for lesson in course.lessons.all %}
                 <li>
-                  {{ lesson.title }}
+                  <strong>{{ lesson.title }}</strong> ({{ lesson.lesson_id }})
                   {% if lesson.status == "Completed" %}
                     <span class="badge badge-success">Completed</span>
                   {% elif lesson.status == "In Progress" %}
@@ -67,7 +73,7 @@
                   {% elif lesson.status == "Not Started" %}
                     <span class="badge badge-secondary">Not Started</span>
                   {% else %}
-                    <span class="badge badge-secondary">Not Enrolled</span>
+                    <span class="badge badge-danger">Not Enrolled</span>
                   {% endif %}
                 </li>
               {% endfor %}
