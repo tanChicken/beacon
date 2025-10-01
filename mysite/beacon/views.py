@@ -112,46 +112,6 @@ def unenrol_course(request, pk):
     
     return redirect("student_dashboard")  
 
-
-# @role_required("STUDENT")
-# def student_course_details(request,pk):
-#     course = get_object_or_404(Course, pk=pk)
-#     lessons = Lesson.objects.filter(course=course, status="PUBLISHED")
-
-#     lesson_status = []
-#     for lesson in lessons:
-#         enrolment = Enrolment.objects.filter(student=request.user, lesson=lesson).first()
-#         completed = enrolment.completed if enrolment else False
-#         enrolled = enrolment is not None and not completed
-#         prereqs = lesson.prerequisites.all()
-
-#         missing = [p for p in prereqs if not Enrolment.objects.filter(student=request.user, lesson=p, completed=True).exists()]
-#         prereqs_met = (len(missing) == 0)
-
-#         can_enroll = prereqs_met and not enrolled and not completed
-#         lesson_status.append(
-#             {
-#                 "lesson": lesson,
-#                 "enrolled": enrolled,
-#                 "can_enroll": can_enroll,
-#                 "missing_prereqs": missing,
-#                 "completed" : completed,
-#             }
-#         )
-    
-#     # Sort by a custom key
-#     lesson_status_sorted = sorted(
-#         lesson_status,
-#         key=lambda s: (
-#             # Use numbers so lower comes first
-#             0 if s["completed"] else 1 if s["enrolled"] else 2 if s["can_enroll"] else 3
-#         )
-#     )
-
-#     return render(request, "student_course_details.html", {
-#         "course": course,
-#         "lesson_status": lesson_status_sorted,
-#     })
 @role_required("STUDENT")
 def student_course_details(request, pk):
     course = get_object_or_404(Course, pk=pk)
@@ -516,6 +476,7 @@ def lesson_detail_edit(request, pk):
         "lesson": lesson,
         "lesson_form": form,
         "formset": formset,
+        "empty_form": formset.empty_form,
         "course": course,
         "available_classrooms": available_classrooms,
         "total_points": total_points,

@@ -89,8 +89,8 @@ input[name$="-DELETE"] {
         {% endif %}
     {% endfor %}
 
-
     <!-- Tasks -->
+     {{ formset.management_form }}
     <h4>Tasks</h4>
     <table class="task-table">
     <thead>
@@ -102,7 +102,7 @@ input[name$="-DELETE"] {
     </thead>
 
     <tbody id="task-rows">
-        {{ formset.management_form }}
+        <!-- {{ formset.management_form }} -->
         {% for form in formset %}
         <tr>
             {{ form.id }}  <!-- hidden ID field for existing tasks -->
@@ -221,10 +221,28 @@ input[name$="-DELETE"] {
 <script>
 const addTaskBtn = document.getElementById("add-task");
 const taskRows = document.getElementById("task-rows");
-const totalForms = document.querySelector('#id_form-TOTAL_FORMS');
 
+// Find or create management form
+let totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+
+if (!totalFormsInput) {
+    const existingForms = taskRows.querySelectorAll('tr').length;
+    const form = document.querySelector('form');
+    const managementDiv = document.createElement('div');
+    managementDiv.style.display = 'none';
+    managementDiv.innerHTML = `
+        <input type="hidden" name="form-TOTAL_FORMS" id="id_form-TOTAL_FORMS" value="${existingForms}">
+        <input type="hidden" name="form-INITIAL_FORMS" id="id_form-INITIAL_FORMS" value="${existingForms}">
+        <input type="hidden" name="form-MIN_NUM_FORMS" id="id_form-MIN_NUM_FORMS" value="0">
+        <input type="hidden" name="form-MAX_NUM_FORMS" id="id_form-MAX_NUM_FORMS" value="1000">
+    `;
+    form.insertBefore(managementDiv, form.firstChild);
+    totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
+}
+
+// Add Task
 addTaskBtn.addEventListener("click", function () {
-    const formIdx = parseInt(totalForms.value);
+    const formIdx = parseInt(totalFormsInput.value);
     const newRow = document.getElementById("empty-form").cloneNode(true);
     newRow.removeAttribute("id");
     newRow.style.display = "";
@@ -233,40 +251,41 @@ addTaskBtn.addEventListener("click", function () {
         if (input.name) input.name = input.name.replace(/__prefix__/g, formIdx);
         if (input.id) input.id = input.id.replace(/__prefix__/g, formIdx);
         if (input.type === "checkbox") input.checked = false;
-        if (input.type === "hidden" && input.name.endsWith("-id")) input.value = ""; // reset ID for new
+        if (input.type === "hidden" && input.name.endsWith("-id")) input.value = "";
     });
 
     taskRows.appendChild(newRow);
-    totalForms.value = formIdx + 1;
+    totalFormsInput.value = formIdx + 1;
 });
 
+// Remove Task
 document.addEventListener("click", function(e) {
     if (e.target.classList.contains("remove-task")) {
         const row = e.target.closest("tr");
-        const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-        if (deleteCheckbox) deleteCheckbox.checked = true;
-        row.style.display = "none"; 
+        const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
+        if (deleteCheckbox) {
+            deleteCheckbox.checked = true;
+            row.style.display = "none";
+        }
     }
 });
 
-// Dynamic Reading Items
+// Add Reading Item
 document.getElementById("add-reading-item").addEventListener("click", function() {
-    const container = document.getElementById('reading-items');
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'form-control mb-2';
     input.name = 'new_reading_item';
-    container.appendChild(input);
+    document.getElementById('reading-items').appendChild(input);
 });
 
-// Dynamic Assignment Items
+// Add Assignment Item
 document.getElementById("add-assignment-item").addEventListener("click", function() {
-    const container = document.getElementById('assignment-items');
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'form-control mb-2';
     input.name = 'new_assignment_item';
-    container.appendChild(input);
+    document.getElementById('assignment-items').appendChild(input);
 });
 </script>
 
