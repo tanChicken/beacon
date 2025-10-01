@@ -67,10 +67,22 @@ class CourseForm(forms.ModelForm):
         model = Course
         fields = ["title", "status", "instructor"]
         widgets = {
-            "course_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. CRS-001"}),
+            "course_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Course Title"}),
             "status": forms.Select(attrs={"class": "form-select"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.pk:
+            self.fields["course_id"] = forms.CharField(
+                initial=self.instance.course_id,
+                disabled=True,
+                required=False,
+                label="Course ID",
+                widget=forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"})
+            )
 
 class LessonForm(forms.ModelForm):
     class Meta:
@@ -86,7 +98,7 @@ class LessonDetailForm(forms.ModelForm):
         model = Lesson
         fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom']
         widgets = {
-            "lesson_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. LSN-001"}),
+            "lesson_id": forms.TextInput(attrs={"class": "form-control", "readonly":"readonly"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Write a short description"}),
             "objective": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Learning objectives"}),
@@ -180,6 +192,7 @@ class ChecklistItemForm(forms.ModelForm):
         fields = ["title"]
 
 DURATION_CHOICES = [(2, "2 weeks"), (3, "3 weeks"), (4, "4 weeks")]
+
 class ClassroomForm(forms.ModelForm):
     duration_weeks = forms.TypedChoiceField(choices=DURATION_CHOICES, coerce=int)
     supervisor = forms.ChoiceField(choices=[])
@@ -189,7 +202,7 @@ class ClassroomForm(forms.ModelForm):
         fields = ["course_id", "duration_weeks", "supervisor",
                   "building", "room", "online_link"]
         widgets = {
-            "classroom_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. CLS-001"}),
+            "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
             "duration_weeks": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
@@ -220,10 +233,10 @@ class EditClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
     class Meta:
         model = Classroom
-        fields = ["course_id", "duration_weeks", "supervisor",
+        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor",
                   "building", "room", "online_link"]
         widgets = {
-            "classroom_id": forms.TextInput(attrs={"class": "form-control"}),
+            "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
             "duration_weeks": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
