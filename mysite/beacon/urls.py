@@ -19,12 +19,15 @@ urlpatterns = [
     path('lesson/<int:pk>/', views.lesson_detail_edit, name='lesson_detail_edit'),
     path('course/<int:course_pk>/lesson/create/', views.create_lesson, name='create_lesson'),
     path('lesson/<int:pk>/delete/', views.delete_lesson, name='delete_lesson'),
-    #instructor classroom
+    # instructor classroom
     path("instructor/classroom/", views.instructor_classroom, name="instructor_classroom"),
     path("instructor/classroom/add/", views.create_classroom, name="create_classroom"),
     path("instructor/classroom/course/<int:pk>/add", views.create_classroom, name="create_classroom"),
     path("instructor/classroom/<int:pk>/edit", views.edit_classroom, name="edit_classroom"),
     path("instructor/classroom/<int:pk>/delete/", views.delete_classroom, name="delete_classroom"),
+    # instructor view student profile
+    path("instructor/students/", views.instructor_student_list, name="instructor_student_list"),
+    path("instructor/students/<int:student_id>/", views.instructor_student_detail, name="instructor_student_detail"),
     # student course enrolment
     path("enrollment/", views.enrolment_page, name="enrolment_page"),
     path("enroll/<int:course_id>/", views.enrol_course, name="enrol_course"),
