@@ -2,6 +2,21 @@
 {% block title %}Course Details{% endblock %}
 
 {% block content %}
+<style>
+  .progress-bar {
+  --progress: 0%;         
+  width: var(--progress); 
+  transition: width 0.6s ease; 
+}
+.progress-bar-green {
+  background-color: #28a745 !important; 
+  color: white !important;
+  font-weight: bold;
+  text-align: center;
+}
+
+</style>
+
 <div class="container mt-4">
     <div class="mb-3">
       <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
@@ -30,9 +45,11 @@
 
     <!-- Progress bar -->
     <div class="progress my-3" style="height: 25px;">
-        <div class="progress-bar bg-success" role="progressbar" 
-            aria-valuenow="{{ course.progress }}" aria-valuemin="0" aria-valuemax="100">
-        {{ course.progress }}%
+        <div class="progress-bar progress-bar-green"
+            role="progressbar"
+            style="--progress: {{ progress }}%;"
+            aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
+            {{ progress }}%
         </div>
     </div>
     <p class="text-center">Your Progress In This Course</p>

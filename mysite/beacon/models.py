@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db.models.signals import post_save 
 from django.dispatch import receiver
 from django.utils import timezone
+from django.db.models import Max
 
 # Demo
 class TodoItem(models.Model):
@@ -35,6 +36,17 @@ class Course(models.Model):
     def __str__(self):
         return f"{self.course_id} - {self.title}"
     
+    def save(self, *args, **kwargs):
+        if not self.course_id:
+            latest = Course.objects.aggregate(Max("course_id"))["course_id__max"]
+            if latest:
+                num = int(latest[1:])
+                new_num = num + 1
+            else:
+                new_num = 1
+            self.course_id = f"C{new_num:03d}"
+        super().save(*args, **kwargs)
+    
 class Classroom(models.Model):
     DURATION_CHOICES = [
         (2, "2 weeks"),
@@ -60,6 +72,22 @@ class Classroom(models.Model):
         elif self.building and self.room:
             return f"{self.building}, Room {self.room}"
         return "TBA"
+    
+    def save(self, *args, **kwargs):
+        if not self.classroom_id and self.course_id:
+            existing_ids = (
+                Classroom.objects.filter(course_id=self.course_id)
+                .values_list("classroom_id", flat=True)
+            )
+            used_numbers = [
+                int(cid.split("-CL")[-1])
+                for cid in existing_ids if cid and "-CL" in cid
+            ]
+            n = 1
+            while n in used_numbers:
+                n += 1
+            self.classroom_id = f"{self.course_id.course_id}-CL{n:02d}"
+        super().save(*args, **kwargs)
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, role, **extra_fields):
