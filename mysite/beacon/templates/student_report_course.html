@@ -3,6 +3,12 @@
 
 {% block content %}
 <style>
+h1, h3 {
+  font-weight: bold;
+}
+h3 {
+  margin-top: 20px;
+}
 .toggle-container {
   display: flex;
 }
@@ -12,12 +18,18 @@
   cursor: pointer;
   border: 1px solid #ccc;
   background: #f8f9fa;
+  user-select: none;
 }
 .toggle-btn.active {
   background: #34a464;
   color: white;
 }
-h1 { font-weight: bold; }
+.toggle-btn[type="button"] { /* ensure non-submit behavior */
+  -webkit-appearance: none;
+}
+
+/* hide by default — JS will show the right one */
+.tab-content { display: none; }
 
 .card-grid {
 display: flex;
@@ -75,19 +87,54 @@ display: block;
 margin-top: 6px;
 font-weight: 600;
 }
+
+.report-container {
+  margin-top: 30px;
+}
+.summary-card {
+  border-radius: 20px;
+  padding: 20px;
+  background: #f9f9f9;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  text-align: center;
+}
+.summary-card h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #2c3e50;
+}
+.summary-card p {
+  margin: 0;
+  font-size: 1rem;
+  color: #555;
+}
+.progress {
+  height: 25px;
+  border-radius: 15px;
+  overflow: hidden;
+}
+.progress-bar {
+  --progress: 0%;
+  width: var(--progress);
+}
+.highlight {
+  color: #34a464;
+  font-weight: 700;
+}
 </style>
 
-<div class="toggle-container">
-  <button class="toggle-btn active" onclick="showTab('course')">Course</button>
-  <button class="toggle-btn" onclick="showTab('student')">Student</button>
+<div class="toggle-container" role="tablist" aria-label="Course / Student tabs">
+  <button type="button" class="toggle-btn" data-tab="course" aria-controls="course" aria-selected="true">Course</button>
+  <button type="button" class="toggle-btn" data-tab="student" aria-controls="student" aria-selected="false">Student</button>
 </div>
 
-<div id="course" class="tab-content">
-    <div class="container mt-4">
+<div id="course" class="tab-content" role="tabpanel" aria-labelledby="tab-course">
+  <div class="container mt-4">
     <!-- Course content -->
     <div class="row card-grid">
-        {% for course in courses %}
-        <div class="col-md-5 mb-5">
+      {% for course in courses %}
+      <div class="col-md-5 mb-5">
         <div class="card-col">
             <a href="{% url 'student_report_course_details' course.pk %}" class="text-decoration-none text-dark">
             <div class="course-oval">
@@ -104,20 +151,124 @@ font-weight: 600;
         <p class="text-muted">No courses enrolled yet.</p>
         {% endfor %}
     </div>
-
+  </div>
 </div>
-<div id="student" class="tab-content" style="display:none;">
-    <!-- Student content -->
+<div id="student" class="tab-content" role="tabpanel" aria-labelledby="tab-student">
+  <!-- Student content -->
+  <div class="container report-container">
+  <h1 class="fw-bold">Your Student Journey</h1> 
+  <hr>
+
+  <!-- Summary Section -->
+  <div class="row g-4">
+    <div class="col-md-3">
+      <div class="summary-card">
+        <h3>{{ total_credit_points }}</h3>
+        <p>Earned Credit Points</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="summary-card">
+        <h3>{{ required }}</h3>
+        <p>Total Required</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="summary-card">
+        <h3>{{ remaining }}</h3>
+        <p>Credits To Go</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="summary-card">
+        <h3>{{ progress|floatformat:1 }}%</h3>
+        <p>Completion</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress bar section --> 
+  <div class="mt-4"> 
+      <div class="d-flex justify-content-between"> 
+          <span>0</span> 
+          <span>{{ required }}</span> 
+      </div> 
+      <div class="progress" style="height: 25px;"> 
+          <div class="progress-bar bg-success"
+              role="progressbar"
+              style="--progress: {{ progress }}%;"
+              aria-valuenow="{{ progress }}"
+              aria-valuemin="0"
+              aria-valuemax="120">
+              {{ progress }}%
+          </div> 
+      </div> 
+  </div> 
+
+  <!-- Analysis Section -->
+  <div class="mt-5">
+    <h3 class="fw-bold">Analysis</h3>
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        You have earned <span class="highlight">{{ total_credit_points }}</span> credits so far.
+      </li>
+      <li class="list-group-item">
+        You need <span class="highlight">{{ remaining }}</span> more to graduate.
+      </li>
+      <li class="list-group-item">
+        Your current completion is <span class="highlight">{{ progress|floatformat:1 }}%</span>.
+      </li>
+    </ul>
+  </div>
 </div>
 
 <script>
-function showTab(tab) {
-  document.getElementById("course").style.display = (tab === "course") ? "block" : "none";
-  document.getElementById("student").style.display = (tab === "student") ? "block" : "none";
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    const buttons = Array.from(document.querySelectorAll('.toggle-btn'));
+    const contents = {
+      course: document.getElementById('course'),
+      student: document.getElementById('student')
+    };
 
-  document.querySelectorAll(".toggle-btn").forEach(btn => btn.classList.remove("active"));
-  event.target.classList.add("active");
-}
+    if (!contents.course || !contents.student) {
+      // If either is missing something else is wrong — log and bail
+      console.warn('Tab content elements not found:', contents);
+      return;
+    }
+
+    function activate(tabName, button) {
+      Object.keys(contents).forEach(name => {
+        const el = contents[name];
+        el.style.display = (name === tabName) ? 'block' : 'none';
+      });
+
+      buttons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+
+      if (button) {
+        button.classList.add('active');
+        button.setAttribute('aria-selected', 'true');
+      }
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        const tab = btn.dataset.tab;
+        activate(tab, btn);
+      });
+    });
+
+    // Initialize: show 'course' tab by default (or first button if different)
+    const defaultBtn = document.querySelector('.toggle-btn[data-tab="course"]') || buttons[0];
+    if (defaultBtn) activate(defaultBtn.dataset.tab || 'course', defaultBtn);
+  } catch (err) {
+    // log a visible error for debugging
+    console.error('Tab initialization error:', err);
+  }
+});
 </script>
 
 {% endblock %}
