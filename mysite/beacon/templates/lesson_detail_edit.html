@@ -17,6 +17,20 @@
   background-color: #f2f2f2;
   text-align: center;
 }
+.reading-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;           /* space between input and button */
+  margin-bottom: 0.5rem;
+}
+.reading-item .form-control {
+  flex: 1 1 auto;     /* grow/shrink so button stays on one line */
+  min-width: 0;       /* important to allow shrinking inside flex */
+}
+.reading-item .remove-reading-item {
+  flex: 0 0 auto;
+}
+
 input[name$="-DELETE"] {
   display: none;
 }
@@ -168,13 +182,17 @@ input[name$="-DELETE"] {
     <!-- Reading List -->
     <h4>Reading List</h4>
     <div id="reading-items">
-        {% for item in reading_items %}
-            <div class="mb-2">
-                <input type="text" class="form-control" 
-                    name="reading_item_{{ item.id }}" 
-                    value="{{ item.title }}">
-            </div>
-        {% endfor %}
+    {% for item in reading_items %}
+        <div class="reading-item">
+        <input type="text"
+                class="form-control"
+                name="reading_item_{{ item.id }}"
+                value="{{ item.title }}">
+        <button type="button"
+                class="btn btn-danger remove-reading-item"
+                aria-label="Remove reading item">&times;</button>
+        </div>
+    {% endfor %}
     </div>
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-reading-item">+ Add Reading Item</button>
 
@@ -252,11 +270,30 @@ document.addEventListener("click", function(e) {
 // Dynamic Reading Items
 document.getElementById("add-reading-item").addEventListener("click", function() {
     const container = document.getElementById('reading-items');
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'input-group mb-2 reading-item';
+    
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'form-control mb-2';
+    input.className = 'form-control';
     input.name = 'new_reading_item';
-    container.appendChild(input);
+    
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-danger remove-reading-item';
+    btn.innerHTML = '&times;';
+    
+    wrapper.appendChild(input);
+    wrapper.appendChild(btn);
+    container.appendChild(wrapper);
+});
+
+// Remove Reading Items
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-reading-item")) {
+        e.target.closest(".reading-item").remove();
+    }
 });
 
 // Dynamic Assignment Items
