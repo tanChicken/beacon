@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Student List{% endblock %}
+
+{% block content %}
+<style>
+    .table-hover tbody tr {
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #ffe5b4; 
+    }
+
+    .table-hover tbody td a {
+        display: block;
+        color: #333;
+        text-decoration: none;
+        padding: 5px;
+    }
+
+    .table-hover tbody td a:hover {
+        color: #000; /* darker text on hover */
+    }
+</style>
+
+<div class="container mt-4">
+    <h1>ALL STUDENTS</h1>
+    <table class="table table-bordered table-hover mt-5 shadow-sm rounded">
+        <thead class="table-warning">
+            <tr>
+                <th style="text-align: center;">Student Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>
+                    <a href="{% url 'instructor_student_detail' student.id %}" style="text-align: center;">
+                        {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">No students found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
