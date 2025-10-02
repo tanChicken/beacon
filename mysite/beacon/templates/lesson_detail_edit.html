@@ -17,6 +17,20 @@
   background-color: #f2f2f2;
   text-align: center;
 }
+.reading-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;           /* space between input and button */
+  margin-bottom: 0.5rem;
+}
+.reading-item .form-control {
+  flex: 1 1 auto;     /* grow/shrink so button stays on one line */
+  min-width: 0;       /* important to allow shrinking inside flex */
+}
+.reading-item .remove-reading-item {
+  flex: 0 0 auto;
+}
+
 input[name$="-DELETE"] {
   display: none;
 }
@@ -168,13 +182,17 @@ input[name$="-DELETE"] {
     <!-- Reading List -->
     <h4>Reading List</h4>
     <div id="reading-items">
-        {% for item in reading_items %}
-            <div class="mb-2">
-                <input type="text" class="form-control" 
-                    name="reading_item_{{ item.id }}" 
-                    value="{{ item.title }}">
-            </div>
-        {% endfor %}
+    {% for item in reading_items %}
+        <div class="reading-item">
+        <input type="text"
+                class="form-control"
+                name="reading_item_{{ item.id }}"
+                value="{{ item.title }}">
+        <button type="button"
+                class="btn btn-danger remove-reading-item"
+                aria-label="Remove reading item">&times;</button>
+        </div>
+    {% endfor %}
     </div>
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-reading-item">+ Add Reading Item</button>
 
@@ -182,13 +200,24 @@ input[name$="-DELETE"] {
     <h4>Assignments</h4>
     <div id="assignment-items">
         {% for item in assignment_items %}
-            <div class="mb-2">
-                <input type="text" class="form-control" 
-                    name="assignment_item_{{ item.id }}" 
-                    value="{{ item.title }}">
+            <div class="row mb-2">
+                <!-- Assignment title -->
+                <div class="col-8">
+                    <input type="text" class="form-control"
+                        name="assignment_item_{{ item.id }}"
+                        value="{{ item.title }}">
+                </div>
+
+                <!-- Deadline -->
+                <div class="col-4">
+                    <input type="date" class="form-control"
+                        name="assignment_deadline_{{ item.id }}"
+                        value="{{ item.deadline|date:'Y-m-d' }}">
+                </div>
             </div>
         {% endfor %}
     </div>
+
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-assignment-item">+ Add Assignment</button>
 
     <!-- Enrolled Students -->
@@ -272,20 +301,61 @@ document.addEventListener("click", function(e) {
 
 // Add Reading Item
 document.getElementById("add-reading-item").addEventListener("click", function() {
+    const container = document.getElementById('reading-items');
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'input-group mb-2 reading-item';
+    
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'form-control mb-2';
+    input.className = 'form-control';
     input.name = 'new_reading_item';
-    document.getElementById('reading-items').appendChild(input);
+    
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-danger remove-reading-item';
+    btn.innerHTML = '&times;';
+    
+    wrapper.appendChild(input);
+    wrapper.appendChild(btn);
+    container.appendChild(wrapper);
+});
+
+// Remove Reading Items
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-reading-item")) {
+        e.target.closest(".reading-item").remove();
+    }
 });
 
 // Add Assignment Item
 document.getElementById("add-assignment-item").addEventListener("click", function() {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-control mb-2';
-    input.name = 'new_assignment_item';
-    document.getElementById('assignment-items').appendChild(input);
+    const row = document.createElement('div');
+    row.className = 'row mb-2';
+
+    // Assignment title
+    const colTitle = document.createElement('div');
+    colTitle.className = 'col-8';
+    const inputTitle = document.createElement('input');
+    inputTitle.type = 'text';
+    inputTitle.className = 'form-control';
+    inputTitle.name = 'new_assignment_item[]';
+    colTitle.appendChild(inputTitle);
+
+    // Assignment deadline
+    const colDate = document.createElement('div');
+    colDate.className = 'col-4';
+    const inputDate = document.createElement('input');
+    inputDate.type = 'date';
+    inputDate.className = 'form-control';
+    inputDate.name = 'new_assignment_deadline[]';
+    colDate.appendChild(inputDate);
+
+    // Add to row
+    row.appendChild(colTitle);
+    row.appendChild(colDate);
+
+    document.getElementById('assignment-items').appendChild(row);
 });
 </script>
 
