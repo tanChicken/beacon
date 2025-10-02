@@ -672,8 +672,24 @@ def student_profile(request):
 def student_report_course(request):
     student = request.user
     enrolled = student.courses_enroling.all()
+    # sum all lesson points for those courses
+    total_credit_points = Lesson.objects.filter(course__in=enrolled).aggregate(
+        total=Sum("credit_point")
+    )["total"] or 0
 
-    return render(request, "student_report_course.html", {"courses":enrolled})
+    required = 120
+    progress = (total_credit_points / required) * 100 if required > 0 else 0
+    remaining = required - total_credit_points
+
+    context = {
+        "courses": enrolled,
+        "total_credit_points": total_credit_points,
+        "progress": progress,
+        "remaining": remaining,
+        "required": required,
+    }
+
+    return render(request, "student_report_course.html", context)
 
 @role_required("STUDENT")
 def student_report_course_details(request, pk):
