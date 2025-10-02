@@ -46,8 +46,20 @@
 </div> 
 
 <!-- Remaining message --> 
-<div class="mt-4 alert alert-info"> 
-    There are {{ reading_left }} more to read and {{ assignment_left }} more assignment to complete for {{ course }} 
+<div class="mt-4 alert alert-info">
+    {% if reading_left == 0 and assignment_left == 0 %}
+        There is nothing more for you to read or complete for {{ course }}.
+    {% elif reading_left == 0 %}
+        There is no more reading for you in {{ course }}. 
+        {% if assignment_left > 0 %}
+            You still have {{ assignment_left }} assignment{% if assignment_left > 1 %}s{% endif %} to complete.
+        {% endif %}
+    {% elif assignment_left == 0 %}
+        There are {{ reading_left }} reading{% if reading_left > 1 %}s{% endif %} left for {{ course }}. 
+        There are no more assignments to complete.
+    {% else %}
+        There are {{ reading_left }} reading{% if reading_left > 1 %}s{% endif %} and {{ assignment_left }} assignment{% if assignment_left > 1 %}s{% endif %} left to complete for {{ course }}.
+    {% endif %}
 </div>
 
 <hr>
