@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Overall Progress - {{ student.studentprofile.first_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="mb-3">
+        <a href="{% url 'instructor_report' %}" class="btn btn-outline-secondary">&larr; Back</a>
+    </div>
+    <h2><strong>OVERALL PROGRESS FOR {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}</strong></h2>
+</div>
+{% endblock %}
