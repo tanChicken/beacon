@@ -1,13 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment
+from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student
 from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
-from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
 from.authz import role_required
-from django.db.models import Sum
+from django.db.models import Sum, Prefetch
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -73,6 +72,7 @@ def student_signup(request):
 
     return render(request, "signup.html")
 
+@role_required("STUDENT")
 def student_dashboard(request):
     student = request.user
     enrolled = student.courses_enroling.all()
@@ -175,7 +175,6 @@ def student_course_details(request, pk):
         "progress": round(progress, 1),   # 👈 send progress to template
     })
 
-
 @role_required("STUDENT")
 def student_lessons(request):
     if not request.user.role == "STUDENT":
@@ -218,12 +217,12 @@ def student_lesson_details(request, pk):
         "lesson": lesson,
         "is_enrolled": is_enrolled,
         "can_enroll": can_enroll,
-        "missing_prereqs": missing_prereqs,  # optional: useful to show in template
+        "missing_prereqs": missing_prereqs,  
         "is_completed": is_completed,
         "completed_item_ids": list(completed_item_ids),
     })
 
-@login_required
+@role_required("STUDENT")
 def toggle_checklist_item(request, item_id):
     item = get_object_or_404(StudentChecklistItem, id=item_id)
     student = request.user
@@ -263,9 +262,9 @@ def student_classroom(request):
     student = request.user
     classrooms = (
         Classroom.objects
-        .select_related("course_id")          # FK field name is course_id
+        .select_related("course_id")          
         .prefetch_related("lessons")
-        .filter(course_id__students=student)  # <-- traverse via course_id
+        .filter(course_id__students=student)  
         .distinct()
     )
     return render(request, "student_classroom.html", {"classrooms": classrooms})
@@ -274,7 +273,6 @@ def student_classroom(request):
 def student_classroom_details(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
     return render(request, 'student_classroom_details.html', {'classroom': classroom})
-
 
 def instructor_login(request):
     if request.method == "POST":
@@ -286,7 +284,6 @@ def instructor_login(request):
 
         if user is None:
             messages.error(request, "Invalid email or password.")
-            # return render(request, "instructor_login.html", {"hide_sidebar": True})
         else:
             if getattr(user, "role", None) == "INSTRUCTOR":
                 login(request, user)
@@ -357,7 +354,7 @@ def course_detail(request, pk):
         form = CourseForm(request.POST, instance=course)
 
         if form.is_valid():
-            form.save()  # <-- actually save course changes
+            form.save()  
             messages.success(request, "Course updated successfully!")
 
         # Handle new inline lessons
@@ -618,8 +615,7 @@ def delete_classroom(request, pk):
         messages.success(request, "Classroom deleted successfully!")
         return redirect("course_detail", pk=course_pk)
 
-from django.db.models import Prefetch
-@login_required
+@role_required("STUDENT")
 def student_profile(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
     courses = Course.objects.filter(students=request.user)
@@ -666,7 +662,6 @@ def student_profile(request):
         "courses": courses,
         "total_credit": total_credit,
     })
-
 
 @role_required("STUDENT")
 def student_report_course(request):
@@ -753,3 +748,100 @@ def student_change_password(request):
     else:
         form = StudentPasswordChangeForm(request.user)
     return render(request, "student_change_password.html", {"form": form})
+
+@role_required("INSTRUCTOR")
+def instructor_student_list(request):
+    students = Student.student.all().select_related("studentprofile")
+    return render(request, "instructor_student_list.html", {"students": students})
+
+@role_required("INSTRUCTOR")
+def instructor_student_detail(request, student_id):
+    # Get the profile for the selected student
+    profile = get_object_or_404(StudentProfile, user_id=student_id)
+
+    # Fetch courses where this student is enrolled
+    courses = Course.objects.filter(students=profile.user)
+
+    # Prefetch published lessons
+    courses = courses.prefetch_related(
+        Prefetch("lessons", queryset=Lesson.objects.filter(status="PUBLISHED"))
+    )
+
+    # Fetch enrolments for this student
+    enrolments = Enrolment.objects.filter(student=profile.user).select_related("lesson")
+    enrolments_map = {e.lesson.id: e for e in enrolments}
+
+    # Attach lesson status
+    for course in courses:
+        for lesson in course.lessons.all():
+            lesson.enrolment = enrolments_map.get(lesson.id)
+
+            total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
+            completed_items = StudentChecklistProgress.objects.filter(
+                student=profile.user,
+                item__lesson=lesson,
+                completed=True
+            ).count()
+
+            if total_items > 0 and completed_items == total_items:
+                lesson.status = "Completed"
+            elif completed_items > 0:
+                lesson.status = "In Progress"
+            else:
+                if lesson.enrolment:
+                    lesson.status = "Not Started"
+                else:
+                    lesson.status = "Not Enrolled"
+
+    # Calculate total credits earned
+    total_credit = sum(e.credit_earned for e in enrolments)
+
+    return render(request, "instructor_student_detail.html", {
+        "profile": profile,
+        "courses": courses,
+        "total_credit": total_credit,
+    })
+
+@role_required("INSTRUCTOR")
+def instructor_report(request):
+    # Courses taught by this instructor
+    courses = Course.objects.filter(instructor=request.user)
+
+    # All signed-up students only (exclude instructors)
+    students = Student.objects.filter(role="STUDENT").select_related("studentprofile")
+
+    return render(request, "instructor_report.html", {
+        "courses": courses,
+        "students": students,
+    })
+
+@role_required("INSTRUCTOR")
+def instructor_course_students(request, course_id):
+    # Get the course taught by this instructor
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+
+    # Fetch all students enrolled in this course
+    enrolled_students = course.students.all().select_related("studentprofile")
+
+    return render(request, "instructor_course_students.html", {
+        "course": course,
+        "students": enrolled_students,
+    })
+
+@role_required("INSTRUCTOR")
+def instructor_report_course_student_progress(request, course_id, student_id):
+    course = get_object_or_404(Course, id=course_id)
+    student = get_object_or_404(Student, id=student_id)
+
+    return render(request, "instructor_report_course_student_progress.html", {
+        "course": course,
+        "student": student,
+    })
+
+@role_required("INSTRUCTOR")
+def instructor_student_overall_progress(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+
+    return render(request, "instructor_report_student_overall_progress.html", {
+        "student": student,
+    })

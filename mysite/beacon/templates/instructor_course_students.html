@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Students in {{ course.title }}{% endblock %}
+
+{% block content %}
+<style>
+.table-hover tbody tr {
+    transition: background-color 0.2s ease-in-out;
+}
+.table-hover tbody tr:hover {
+    background-color: #ffe5b4; 
+}
+.table-hover tbody td a {
+    display: block;
+    color: #333;
+    text-decoration: none;
+    padding: 5px;
+}
+.table-hover tbody td a:hover {
+    color: #000; 
+}
+</style>
+
+<div class="container mt-4">
+    <div class="mb-3">
+        <a href="{% url 'instructor_report' %}" class="btn btn-outline-secondary">&larr; Back</a>
+    </div>
+    <h2><strong>Students Enrolled in {{ course.title }}</strong></h2>
+    <table class="table table-bordered table-hover mt-4 shadow-sm rounded">
+        <thead class="table-warning">
+            <tr>
+                <th style="text-align: center;">Student Name</th>
+                <th style="text-align: center;">Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td style="text-align: center;">
+                    <a href="{% url 'instructor_report_course_student_progress' course.id student.id %}">
+                        {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
+                    </a>
+                </td>
+                <td style="text-align: center;">{{ student.email }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2" class="text-center">No students enrolled in this course.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

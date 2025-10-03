@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Instructor Report{% endblock %}
+
+{% block content %}
+<style>
+h1, h3 {
+  font-weight: bold;
+}
+h3 {
+  margin-top: 20px;
+}
+
+/* === Toggle buttons === */
+.toggle-container {
+  display: flex;
+}
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #f8f9fa;
+  user-select: none;
+  transition: all 0.2s ease-in-out;
+}
+.toggle-btn.active {
+  background: #ff8c42;
+  color: white;
+  font-weight: 600;
+}
+.toggle-btn[type="button"] {
+  appearance: none;
+}
+
+.tab-content { display: none; }
+
+/* === Course cards === */
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 20px;
+  justify-content: flex-start; 
+}
+.card-col {
+  width: 400px;
+  min-width: 220px;
+  margin: 0 auto; 
+}
+.course-oval {
+  box-sizing: border-box;
+  width: 100%;
+  height: 220px;
+  border-radius: 40px;
+  border: 2px solid #ff9e57;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  text-align: center;
+}
+.course-oval:hover {
+  background-color: #fff3e0; 
+  box-shadow: 0 6px 12px rgba(255, 140, 66, 0.2); 
+  transform: translateY(-4px); 
+  transition: all 0.3s ease-in-out;
+}
+.course-id {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+}
+.course-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  margin: 25px 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 3px solid rgba(0,0,0,0.85);
+  width: 70%;
+}
+.course-meta {
+  font-size: 0.95rem;
+  margin-top: 12px;
+  line-height: 1.3;
+  color: #333;
+}
+.course-meta .label {
+  display: block;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+/* === Student List === */
+.student-list {
+  margin-top: 30px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  background: #fff;
+}
+.student-list-header {
+  background: #ff8c42;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  padding: 14px;
+  font-size: 1.1rem;
+}
+.student-list-item {
+  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eee;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+.student-list-item:last-child {
+  border-bottom: none;
+}
+.student-list-item:hover {
+  background-color: #fff3e0;
+  transform: translateX(3px);
+}
+.student-list-item a {
+  text-decoration: none;
+  font-weight: 600;
+  color: #000;   /* 🔹 Black student name */
+  width: 100%;
+  display: block;
+}
+.student-list-item a:hover {
+  color: #000;   /* Keep black on hover */
+}
+</style>
+
+<div class="toggle-container" role="tablist" aria-label="Course / Student tabs">
+  <button type="button" class="toggle-btn" data-tab="course" aria-controls="course" aria-selected="true">Course</button>
+  <button type="button" class="toggle-btn" data-tab="student" aria-controls="student" aria-selected="false">Student</button>
+</div>
+
+<!-- Course Tab -->
+<div id="course" class="tab-content" role="tabpanel" aria-labelledby="tab-course">
+  <div class="container mt-4">
+    <h1><strong>Your Courses</strong></h1>
+    <div class="row card-grid justify-content-center">
+      {% for course in courses %}
+      <div class="col-md-5 mb-5 d-flex justify-content-center">
+        <div class="card-col">
+          <a href="{% url 'instructor_course_students' course.id %}" class="text-decoration-none text-dark">
+            <div class="course-oval">
+                <div class="course-id">{{ course.course_id }}</div>
+                <div class="course-title">{{ course.title }}</div>
+                <div class="course-meta">
+                    <span class="label">Instructor: {{ course.instructor.email }}</span>
+                </div>
+            </div>
+          </a>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted">No courses assigned yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Student Tab -->
+<div id="student" class="tab-content" role="tabpanel" aria-labelledby="tab-student">
+  <div class="container mt-4">
+    <h1><strong>All Students</strong></h1>
+    <div class="student-list">
+      <div class="student-list-header">Student Name</div>
+      {% for student in students %}
+        <div class="student-list-item">
+          <a href="{% url 'instructor_student_overall_progress' student.id %}">
+            {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
+          </a>
+        </div>
+      {% empty %}
+        <div class="student-list-item text-muted text-center">No students found.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const buttons = Array.from(document.querySelectorAll('.toggle-btn'));
+  const contents = {
+    course: document.getElementById('course'),
+    student: document.getElementById('student')
+  };
+
+  function activate(tabName, button) {
+    Object.keys(contents).forEach(name => {
+      contents[name].style.display = (name === tabName) ? 'block' : 'none';
+    });
+
+    buttons.forEach(btn => {
+      btn.classList.remove('active');
+      btn.setAttribute('aria-selected', 'false');
+    });
+
+    if (button) {
+      button.classList.add('active');
+      button.setAttribute('aria-selected', 'true');
+    }
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', function () {
+      activate(btn.dataset.tab, btn);
+    });
+  });
+
+  // Default: show courses tab
+  const defaultBtn = document.querySelector('.toggle-btn[data-tab="course"]') || buttons[0];
+  if (defaultBtn) activate(defaultBtn.dataset.tab || 'course', defaultBtn);
+});
+</script>
+{% endblock %}
