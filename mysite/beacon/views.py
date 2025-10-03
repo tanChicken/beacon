@@ -801,3 +801,29 @@ def instructor_student_detail(request, student_id):
         "courses": courses,
         "total_credit": total_credit,
     })
+
+@role_required("INSTRUCTOR")
+def instructor_report(request):
+    # Courses taught by this instructor
+    courses = Course.objects.filter(instructor=request.user)
+
+    # All signed-up students only (exclude instructors)
+    students = Student.objects.filter(role="STUDENT").select_related("studentprofile")
+
+    return render(request, "instructor_report.html", {
+        "courses": courses,
+        "students": students,
+    })
+
+@role_required("INSTRUCTOR")
+def instructor_course_students(request, course_id):
+    # Get the course taught by this instructor
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+
+    # Fetch all students enrolled in this course
+    enrolled_students = course.students.all().select_related("studentprofile")
+
+    return render(request, "instructor_course_students.html", {
+        "course": course,
+        "students": enrolled_students,
+    })

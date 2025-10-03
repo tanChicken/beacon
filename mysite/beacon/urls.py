@@ -28,6 +28,9 @@ urlpatterns = [
     # instructor view student profile
     path("instructor/students/", views.instructor_student_list, name="instructor_student_list"),
     path("instructor/students/<int:student_id>/", views.instructor_student_detail, name="instructor_student_detail"),
+    # instructor report
+    path("instructor/report/courses/", views.instructor_report, name="instructor_report"),
+    path("report/course/<int:course_id>/students/", views.instructor_course_students, name="instructor_course_students"),
     # student course enrolment
     path("enrollment/", views.enrolment_page, name="enrolment_page"),
     path("enroll/<int:course_id>/", views.enrol_course, name="enrol_course"),
