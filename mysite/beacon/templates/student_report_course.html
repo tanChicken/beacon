@@ -24,23 +24,24 @@ h3 {
   background: #34a464;
   color: white;
 }
-.toggle-btn[type="button"] { /* ensure non-submit behavior */
-  -webkit-appearance: none;
+.toggle-btn[type="button"] {
+  appearance: none;         
 }
 
-/* hide by default — JS will show the right one */
 .tab-content { display: none; }
 
 .card-grid {
-display: flex;
-flex-wrap: wrap;
-gap: 24px;
-margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 20px;
+  justify-content: flex-start; 
 }
 
 .card-col {
-width: 400px;
-min-width: 220px;
+  width: 400px;
+  min-width: 220px;
+  margin: 0 auto;
 }
 
 .course-oval {
@@ -132,9 +133,9 @@ font-weight: 600;
 <div id="course" class="tab-content" role="tabpanel" aria-labelledby="tab-course">
   <div class="container mt-4">
     <!-- Course content -->
-    <div class="row card-grid">
+    <div class="row card-grid justify-content-center">
       {% for course in courses %}
-      <div class="col-md-5 mb-5">
+      <div class="col-md-5 mb-5 d-flex justify-content-center">
         <div class="card-col">
             <a href="{% url 'student_report_course_details' course.pk %}" class="text-decoration-none text-dark">
             <div class="course-oval">
@@ -146,10 +147,10 @@ font-weight: 600;
             </div>
             </a>
         </div>
-        </div>
-        {% empty %}
-        <p class="text-muted">No courses enrolled yet.</p>
-        {% endfor %}
+      </div>
+      {% empty %}
+      <p class="text-muted">No courses enrolled yet.</p>
+      {% endfor %}
     </div>
   </div>
 </div>
