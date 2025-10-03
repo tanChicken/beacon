@@ -6,7 +6,7 @@ from django.contrib.auth import authenticate, login, get_user_model, update_sess
 from django.db import transaction
 from django.http import JsonResponse
 from.authz import role_required
-from django.db.models import Sum, Prefetch
+from django.db.models import Sum, Prefetch, Q, F, Count
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -666,21 +666,64 @@ def student_profile(request):
 @role_required("STUDENT")
 def student_report_course(request):
     student = request.user
-    enrolled = student.courses_enroling.all()
-    # sum all lesson points for those courses
-    total_credit_points = Lesson.objects.filter(course__in=enrolled).aggregate(
-        total=Sum("credit_point")
-    )["total"] or 0
+    enrolled_courses = student.courses_enroling.all()
 
-    required = 120
-    progress = (total_credit_points / required) * 100 if required > 0 else 0
-    remaining = required - total_credit_points
+    required = 120  # total credits required
+
+    # --- Global progress ---
+    current_credit = (
+        Enrolment.objects.filter(
+            student=student,
+            completed=True,
+            lesson__status="PUBLISHED"
+        )
+        .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+    )
+
+    enrolled_credit = (
+        Enrolment.objects.filter(
+            student=student,
+            completed=False,
+            lesson__status="PUBLISHED"
+        )
+        .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+    )
+
+    remaining_exclude_enrolled = max(required - current_credit, 0)
+    remaining_include_enrolled = max(required - (current_credit + enrolled_credit), 0)
+
+    progress = (current_credit / required) * 100 if required > 0 else 0
+
+    # --- Per course breakdown ---
+    courses = (
+        enrolled_courses
+        .annotate(
+            completed_credits=Sum(
+                "lessons__credit_point",
+                filter=Q(
+                    lessons__enrolments__student=student,
+                    lessons__enrolments__completed=True,
+                    lessons__status="PUBLISHED"
+                )
+            ),
+            enrolled_credits=Sum(
+                "lessons__credit_point",
+                filter=Q(
+                    lessons__enrolments__student=student,
+                    lessons__enrolments__completed=False,
+                    lessons__status="PUBLISHED"
+                )
+            )
+        )
+    )
 
     context = {
-        "courses": enrolled,
-        "total_credit_points": total_credit_points,
+        "courses": courses,
+        "current_credit": current_credit,
+        "enrolled_credit": enrolled_credit,
+        "remaining_exclude_enrolled": remaining_exclude_enrolled,
+        "remaining_include_enrolled": remaining_include_enrolled,
         "progress": progress,
-        "remaining": remaining,
         "required": required,
     }
 

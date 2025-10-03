@@ -166,37 +166,38 @@ font-weight: 600;
   <div class="container report-container">
   <h1 class="fw-bold">Your Student Journey</h1> 
   <hr>
+  <h3 class="fw-bold">Current Progress: {{ progress|floatformat:1 }}%</h3>
 
   <!-- Summary Section -->
-  <div class="row g-4">
-    <div class="col-md-3">
-      <div class="summary-card">
-        <h3>{{ total_credit_points }}</h3>
-        <p>Earned Credit Points</p>
+    <div class="row g-4">
+      <div class="col-md-3">
+        <div class="summary-card">
+          <h3>{{ current_credit }}</h3>
+          <p>Earned Credits</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="summary-card">
+          <h3>{{ enrolled_credit }}</h3>
+          <p>In Progress Credits</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="summary-card">
+          <h3>{{ remaining_include_enrolled }}</h3>
+          <p>Credits To Go</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="summary-card">
+          <h3>120</h3>
+          <p>Credit to Graduate</p>
+        </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="summary-card">
-        <h3>{{ required }}</h3>
-        <p>Total Required</p>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="summary-card">
-        <h3>{{ remaining }}</h3>
-        <p>Credits To Go</p>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="summary-card">
-        <h3>{{ progress|floatformat:1 }}%</h3>
-        <p>Completion</p>
-      </div>
-    </div>
-  </div>
 
-  <!-- Progress bar section --> 
-  <div class="mt-4"> 
+    <!-- Progress bar section --> 
+    <div class="mt-4"> 
       <div class="d-flex justify-content-between"> 
           <span>0</span> 
           <span>{{ required }}</span> 
@@ -207,27 +208,60 @@ font-weight: 600;
               style="--progress: {{ progress }}%;"
               aria-valuenow="{{ progress }}"
               aria-valuemin="0"
-              aria-valuemax="120">
-              {{ progress }}%
+              aria-valuemax="{{ required }}">
+              {{ progress|floatformat:1 }}%
           </div> 
       </div> 
-  </div> 
+    </div> 
 
-  <!-- Analysis Section -->
-  <div class="mt-5">
-    <h3 class="fw-bold">Analysis</h3>
-    <ul class="list-group list-group-flush">
-      <li class="list-group-item">
-        You have earned <span class="highlight">{{ total_credit_points }}</span> credits so far.
-      </li>
-      <li class="list-group-item">
-        You need <span class="highlight">{{ remaining }}</span> more to graduate.
-      </li>
-      <li class="list-group-item">
-        Your current completion is <span class="highlight">{{ progress|floatformat:1 }}%</span>.
-      </li>
-    </ul>
-  </div>
+    <!-- Analysis Section -->
+    <div class="mt-5">
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item">
+          You have <span class="highlight">{{ current_credit }}</span> completed credits.
+        </li>
+        <li class="list-group-item">
+          You are currently enrolled in <span class="highlight">{{ enrolled_credit }}</span> more credits.
+        </li>
+        <li class="list-group-item">
+          You need <span class="highlight">{{ remaining_exclude_enrolled }}</span> more credits if ignoring in-progress,
+          or <span class="highlight">{{ remaining_include_enrolled }}</span> if including them.
+        </li>
+        <li class="list-group-item">
+          Current completion: <span class="highlight">{{ progress|floatformat:1 }}%</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Course Breakdown -->
+    <div class="mt-5">
+      <h3 class="fw-bold">Per-Course Breakdown</h3>
+      <table class="table table-striped mt-3">
+        <thead>
+          <tr>
+            <th>Course</th>
+            <th>Completed Credits</th>
+            <th>Enrolled Credits</th>
+            <th>Total Course Credits</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for course in courses %}
+          <tr>
+            <td>{{ course.course_id }} - {{ course.title }}</td>
+            <td>{{ course.completed_credits|default:"0" }}</td>
+            <td>{{ course.enrolled_credits|default:"0" }}</td>
+            <td>{{ course.credit_points }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-muted">No courses enrolled yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
 </div>
 
 <script>
