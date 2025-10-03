@@ -178,6 +178,12 @@ input[name$="-DELETE"] {
         </div>
         {% endif %}
     </div>
+    <!-- Classrooms Section -->
+    <div class="mb-3">
+      <a href="{% url 'create_classroom' course.pk %}" class="btn btn-sm btn-outline-primary">
+        + Add Classroom
+      </a>
+    </div>
 
     <!-- Reading List -->
     <h4>Reading List</h4>
@@ -339,7 +345,7 @@ document.getElementById("add-assignment-item").addEventListener("click", functio
     const inputTitle = document.createElement('input');
     inputTitle.type = 'text';
     inputTitle.className = 'form-control';
-    inputTitle.name = 'new_assignment_item[]';
+    inputTitle.name = 'new_assignment_item';
     colTitle.appendChild(inputTitle);
 
     // Assignment deadline
@@ -348,7 +354,7 @@ document.getElementById("add-assignment-item").addEventListener("click", functio
     const inputDate = document.createElement('input');
     inputDate.type = 'date';
     inputDate.className = 'form-control';
-    inputDate.name = 'new_assignment_deadline[]';
+    inputDate.name = 'new_assignment_deadline';
     colDate.appendChild(inputDate);
 
     // Add to row
