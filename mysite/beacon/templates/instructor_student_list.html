@@ -4,49 +4,61 @@
 
 {% block content %}
 <style>
-    .table-hover tbody tr {
-        transition: background-color 0.2s ease-in-out;
-    }
+.student-container {
+  margin-top: 40px;
+}
 
-    .table-hover tbody tr:hover {
-        background-color: #ffe5b4; 
-    }
+.student-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-    .table-hover tbody td a {
-        display: block;
-        color: #333;
-        text-decoration: none;
-        padding: 5px;
-    }
+.student-card:hover {
+  background: #fff3e0;  /* light orange hover */
+  transform: translateY(-3px);
+}
 
-    .table-hover tbody td a:hover {
-        color: #000; 
-    }
+.student-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #000;
+  margin: 0;
+}
+
+.student-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  width: 100%;
+}
+
+.student-link:hover {
+  text-decoration: none;
+}
 </style>
 
-<div class="container mt-4">
+<div class="container student-container">
     <h1><strong>ALL STUDENTS</strong></h1>
-    <table class="table table-bordered table-hover mt-5 shadow-sm rounded">
-        <thead class="table-warning">
-            <tr>
-                <th style="text-align: center;">Student Name</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for student in students %}
-            <tr>
-                <td>
-                    <a href="{% url 'instructor_student_detail' student.id %}" style="text-align: center;">
+    {% if students %}
+        {% for student in students %}
+            <a href="{% url 'instructor_student_detail' student.id %}" class="student-link">
+                <div class="student-card">
+                    <p class="student-name">
                         {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
-                    </a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" class="text-center">No students found.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </p>
+                </div>
+            </a>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted mt-4">No students found.</p>
+    {% endif %}
 </div>
 {% endblock %}
