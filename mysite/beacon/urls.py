@@ -31,6 +31,8 @@ urlpatterns = [
     # instructor report
     path("instructor/report/courses/", views.instructor_report, name="instructor_report"),
     path("report/course/<int:course_id>/students/", views.instructor_course_students, name="instructor_course_students"),
+    path("instructor/report/course/<int:course_id>/student/<int:student_id>/progress/",views.instructor_report_course_student_progress, name="instructor_report_course_student_progress"),
+    path("instructor/students/<int:student_id>/overall-progress/",views.instructor_student_overall_progress, name="instructor_student_overall_progress"),
     # student course enrolment
     path("enrollment/", views.enrolment_page, name="enrolment_page"),
     path("enroll/<int:course_id>/", views.enrol_course, name="enrol_course"),

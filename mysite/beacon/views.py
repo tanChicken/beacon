@@ -827,3 +827,21 @@ def instructor_course_students(request, course_id):
         "course": course,
         "students": enrolled_students,
     })
+
+@role_required("INSTRUCTOR")
+def instructor_report_course_student_progress(request, course_id, student_id):
+    course = get_object_or_404(Course, id=course_id)
+    student = get_object_or_404(Student, id=student_id)
+
+    return render(request, "instructor_report_course_student_progress.html", {
+        "course": course,
+        "student": student,
+    })
+
+@role_required("INSTRUCTOR")
+def instructor_student_overall_progress(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+
+    return render(request, "instructor_report_student_overall_progress.html", {
+        "student": student,
+    })

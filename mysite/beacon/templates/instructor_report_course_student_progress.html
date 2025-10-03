@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Progress: {{ student.studentprofile.first_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{% url 'instructor_course_students' course.id %}" class="btn btn-outline-secondary">&larr; Back</a>
+
+    <h1 class="mt-3">Progress for {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}</h1>
+</div>
+{% endblock %}
