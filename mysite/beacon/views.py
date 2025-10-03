@@ -751,7 +751,14 @@ def student_change_password(request):
 
 @role_required("INSTRUCTOR")
 def instructor_student_list(request):
-    students = Student.student.all().select_related("studentprofile")
+    # Get all courses taught by this instructor
+    courses = Course.objects.filter(instructor=request.user)
+
+    # Get all students who are enrolled in those courses
+    students = Student.objects.filter(
+        courses_enroling__in=courses
+    ).select_related("studentprofile").distinct()
+
     return render(request, "instructor_student_list.html", {"students": students})
 
 @role_required("INSTRUCTOR")
@@ -807,8 +814,10 @@ def instructor_report(request):
     # Courses taught by this instructor
     courses = Course.objects.filter(instructor=request.user)
 
-    # All signed-up students only (exclude instructors)
-    students = Student.objects.filter(role="STUDENT").select_related("studentprofile")
+    # Students enrolled in those courses
+    students = Student.objects.filter(
+        courses_enroling__in=courses
+    ).select_related("studentprofile").distinct()
 
     return render(request, "instructor_report.html", {
         "courses": courses,
