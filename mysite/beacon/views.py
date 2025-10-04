@@ -6,7 +6,7 @@ from django.contrib.auth import authenticate, login, get_user_model, update_sess
 from django.db import transaction
 from django.http import JsonResponse
 from.authz import role_required
-from django.db.models import Sum, Prefetch
+from django.db.models import Sum, Prefetch, Q, F, Count
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -666,21 +666,64 @@ def student_profile(request):
 @role_required("STUDENT")
 def student_report_course(request):
     student = request.user
-    enrolled = student.courses_enroling.all()
-    # sum all lesson points for those courses
-    total_credit_points = Lesson.objects.filter(course__in=enrolled).aggregate(
-        total=Sum("credit_point")
-    )["total"] or 0
+    enrolled_courses = student.courses_enroling.all()
 
-    required = 120
-    progress = (total_credit_points / required) * 100 if required > 0 else 0
-    remaining = required - total_credit_points
+    required = 120  # total credits required
+
+    # --- Global progress ---
+    current_credit = (
+        Enrolment.objects.filter(
+            student=student,
+            completed=True,
+            lesson__status="PUBLISHED"
+        )
+        .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+    )
+
+    enrolled_credit = (
+        Enrolment.objects.filter(
+            student=student,
+            completed=False,
+            lesson__status="PUBLISHED"
+        )
+        .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+    )
+
+    remaining_exclude_enrolled = max(required - current_credit, 0)
+    remaining_include_enrolled = max(required - (current_credit + enrolled_credit), 0)
+
+    progress = (current_credit / required) * 100 if required > 0 else 0
+
+    # --- Per course breakdown ---
+    courses = (
+        enrolled_courses
+        .annotate(
+            completed_credits=Sum(
+                "lessons__credit_point",
+                filter=Q(
+                    lessons__enrolments__student=student,
+                    lessons__enrolments__completed=True,
+                    lessons__status="PUBLISHED"
+                )
+            ),
+            enrolled_credits=Sum(
+                "lessons__credit_point",
+                filter=Q(
+                    lessons__enrolments__student=student,
+                    lessons__enrolments__completed=False,
+                    lessons__status="PUBLISHED"
+                )
+            )
+        )
+    )
 
     context = {
-        "courses": enrolled,
-        "total_credit_points": total_credit_points,
+        "courses": courses,
+        "current_credit": current_credit,
+        "enrolled_credit": enrolled_credit,
+        "remaining_exclude_enrolled": remaining_exclude_enrolled,
+        "remaining_include_enrolled": remaining_include_enrolled,
         "progress": progress,
-        "remaining": remaining,
         "required": required,
     }
 
@@ -842,9 +885,45 @@ def instructor_report_course_student_progress(request, course_id, student_id):
     course = get_object_or_404(Course, id=course_id)
     student = get_object_or_404(Student, id=student_id)
 
+    # Only active lessons
+    active_lessons = course.lessons.filter(status="PUBLISHED")
+
+    # Checklist items by type
+    reading_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="READING")
+    assignment_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="ASSIGNMENT")
+
+    # Student progress for checklist
+    reading_done = StudentChecklistProgress.objects.filter(student=student, item__in=reading_items, completed=True).count()
+    assignment_done = StudentChecklistProgress.objects.filter(student=student, item__in=assignment_items, completed=True).count()
+
+    # Totals
+    total_readings = reading_items.count()
+    total_assignments = assignment_items.count()
+
+    reading_left = total_readings - reading_done
+    assignment_left = total_assignments - assignment_done
+
+    reading_percent = (reading_done / total_readings * 100) if total_readings else 0
+    assignment_percent = (assignment_done / total_assignments * 100) if total_assignments else 0
+
+    total_item = total_readings + total_assignments
+    total_done = reading_done + assignment_done
+    total_percentage = (total_done / total_item * 100) if total_item else 0
+
     return render(request, "instructor_report_course_student_progress.html", {
         "course": course,
         "student": student,
+        "reading_percent": round(reading_percent, 1),
+        "assignment_percent": round(assignment_percent, 1),
+        "total_readings": total_readings,
+        "total_assignments": total_assignments,
+        "reading_done": reading_done,
+        "assignment_done": assignment_done,
+        "reading_left": reading_left,
+        "assignment_left": assignment_left,
+        "total_item": total_readings + total_assignments,
+        "total_done": total_done,
+        "total_percent": total_percentage,
     })
 
 @role_required("INSTRUCTOR")
