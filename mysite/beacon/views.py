@@ -6,6 +6,8 @@ from django.contrib.auth import authenticate, login, get_user_model, update_sess
 from django.db import transaction
 from django.http import JsonResponse
 from.authz import role_required
+from django.db.models import Sum, Prefetch
+from datetime import datetime
 from django.db.models import Sum, Prefetch, Q, F, Count
 
 def home(request):
@@ -457,20 +459,60 @@ def lesson_detail_edit(request, pk):
                     )
 
             # Update existing assignment items
-            for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
-                key = f"assignment_item_{item.id}"
-                if key in request.POST:
-                    item.title = request.POST[key].strip()
-                    item.save()
+            # for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
+            #     key = f"assignment_item_{item.id}"
+            #     if key in request.POST:
+            #         item.title = request.POST[key].strip()
+            #         item.save()
 
-            # Add new assignment items
-            for title in request.POST.getlist("new_assignment_item"):
-                if title.strip():
-                    StudentChecklistItem.objects.create(
-                        lesson=lesson,
-                        title=title.strip(),
-                        item_type="ASSIGNMENT"
-                    )
+            # # Add new assignment items
+            # for title in request.POST.getlist("new_assignment_item"):
+            #     if title.strip():
+            #         StudentChecklistItem.objects.create(
+            #             lesson=lesson,
+            #             title=title.strip(),
+            #             item_type="ASSIGNMENT"
+            #         )
+            for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
+                title_key = f"assignment_item_{item.id}"
+                date_key  = f"assignment_deadline_{item.id}"
+
+                if title_key in request.POST:
+                    item.title = request.POST[title_key].strip()
+
+                # Parse YYYY-MM-DD (empty allowed)
+                raw_date = request.POST.get(date_key, "").strip()
+                if raw_date:
+                    try:
+                        item.deadline = datetime.strptime(raw_date, "%Y-%m-%d").date()
+                    except ValueError:
+                        # Optional: attach a message / ignore invalid dates
+                        pass
+                else:
+                    item.deadline = None
+
+                item.save()
+            
+            new_titles = [t.strip() for t in request.POST.getlist("new_assignment_item")]
+            new_dates  = [d.strip() for d in request.POST.getlist("new_assignment_deadline")]
+
+            # zip_longest to be defensive if counts mismatch
+            from itertools import zip_longest
+            for title, raw_date in zip_longest(new_titles, new_dates, fillvalue=""):
+                if not title:
+                    continue
+                deadline_val = None
+                if raw_date:
+                    try:
+                        deadline_val = datetime.strptime(raw_date, "%Y-%m-%d").date()
+                    except ValueError:
+                        pass
+                StudentChecklistItem.objects.create(
+                    lesson=lesson,
+                    title=title,
+                    item_type="ASSIGNMENT",
+                    deadline=deadline_val,
+                )
 
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("lesson_detail_edit", pk=lesson.pk)
