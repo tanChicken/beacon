@@ -424,6 +424,22 @@ def lesson_detail_edit(request, pk):
             formset.instance = lesson
             formset.save()
 
+            # --- DELETE removed reading items ---
+            existing_reading_ids = set(lesson.checklist_items.filter(item_type="READING").values_list("id", flat=True))
+            submitted_reading_ids = set()
+
+            for key in request.POST.keys():
+                if key.startswith("reading_item_"):
+                    try:
+                        item_id = int(key.replace("reading_item_", ""))
+                        submitted_reading_ids.add(item_id)
+                    except ValueError:
+                        pass  # ignore if something unexpected
+
+            # Determine deleted ones
+            deleted_ids = existing_reading_ids - submitted_reading_ids
+            StudentChecklistItem.objects.filter(id__in=deleted_ids, item_type="READING").delete()
+
             # Update existing reading items
             for item in lesson.checklist_items.filter(item_type="READING"):
                 key = f"reading_item_{item.id}"
