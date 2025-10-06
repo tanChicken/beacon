@@ -424,6 +424,22 @@ def lesson_detail_edit(request, pk):
             formset.instance = lesson
             formset.save()
 
+            # --- DELETE removed reading items ---
+            existing_reading_ids = set(lesson.checklist_items.filter(item_type="READING").values_list("id", flat=True))
+            submitted_reading_ids = set()
+
+            for key in request.POST.keys():
+                if key.startswith("reading_item_"):
+                    try:
+                        item_id = int(key.replace("reading_item_", ""))
+                        submitted_reading_ids.add(item_id)
+                    except ValueError:
+                        pass  # ignore if something unexpected
+
+            # Determine deleted ones
+            deleted_ids = existing_reading_ids - submitted_reading_ids
+            StudentChecklistItem.objects.filter(id__in=deleted_ids, item_type="READING").delete()
+
             # Update existing reading items
             for item in lesson.checklist_items.filter(item_type="READING"):
                 key = f"reading_item_{item.id}"
@@ -929,7 +945,66 @@ def instructor_report_course_student_progress(request, course_id, student_id):
 @role_required("INSTRUCTOR")
 def instructor_student_overall_progress(request, student_id):
     student = get_object_or_404(Student, id=student_id)
+    enrolled_courses = student.courses_enroling.all()
 
-    return render(request, "instructor_report_student_overall_progress.html", {
+    required = 120  # total credits required
+
+    # --- Global progress ---
+    current_credit = (
+        Enrolment.objects.filter(
+            student=student,
+            completed=True,
+            lesson__status="PUBLISHED"
+        )
+        .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+    )
+
+    enrolled_credit = (
+        Enrolment.objects.filter(
+            student=student,
+            completed=False,
+            lesson__status="PUBLISHED"
+        )
+        .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+    )
+
+    remaining_exclude_enrolled = max(required - current_credit, 0)
+    remaining_include_enrolled = max(required - (current_credit + enrolled_credit), 0)
+
+    progress = (current_credit / required) * 100 if required > 0 else 0
+
+    # --- Per course breakdown ---
+    courses = (
+        enrolled_courses
+        .annotate(
+            completed_credits=Sum(
+                "lessons__credit_point",
+                filter=Q(
+                    lessons__enrolments__student=student,
+                    lessons__enrolments__completed=True,
+                    lessons__status="PUBLISHED"
+                )
+            ),
+            enrolled_credits=Sum(
+                "lessons__credit_point",
+                filter=Q(
+                    lessons__enrolments__student=student,
+                    lessons__enrolments__completed=False,
+                    lessons__status="PUBLISHED"
+                )
+            )
+        )
+    )
+
+    context = {
         "student": student,
-    })
+        "courses": courses,
+        "current_credit": current_credit,
+        "enrolled_credit": enrolled_credit,
+        "remaining_exclude_enrolled": remaining_exclude_enrolled,
+        "remaining_include_enrolled": remaining_include_enrolled,
+        "progress": progress,
+        "required": required,
+    }
+
+    return render(request, "instructor_report_student_overall_progress.html", context)
