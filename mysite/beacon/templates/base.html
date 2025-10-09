@@ -9,216 +9,383 @@
 
     <style>
       /* ============== LIGHT (default) ============== */
-      body {
-        background-color: #ffffff;
-        color: #111;
-        font-family: Arial, sans-serif;
-      }
+body {
+  background-color: #ffffff;
+  color: #111;
+  font-family: Arial, sans-serif;
+}
 
-      /* Sidebar */
-      .sidebar {
-        height: 100vh;
-        border-right: 1px solid #ddd;
-        padding: 20px;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 240px;
-        transition: all 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        z-index: 1000;
-        pointer-events: auto;
-        background-clip: padding-box;
-      }
-      .sidebar h2 { font-size: 20px; margin-bottom: 20px; }
-      .sidebar a {
-        display: block;
-        padding: 8px 12px;
-        color: #333;
-        text-decoration: none;
-        border-radius: 6px;
-        margin-bottom: 5px;
-      }
-      .sidebar a:hover { color: #fff; }
-      .sidebar h2 a:hover { color: #fff !important; }
+/* Sidebar */
+.sidebar {
+  height: 100vh;
+  border-right: 1px solid #ddd;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  pointer-events: auto;
+  background-clip: padding-box;
+}
+.sidebar h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+.sidebar a {
+  display: block;
+  padding: 8px 12px;
+  color: #333;
+  text-decoration: none;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  transition: all 0.2s ease;
+}
+.sidebar a:hover {
+  color: #fff;
+  background-color: #555;
+}
+.sidebar h2 a:hover {
+  color: #fff !important;
+}
 
-      /* Instructor (Orange Theme) */
-      .instructor-sidebar { background-color: #fae3d3; }
-      .instructor-sidebar h2 a { color: #e67e22; text-decoration: none; font-weight: bold; }
-      .instructor-sidebar h2 a:hover { color: #c75d00; }
-      .instructor-sidebar a:hover { background-color: #e67e22; }
+/* Instructor (Orange Theme) */
+.instructor-sidebar {
+  background-color: #fae3d3;
+}
+.instructor-sidebar h2 a {
+  color: #e67e22;
+  text-decoration: none;
+  font-weight: bold;
+}
+.instructor-sidebar h2 a:hover {
+  color: #fff;
+}
+.instructor-sidebar a:hover {
+  background-color: #e67e22;
+  color: #fff;
+}
 
-      /* Student (Green Theme) */
-      .student-sidebar { background-color: #d8fae6; }
-      .student-sidebar h2 a { color: #34a464; text-decoration: none; font-weight: bold; }
-      .student-sidebar h2 a:hover { color: #278c50; }
-      .student-sidebar a:hover { background-color: #34a464; }
+/* Student (Green Theme) */
+.student-sidebar {
+  background-color: #d8fae6;
+}
+.student-sidebar h2 a {
+  color: #34a464;
+  text-decoration: none;
+  font-weight: bold;
+}
+.student-sidebar h2 a:hover {
+  color: #fff;
+}
+.student-sidebar a:hover {
+  background-color: #34a464;
+  color: #fff;
+}
 
-      /* Bottom toggle area */
-      .sidebar-bottom { margin-top: auto; padding-top: 12px; border-top: 1px solid #ddd; }
-      .theme-toggle {
-        width: 100%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 8px 12px;
-        border-radius: 8px;
-        border: 1px solid #ddd;
-        background: #fff;
-        color: #111;
-        cursor: pointer;
-        position: relative;
-        z-index: 1001;
-      }
+/* Bottom toggle area */
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+}
+.theme-toggle {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  position: relative;
+  z-index: 1001;
+  transition: all 0.3s ease;
+}
+.theme-toggle:hover {
+  background-color: #f3f3f3;
+}
 
-      /* Main content */
-      .main-content {
-        margin-left: 260px;
-        padding: 20px;
-        transition: margin-left 0.3s ease;
-        position: relative;
-        z-index: 1;
-      }
+/* Main content */
+.main-content {
+  margin-left: 260px;
+  padding: 20px;
+  transition: margin-left 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
 
-      /* Responsive */
-      @media (max-width: 991px) {
-        .sidebar { width: 200px; }
-        .main-content { margin-left: 210px; }
-      }
-      @media (max-width: 767px) {
-        .sidebar {
-          position: relative;
-          width: 100%;
-          height: auto;
-          border-right: none;
-          border-bottom: 1px solid #ddd;
-          z-index: 1000;
-        }
-        .main-content { margin-left: 0; }
-        .sidebar a { display: inline-block; margin-right: 10px; }
-        .sidebar-bottom { border-top: none; }
-      }
+/* Responsive */
+@media (max-width: 991px) {
+  .sidebar {
+    width: 200px;
+  }
+  .main-content {
+    margin-left: 210px;
+  }
+}
+@media (max-width: 767px) {
+  .sidebar {
+    position: relative;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+    z-index: 1000;
+  }
+  .main-content {
+    margin-left: 0;
+  }
+  .sidebar a {
+    display: inline-block;
+    margin-right: 10px;
+  }
+  .sidebar-bottom {
+    border-top: none;
+  }
+}
 
-      /* ==================== DARK MODE ==================== */
-      body.dark-mode {
-        background-color: #121212;
-        color: #e0e0e0;
-      }
-      body.dark-mode .sidebar {
-        background-color: #1e1e1e !important;
-        border-color: #444 !important;
-      }
-      body.dark-mode .sidebar a { color: #e0e0e0; }
-      body.dark-mode .sidebar a:hover { background-color: #333 !important; color: #fff; }
-      body.dark-mode .theme-toggle { background: #1e1e1e; color: #e0e0e0; border-color: #444; }
-      body.dark-mode .theme-toggle:hover { background: #2a2a2a; }
-      body.dark-mode .main-content { background-color: #121212; }
+/* ==================== DARK MODE ==================== */
+body.dark-mode {
+  background-color: #121212;
+  color: #e0e0e0;
+}
 
-      /* Components commonly used across pages - ADD .rounded, .shadow, .shadow-sm, .bg-white, .student-card, .student-list-item */
-      body.dark-mode .alert,
-      body.dark-mode .card,
-      body.dark-mode .border,
-      body.dark-mode .list-group-item,
-      body.dark-mode .rounded,
-      body.dark-mode .shadow,
-      body.dark-mode .shadow-sm,
-      body.dark-mode .bg-white,
-      body.dark-mode .student-card,
-      body.dark-mode .student-list-item {
-        background-color: #1e1e1e !important;
-        color: #e0e0e0 !important;
-        border-color: #444 !important;
-      }
-      
-      body.dark-mode table,
-      body.dark-mode .table { color: #e0e0e0; background-color: #1a1a1a; }
-      body.dark-mode .table thead th { border-bottom-color: #444 !important; background:#2a2a2a !important; color:#fff !important; }
-      body.dark-mode .table td, 
-      body.dark-mode .table th { border-top-color: #333 !important; }
+/* Student sidebar dark mode */
+body.dark-mode .student-sidebar {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+body.dark-mode .student-sidebar a {
+  color: #ccc !important;
+}
+body.dark-mode .student-sidebar a:hover {
+  background-color: #34a464 !important;
+  color: #fff !important;
+}
 
-      body.dark-mode .form-control,
-      body.dark-mode .custom-select,
-      body.dark-mode .input-group-text,
-      body.dark-mode .form-control:focus {
-        background-color: #1a1a1a !important;
-        color: #e0e0e0 !important;
-        border-color: #444 !important;
-        caret-color: #ffffff;
-      }
-      body.dark-mode select, body.dark-mode option { background-color:#1a1a1a !important; color:#ffffff !important; }
-      body.dark-mode ::placeholder { color: #9aa0a6 !important; }
+/* Instructor sidebar dark mode */
+body.dark-mode .instructor-sidebar {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+body.dark-mode .instructor-sidebar a {
+  color: #ccc !important;
+}
+body.dark-mode .instructor-sidebar a:hover {
+  background-color: #e67e22 !important;
+  color: #fff !important;
+}
 
-      body.dark-mode .btn-light { background-color: #2b2b2b !important; color: #e0e0e0 !important; border-color: #444 !important; }
-      body.dark-mode .btn-outline-secondary { color: #e0e0e0 !important; border-color: #666 !important; }
-      body.dark-mode .btn-outline-secondary:hover { background:#2b2b2b !important; }
-      body.dark-mode .btn-primary { background-color: #e67e22 !important; border-color: #e67e22 !important; color: #fff !important; }
-      body.dark-mode .btn-primary:hover { background-color: #cf6c17 !important; border-color: #cf6c17 !important; }
+/* Sidebar hover improvement */
+body.dark-mode .sidebar a:hover {
+  color: #fff !important;
+}
 
-      body.dark-mode a { color: #9dc6ff; }
-      body.dark-mode a:hover { color: #c4dcff; }
+/* Dark mode toggle button */
+body.dark-mode .theme-toggle {
+  background: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #444;
+}
+body.dark-mode .theme-toggle:hover {
+  background: #2a2a2a;
+}
 
-      /* Readable text fallback */
-      body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
-      body.dark-mode h4, body.dark-mode h5, body.dark-mode h6,
-      body.dark-mode p, body.dark-mode span, body.dark-mode label,
-      body.dark-mode td, body.dark-mode th, body.dark-mode a,
-      body.dark-mode .card *, body.dark-mode .list-group-item,
-      body.dark-mode .form-control { color: #ffffff !important; }
+/* Content area */
+body.dark-mode .main-content {
+  background-color: #121212;
+}
 
-      /* ======= ONLY the top "Course / Student" bar (scoped by id) ======= */
-      /* (Add id="report-tabs" to that bar's wrapper in the template) */
-      body.dark-mode #report-tabs {
-        background-color: #1e1e1e !important;
-        border: 1px solid #444 !important;
-        border-radius: .25rem;
-        padding: 2px;
-      }
-      body.dark-mode #report-tabs .nav-link,
-      body.dark-mode #report-tabs .btn,
-      body.dark-mode #report-tabs .tab-link {
-        background-color: #2a2a2a !important;
-        color: #ffffff !important;
-        border-color: #444 !important;
-      }
-      body.dark-mode #report-tabs .nav-link.active,
-      body.dark-mode #report-tabs .btn.active,
-      body.dark-mode #report-tabs .tab-link.active,
-      body.dark-mode #report-tabs .selected {
-        background-color: #e67e22 !important;
-        color: #ffffff !important;
-        border-color: #e67e22 !important;
-      }
+/* Common components dark mode */
+body.dark-mode .alert,
+body.dark-mode .card,
+body.dark-mode .border,
+body.dark-mode .list-group-item,
+body.dark-mode .rounded,
+body.dark-mode .shadow,
+body.dark-mode .shadow-sm,
+body.dark-mode .bg-white,
+body.dark-mode .student-card,
+body.dark-mode .student-list-item {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+  border-color: #444 !important;
+}
 
-      /* ======= KPI / Summary tiles on the Student Journey page ======= */
-      /* These cover common class names used for those white stat boxes */
-      body.dark-mode .kpi-box,
-      body.dark-mode .kpi,
-      body.dark-mode .stat-box,
-      body.dark-mode .stat-tile,
-      body.dark-mode .summary-box,
-      body.dark-mode .metric-box,
-      body.dark-mode .metric,
-      body.dark-mode .info-box,
-      body.dark-mode .stats-card,
-      body.dark-mode .summary-card {
-        background-color: #1e1e1e !important;
-        color: #ffffff !important;
-        border-color: #444 !important;
-      }
-      /* If the tiles are just plain rounded divs, this targets only tiles sized like cards */
-      body.dark-mode .main-content .rounded.p-3,
-      body.dark-mode .main-content .rounded.p-4,
-      body.dark-mode .main-content .rounded-lg.p-3,
-      body.dark-mode .main-content .rounded-lg.p-4 {
-        background-color: #1e1e1e !important;
-        color: #ffffff !important;
-        border: 1px solid #444 !important;
-      }
+/* Tables */
+body.dark-mode table,
+body.dark-mode .table {
+  color: #e0e0e0;
+  background-color: #1a1a1a;
+}
+body.dark-mode .table thead th {
+  border-bottom-color: #444 !important;
+  background: #2a2a2a !important;
+  color: #fff !important;
+}
+body.dark-mode .table td,
+body.dark-mode .table th {
+  border-top-color: #333 !important;
+}
 
-      /* Progress track (keep the colored bar as-is, just darken the track) */
-      body.dark-mode .progress { background-color: #2a2a2a !important; }
+/* Forms */
+body.dark-mode .form-control,
+body.dark-mode .custom-select,
+body.dark-mode .input-group-text,
+body.dark-mode .form-control:focus {
+  background-color: #1a1a1a !important;
+  color: #e0e0e0 !important;
+  border-color: #444 !important;
+  caret-color: #ffffff;
+}
+body.dark-mode select,
+body.dark-mode option {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+body.dark-mode ::placeholder {
+  color: #9aa0a6 !important;
+}
+
+/* Buttons */
+body.dark-mode .btn-light {
+  background-color: #2b2b2b !important;
+  color: #e0e0e0 !important;
+  border-color: #444 !important;
+}
+body.dark-mode .btn-outline-secondary {
+  color: #e0e0e0 !important;
+  border-color: #666 !important;
+}
+body.dark-mode .btn-outline-secondary:hover {
+  background: #2b2b2b !important;
+}
+body.dark-mode .btn-primary {
+  background-color: #e67e22 !important;
+  border-color: #e67e22 !important;
+  color: #fff !important;
+}
+body.dark-mode .btn-primary:hover {
+  background-color: #cf6c17 !important;
+  border-color: #cf6c17 !important;
+}
+
+/* Links */
+body.dark-mode a {
+  color: #9dc6ff;
+}
+body.dark-mode a:hover {
+  color: #ffffff;
+}
+
+/* General text fallback */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6,
+body.dark-mode p,
+body.dark-mode span,
+body.dark-mode label,
+body.dark-mode td,
+body.dark-mode th,
+body.dark-mode a,
+body.dark-mode .card *,
+body.dark-mode .list-group-item,
+body.dark-mode .form-control {
+  color: #ffffff !important;
+}
+
+/* Report tabs bar */
+body.dark-mode #report-tabs {
+  background-color: #1e1e1e !important;
+  border: 1px solid #444 !important;
+  border-radius: .25rem;
+  padding: 2px;
+}
+body.dark-mode #report-tabs .nav-link,
+body.dark-mode #report-tabs .btn,
+body.dark-mode #report-tabs .tab-link {
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+  border-color: #444 !important;
+}
+body.dark-mode #report-tabs .nav-link.active,
+body.dark-mode #report-tabs .btn.active,
+body.dark-mode #report-tabs .tab-link.active,
+body.dark-mode #report-tabs .selected {
+  background-color: #e67e22 !important;
+  color: #ffffff !important;
+  border-color: #e67e22 !important;
+}
+
+/* KPI / Summary boxes */
+body.dark-mode .kpi-box,
+body.dark-mode .kpi,
+body.dark-mode .stat-box,
+body.dark-mode .stat-tile,
+body.dark-mode .summary-box,
+body.dark-mode .metric-box,
+body.dark-mode .metric,
+body.dark-mode .info-box,
+body.dark-mode .stats-card,
+body.dark-mode .summary-card {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border-color: #444 !important;
+}
+
+/* Rounded tiles in content */
+body.dark-mode .main-content .rounded.p-3,
+body.dark-mode .main-content .rounded.p-4,
+body.dark-mode .main-content .rounded-lg.p-3,
+body.dark-mode .main-content .rounded-lg.p-4 {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border: 1px solid #444 !important;
+}
+
+/* Progress bar track */
+body.dark-mode .progress {
+  background-color: #2a2a2a !important;
+}
+
+/* Student role */
+.student-sidebar ~ .main-content .course-list-item:hover,
+.student-sidebar ~ .main-content .course-card:hover {
+  background-color: #34a464 !important;
+  color: #fff !important;
+  border-color: #34a464 !important;
+}
+
+/* Ensure all text + links inside also turn white */
+.student-sidebar ~ .main-content .course-list-item:hover *,
+.student-sidebar ~ .main-content .course-card:hover * {
+  color: #fff !important;
+  text-decoration: none !important;
+}
+
+/* Instructor role */
+.instructor-sidebar ~ .main-content .course-list-item:hover,
+.instructor-sidebar ~ .main-content .course-card:hover {
+  background-color: #e67e22 !important;
+  color: #fff !important;
+  border-color: #e67e22 !important;
+}
+
+.instructor-sidebar ~ .main-content .course-list-item:hover *,
+.instructor-sidebar ~ .main-content .course-card:hover * {
+  color: #fff !important;
+  text-decoration: none !important;
+}
     </style>
   </head>
 
