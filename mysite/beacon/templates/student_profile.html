@@ -1,24 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Student Profile{% endblock %}
+
 {% block content %}
 <style>
 .course-card-header {
   background-color: #549257;
+  color: white;
 }
 </style>
+
 <div class="container mt-4">
   <h1 class="mb-4"><strong>YOUR PROFILE</strong></h1>
 
-  <!-- Profile Information -->
+  <!-- Flash messages -->
+  {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Profile Info -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Personal Information</h4>
-        <a href="{% url 'student_change_password' %}" class="btn btn-outline-success btn-sm">
-          Change Password
-        </a>
+        <a href="{% url 'student_change_password' %}" class="btn btn-outline-success btn-sm">Change Password</a>
       </div>
-      
       <div class="row">
         <div class="col-md-6">
           <p><strong>Title:</strong> {{ profile.title }}</p>
@@ -31,52 +43,49 @@
           <p>
             <strong>Status:</strong>
             {% if profile.user.is_active %}
-              <span class="badge badge-success">Active</span>
+              <span class="badge bg-success">Active</span>
             {% else %}
-              <span class="badge badge-danger">Inactive</span>
+              <span class="badge bg-danger">Inactive</span>
             {% endif %}
           </p>
+
+          <!-- Status Toggle Button -->
+          <button id="toggleStatusBtn" class="btn {% if profile.user.is_active %}btn-danger{% else %}btn-success{% endif %} mt-3">
+            {% if profile.user.is_active %}Set as Inactive{% else %}Reactivate Account{% endif %}
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Academic Information + Courses -->
+  <!-- Academic Info + Courses -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <h4 class="mb-3">Academic Information</h4>
-
-      <!-- Academic summary -->
-      <p class="mb-4">
-        <strong>Total Credit Accumulated:</strong>
-        <span class="text-dark">{{ total_credit }}</span>
-      </p>
-
-      <!-- Courses and lessons -->
+      <p class="mb-4"><strong>Total Credit Accumulated:</strong> {{ total_credit }}</p>
       <h5>Enrolled Courses & Lessons</h5>
       {% for course in courses %}
         <div class="card mb-3 shadow-sm">
-          <!-- <div class="card-header bg-success text-white"> -->
-          <div class="card-header course-card-header text-white">
+          <div class="card-header course-card-header">
             <strong>{{ course.title }}</strong> ({{ course.course_id }})
           </div>
           <div class="card-body">
             {% if course.lessons.all %}
               <ul class="list-group list-group-flush">
                 {% for lesson in course.lessons.all %}
-                <li>
-                  <strong>{{ lesson.title }}</strong> ({{ lesson.lesson_id }})
-                  {% if lesson.status == "Completed" %}
-                    <span class="badge badge-success">Completed</span>
-                  {% elif lesson.status == "In Progress" %}
-                    <span class="badge badge-warning text-dark">In Progress</span>
-                  {% elif lesson.status == "Not Started" %}
-                    <span class="badge badge-secondary">Not Started</span>
-                  {% else %}
-                    <span class="badge badge-danger">Not Enrolled</span>
-                  {% endif %}
-                </li>
-              {% endfor %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>{{ lesson.title }} ({{ lesson.lesson_id }})</span>
+                    {% if lesson.status == "Completed" %}
+                      <span class="badge bg-success">Completed</span>
+                    {% elif lesson.status == "In Progress" %}
+                      <span class="badge bg-warning text-dark">In Progress</span>
+                    {% elif lesson.status == "Not Started" %}
+                      <span class="badge bg-secondary">Not Started</span>
+                    {% else %}
+                      <span class="badge bg-danger">Not Enrolled</span>
+                    {% endif %}
+                  </li>
+                {% endfor %}
               </ul>
             {% else %}
               <p class="text-muted">No lessons in this course yet.</p>
@@ -89,4 +98,34 @@
     </div>
   </div>
 </div>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.getElementById('toggleStatusBtn').addEventListener('click', function() {
+  // Correctly parse Django boolean as JS boolean
+  let isActive = "{{ profile.user.is_active|yesno:'true,false' }}" === "true";
+
+  Swal.fire({
+    title: 'Confirm Status Change',
+    html: isActive
+      ? 'Are you sure you want to <strong>set your account to inactive</strong>?<br><small>Existing courses will be unenrolled.</small>'
+      : 'Are you sure you want to <strong>reactivate your account</strong>?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: isActive ? '#dc3545' : '#28a745',
+    confirmButtonText: 'Yes',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById('statusForm').submit();
+    }
+  });
+});
+</script>
+
+<form method="POST" action="{% url 'student_toggle_status' %}" id="statusForm">
+  {% csrf_token %}
+</form>
 {% endblock %}

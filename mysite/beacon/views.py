@@ -1050,3 +1050,18 @@ def instructor_student_overall_progress(request, student_id):
     }
 
     return render(request, "instructor_report_student_overall_progress.html", context)
+
+@role_required("STUDENT")
+def student_toggle_status(request):
+    if request.method == "POST":
+        user = request.user
+        if user.is_active:
+            # Remove enrollments
+            user.courses_enroling.clear()
+            user.is_active = False
+            messages.success(request, "Your account is now inactive. All course enrollments have been removed.")
+        else:
+            user.is_active = True
+            messages.success(request, "Your account has been reactivated. You can enroll in courses again.")
+        user.save()
+    return redirect("student_profile")

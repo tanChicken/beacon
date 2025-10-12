@@ -50,6 +50,7 @@ urlpatterns = [
     # student profile
     path("student/profile/", views.student_profile, name="student_profile"),
     path("student/change-password/", views.student_change_password, name="student_change_password"),
+    path("profile/toggle_status/", views.student_toggle_status, name="student_toggle_status"),
     # student report
     path("student/report/course", views.student_report_course, name="student_report_course"),
     path("student/report/course/<int:pk>/", views.student_report_course_details, name="student_report_course_details"),
