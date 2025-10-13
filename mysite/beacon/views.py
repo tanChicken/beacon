@@ -1081,7 +1081,7 @@ def student_toggle_status(request):
             user.is_semester_active = False
             messages.success(
                 request,
-                "Your account is now inactive for this semester. All course and lesson progress has been reset."
+                "Your account is now inactive. All course and lesson progress has been removed."
             )
         else:
             user.is_semester_active = True
