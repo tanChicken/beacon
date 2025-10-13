@@ -120,10 +120,10 @@
     </div>
 
     <!-- Enrolment Button -->
-    {% if user.is_semester_active %}
-    <div class="mt-4 text-right">
-      <a href="{% url 'enrolment_page' %}" class="btn btn-primary">📚 Enrol in New Courses</a>
-    </div>
+    {% if user.is_semester_active and courses|length < 4 %}
+        <div class="mt-4 text-right">
+          <a href="{% url 'enrolment_page' %}" class="btn btn-primary">📚 Enrol in New Courses</a>
+        </div>
     {% endif %}
   </div>
 {% endif %}

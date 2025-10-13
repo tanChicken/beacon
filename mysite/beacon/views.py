@@ -1072,19 +1072,16 @@ def instructor_student_overall_progress(request, student_id):
 @role_required("STUDENT")
 def student_toggle_status(request):
     if request.method == "POST":
-        user = request.user  # your student user
+        user = request.user  
 
         if user.is_semester_active:
-            # Remove all course enrollments
-            user.courses_enroling.clear()  # M2M field on Course
-
-            # Remove all lesson enrollments via Enrolment table
+            user.courses_enroling.clear()
             Enrolment.objects.filter(student=user).delete()
-
+            StudentChecklistProgress.objects.filter(student=user).delete()
             user.is_semester_active = False
             messages.success(
                 request,
-                "Your account is now inactive for this semester. All course enrollments have been removed."
+                "Your account is now inactive for this semester. All course and lesson progress has been reset."
             )
         else:
             user.is_semester_active = True
