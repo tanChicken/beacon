@@ -721,71 +721,6 @@ def student_profile(request):
         "total_credit": total_credit,
     })
 
-# @role_required("STUDENT")
-# def student_report_course(request):
-#     student = request.user
-#     enrolled_courses = student.courses_enroling.all()
-
-#     required = 120  # total credits required
-
-#     # --- Global progress ---
-#     current_credit = (
-#         Enrolment.objects.filter(
-#             student=student,
-#             completed=True,
-#             lesson__status="PUBLISHED"
-#         )
-#         .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
-#     )
-
-#     enrolled_credit = (
-#         Enrolment.objects.filter(
-#             student=student,
-#             completed=False,
-#             lesson__status="PUBLISHED"
-#         )
-#         .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
-#     )
-
-#     remaining_exclude_enrolled = max(required - current_credit, 0)
-#     remaining_include_enrolled = max(required - (current_credit + enrolled_credit), 0)
-
-#     progress = (current_credit / required) * 100 if required > 0 else 0
-
-#     # --- Per course breakdown ---
-#     courses = (
-#         enrolled_courses
-#         .annotate(
-#             completed_credits=Sum(
-#                 "lessons__credit_point",
-#                 filter=Q(
-#                     lessons__enrolments__student=student,
-#                     lessons__enrolments__completed=True,
-#                     lessons__status="PUBLISHED"
-#                 )
-#             ),
-#             enrolled_credits=Sum(
-#                 "lessons__credit_point",
-#                 filter=Q(
-#                     lessons__enrolments__student=student,
-#                     lessons__enrolments__completed=False,
-#                     lessons__status="PUBLISHED"
-#                 )
-#             )
-#         )
-#     )
-
-#     context = {
-#         "courses": courses,
-#         "current_credit": current_credit,
-#         "enrolled_credit": enrolled_credit,
-#         "remaining_exclude_enrolled": remaining_exclude_enrolled,
-#         "remaining_include_enrolled": remaining_include_enrolled,
-#         "progress": progress,
-#         "required": required,
-#     }
-
-#     return render(request, "student_report_course.html", context)
 @role_required("STUDENT")
 def student_report_course(request):
     student = request.user
@@ -1116,28 +1051,6 @@ def instructor_student_overall_progress(request, student_id):
     }
 
     return render(request, "instructor_report_student_overall_progress.html", context)
-
-# @role_required("STUDENT")
-# def student_toggle_status(request):
-#     if request.method == "POST":
-#         user = request.user
-
-#         if user.is_active:
-#             # Remove course enrollments only
-#             user.courses_enroling.clear()
-
-#             # Keep them login-able
-#             messages.warning(
-#                 request,
-#                 "You’re now inactive for this semester. All courses unenrolled, but you can still log in."
-#             )
-#         else:
-#             messages.success(request, "Your account is reactivated! You may now enroll in new courses.")
-
-#         user.save()
-#         return redirect("student_profile")
-
-#     return redirect("student_profile")
 
 @role_required("STUDENT")
 def student_toggle_status(request):
