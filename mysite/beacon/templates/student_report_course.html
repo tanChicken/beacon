@@ -130,6 +130,20 @@ h3 {
   color: #34a464;
   font-weight: 700;
 }
+
+body.dark-mode .course-oval:hover {
+    background-color: #34a464 !important; /* same green as classroom */
+    color: #fff !important;
+    border-color: #34a464 !important;
+    box-shadow: 0 6px 12px rgba(52, 164, 100, 0.2);
+    transform: translateY(-4px);
+    transition: all 0.3s ease-in-out;
+}
+
+body.dark-mode .course-oval:hover * {
+    color: #fff !important;
+    text-decoration: none !important;
+}
 </style>
 
 {% if not inactive %}

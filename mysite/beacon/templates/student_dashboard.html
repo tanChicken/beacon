@@ -6,7 +6,6 @@
   h1, h3 { font-weight: bold; }
   h3 { margin-top: 20px; }
 
-  /* Theme: Green for Student */
   .list-group-item {
     background-color: #ffffff;
     border: 2px solid #41ca7c;
@@ -15,16 +14,73 @@
     padding: 15px;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    color: #000; /* Ensure text is black in light mode */
   }
-  .list-group-item:hover { background-color: #eafaf1; }
 
-  /* Primary button (enrol, create, etc.) */
+  /* Light Mode List Hover: Corrected to use the lighter green for a subtle effect */
+  .list-group-item:hover {
+    background-color: #eafaf1 !important; /* Added !important */
+    color: #000 !important; /* Ensure text stays black */
+    transition: background-color 0.2s ease;
+  }
+
+  /* DARK MODE: Default List Item Style (FIX) */
+  body.dark-mode .list-group-item {
+    background-color: #1e1e1e !important; /* Use a dark background */
+    border-color: #41ca7c !important; /* Keep the green border */
+    color: #e0e0e0 !important; /* Ensure text is light */
+  }
+
+  /* DARK MODE List Hover */
+  body.dark-mode .list-group-item.course-card:hover {
+    background-color: #41ca7c !important; /* Bright green on hover */
+    color: #fff !important; 
+    transition: background-color 0.2s ease;
+  }
+  
+  /* --- CARD VIEW STYLES --- */
+  .custom-course-card {
+    border: 2px solid #41ca7c;
+    border-radius: 10px;
+    background-color: #ffffff;
+    height: 250px;
+    /* ... other styles ... */
+    color: #000; /* Ensure text is black in light mode */
+  }
+  
+  /* Light Mode Card Hover */
+  .custom-course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background-color: #eafaf1; /* Light green on hover */
+    transition: all 0.2s ease;
+  }
+  
+  /* DARK MODE: Default Card Style (FIX) */
+  body.dark-mode .custom-course-card {
+    background-color: #1e1e1e !important; /* Use a dark background */
+    border-color: #41ca7c !important; /* Keep the green border */
+    color: #e0e0e0 !important; /* Ensure text is light */
+  }
+
+  /* DARK MODE Card Hover */
+  body.dark-mode .custom-course-card:hover {
+    background-color: #41ca7c !important; /* Bright green on hover */
+    color: #fff !important;
+    transition: all 0.2s ease;
+  }
+
+  /* Fix for text color inside links for dark mode cards/lists */
+  body.dark-mode .stretched-link.text-dark {
+      color: #e0e0e0 !important;
+  }
+
   .btn-primary {
     background-color: #41ca7c;
     border-color: #41ca7c;
   }
   .btn-primary:hover {
-    background-color: #369e65; /* darker green */
+    background-color: #369e65; 
     border-color: #369e65;
   }
 
@@ -84,7 +140,7 @@
     <div id="listView">
       <ul class="list-group mt-3">
         {% for course in courses %}
-          <li class="list-group-item course-card" data-course-id="{{ course.pk }}">
+          <li class="list-group-item" data-course-id="{{ course.pk }}">
             <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
               <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
               <div class="small text-muted">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>

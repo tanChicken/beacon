@@ -10,24 +10,20 @@
     background-color: #41ca7c;
     border-color: #41ca7c;
   }
-
   .btn-primary:hover {
-    background-color: #369e65; /* darker green */
+    background-color: #369e65;
     border-color: #369e65;
   }
-
   .btn-outline-primary {
     color: #41ca7c;
     border-color: #41ca7c;
   }
-
   .btn-outline-primary:hover {
     background-color: #41ca7c;
     color: #fff;
     border-color: #41ca7c;
   }
 
-  /* List View */
   .list-group-item {
     background-color: #ffffff;
     border: 2px solid #41ca7c;
@@ -42,7 +38,11 @@
     transition: background-color 0.2s ease;
   }
 
-  .list-group-item:hover { background-color: #eafaf1; }
+  .list-group-item:hover { 
+      background-color: #eafaf1 !important; 
+      transform: none !important; 
+      box-shadow: none !important; 
+  }
 
   .list-course {
     text-transform: uppercase;
@@ -55,7 +55,7 @@
     font-size: 1.4rem;
     font-weight: bold;
     text-align: center;
-    margin-top: 15px 0; /* center vertically */
+    margin-top: 15px 0;
   }
 
   .list-footer {
@@ -73,7 +73,6 @@
     align-self: flex-end;
   }
 
-  /* Card Grid */
   .card-grid {
     display: flex;
     flex-wrap: wrap;
@@ -82,7 +81,7 @@
   }
 
   .card-col {
-    width: 400px; /* 2 per row */
+    width: 400px;
     min-width: 220px;
   }
 
@@ -94,11 +93,17 @@
     border: 2px solid #41ca7c;
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* ensures top, middle, bottom placement */
+    justify-content: space-between;
     align-items: center;
     padding: 15px;
     text-align: center;
   }
+
+  .classroom-oval:hover {
+    background-color: #eafaf1 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
 
   .classroom-course {
     font-size: 0.85rem;
@@ -106,7 +111,7 @@
     letter-spacing: 1px;
     margin: 0;
     text-align: center;
-    }
+  }
 
   .classroom-id {
     font-size: 1.45rem;
@@ -136,6 +141,36 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* Dark Mode Default Styles */
+  body.dark-mode .list-group-item,
+  body.dark-mode .classroom-oval {
+      background-color: #1e1e1e !important;
+      border-color: #444 !important;
+  }
+  body.dark-mode .classroom-meta {
+      color: #e0e0e0 !important;
+  }
+  body.dark-mode .classroom-id {
+      border-bottom: 3px solid rgba(255,255,255,0.85) !important;
+  }
+
+
+  /* Dark Mode Hover Styles (Darker Green & No Shape Change) */
+  body.dark-mode .main-content .list-group-item:hover,
+  body.dark-mode .main-content .classroom-oval:hover {
+      background-color: #369e65 !important;
+      color: #fff !important;
+      border-color: #369e65 !important;
+      transform: none !important;
+      box-shadow: none !important;
+  }
+
+  body.dark-mode .main-content .list-group-item:hover *,
+  body.dark-mode .main-content .classroom-oval:hover * {
+      color: #fff !important;
+      text-decoration: none !important;
   }
 </style>
 
