@@ -139,58 +139,70 @@
   }
 </style>
 
-<div class="container mt-4">
-  <h1>YOUR CLASSROOMS</h1>
-
-  <div class="d-flex justify-content-end mb-3">
-    <button id="listViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
-    <button id="cardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
-  </div>
-
-  <!-- List View -->
-  <div id="listView">
-    <ul class="list-group mt-3">
-      {% for classroom in classrooms %}
-        <li class="list-group-item">
-          <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark d-block">
-            <div class="list-course"> {{ classroom.course_id }}</div>
-            <div class="list-classroom">{{ classroom.classroom_id }}</div>
-            <div class="list-footer">
-              <div class="list-duration">Duration: {{ classroom.get_duration_weeks_display }}</div>
-              <div class="list-supervisor">Supervisor: {{ classroom.supervisor }}</div>
-            </div>
-          </a>
-        </li>
-      {% empty %}
-        <li class="list-group-item text-muted">No classrooms created yet.</li>
-      {% endfor %}
-    </ul>
-  </div>
-
-   <!-- Card View -->
-  <div id="cardView" class="row d-none">
-    {% for classroom in classrooms %}
-    <div class="col-md-5 mb-5">
-      <div class="card-grid">
-          <div class="card-col">
-            <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark">
-            <div class="classroom-oval">
-                <div class="classroom-course">{{ classroom.course_id.course_id }}1</div>
-                <div class="classroom-id">{{ classroom.classroom_id }}</div>
-                <div class="classroom-meta">
-                  <span class="label">Supervisor: {{ classroom.supervisor }}</span>
-                  <span>Duration: {{ classroom.get_duration_weeks_display }}</span>
-                </div>
-            </div>
-            </a>
-          </div>
-      </div>
+{% if not user.is_semester_active %}
+  <div class="container text-center mt-5">
+    <div class="alert alert-warning p-5 shadow-sm rounded-4">
+      <h2 class="fw-bold mb-3">Your account is currently inactive ⚠️</h2>
+      <p class="lead">
+        You can reactivate it anytime from your <strong>Profile page</strong>.
+      </p>
     </div>
-    {% empty %}
-      <p class="text-muted">No classrooms created yet.</p>
-    {% endfor %}
   </div>
-</div>
+
+{% else %}
+  <div class="container mt-4">
+    <h1>YOUR CLASSROOMS</h1>
+
+    <div class="d-flex justify-content-end mb-3">
+      <button id="listViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+      <button id="cardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+    </div>
+
+    <!-- List View -->
+    <div id="listView">
+      <ul class="list-group mt-3">
+        {% for classroom in classrooms %}
+          <li class="list-group-item">
+            <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark d-block">
+              <div class="list-course"> {{ classroom.course_id }}</div>
+              <div class="list-classroom">{{ classroom.classroom_id }}</div>
+              <div class="list-footer">
+                <div class="list-duration">Duration: {{ classroom.get_duration_weeks_display }}</div>
+                <div class="list-supervisor">Supervisor: {{ classroom.supervisor }}</div>
+              </div>
+            </a>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">No classrooms enrolled.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Card View -->
+    <div id="cardView" class="row d-none">
+      {% for classroom in classrooms %}
+      <div class="col-md-5 mb-5">
+        <div class="card-grid">
+            <div class="card-col">
+              <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark">
+              <div class="classroom-oval">
+                  <div class="classroom-course">{{ classroom.course_id.course_id }}1</div>
+                  <div class="classroom-id">{{ classroom.classroom_id }}</div>
+                  <div class="classroom-meta">
+                    <span class="label">Supervisor: {{ classroom.supervisor }}</span>
+                    <span>Duration: {{ classroom.get_duration_weeks_display }}</span>
+                  </div>
+              </div>
+              </a>
+            </div>
+        </div>
+      </div>
+      {% empty %}
+        <p class="text-muted">No classrooms enrolled.</p>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
 
 <script>
   document.getElementById("listViewBtn").addEventListener("click", function() {

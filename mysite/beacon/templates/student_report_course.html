@@ -45,17 +45,17 @@ h3 {
 }
 
 .course-oval {
-box-sizing: border-box;
-width: 100%;
-height: 220px;
-border-radius: 40px;
-border: 2px solid #41ca7c;
-display: flex;
-flex-direction: column;
-justify-content: space-between;
-align-items: center;
-padding: 15px;
-text-align: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 220px;
+  border-radius: 40px;
+  border: 2px solid #41ca7c;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  text-align: center;
 }
 
 .course-oval:hover {
@@ -66,34 +66,34 @@ text-align: center;
 }
 
 .course-id {
-font-size: 0.85rem;
-text-transform: uppercase;
-letter-spacing: 1px;
-margin: 0;
-text-align: center;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+  text-align: center;
 }
 
 .course-title {
-font-size: 1.45rem;
-font-weight: 700;
-margin: 0 0 8px 0;
-padding-bottom: 6px;
-border-bottom: 3px solid rgba(0,0,0,0.85);
-width: 70%;
-margin-top: 25px;
+  font-size: 1.45rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 3px solid rgba(0,0,0,0.85);
+  width: 70%;
+  margin-top: 25px;
 }
 
 .course-meta {
-font-size: 0.95rem;
-margin-top: 12px;
-line-height: 1.3;
-color: #333;
+  font-size: 0.95rem;
+  margin-top: 12px;
+  line-height: 1.3;
+  color: #333;
 }
 
 .course-meta .label {
-display: block;
-margin-top: 6px;
-font-weight: 600;
+  display: block;
+  margin-top: 6px;
+  font-weight: 600;
 }
 
 .report-container {
@@ -132,139 +132,153 @@ font-weight: 600;
 }
 </style>
 
-<div class="toggle-container" role="tablist" aria-label="Course / Student tabs">
-  <button type="button" class="toggle-btn" data-tab="course" aria-controls="course" aria-selected="true">Course</button>
-  <button type="button" class="toggle-btn" data-tab="student" aria-controls="student" aria-selected="false">Student</button>
-</div>
+{% if not inactive %}
+  <!-- ===================== ACTIVE STUDENT CONTENT ===================== -->
+  <div class="toggle-container" role="tablist" aria-label="Course / Student tabs">
+    <button type="button" class="toggle-btn" data-tab="course" aria-controls="course" aria-selected="true">Course</button>
+    <button type="button" class="toggle-btn" data-tab="student" aria-controls="student" aria-selected="false">Student</button>
+  </div>
 
-<div id="course" class="tab-content" role="tabpanel" aria-labelledby="tab-course">
-  <div class="container mt-4">
-    <!-- Course content -->
-    <div class="row card-grid justify-content-center">
-      {% for course in courses %}
-      <div class="col-md-5 mb-5 d-flex justify-content-center">
-        <div class="card-col">
-            <a href="{% url 'student_report_course_details' course.pk %}" class="text-decoration-none text-dark">
-            <div class="course-oval">
-                <div class="course-id">{{ course.course_id }}</div>
-                <div class="course-title">{{ course.title }}</div>
-                <div class="course-meta">
-                <span class="label">Instructor: {{ course.instructor.email }}</span>
-                </div>
-            </div>
-            </a>
+  <div id="course" class="tab-content" role="tabpanel" aria-labelledby="tab-course">
+    <div class="container mt-4">
+      <!-- Course content -->
+      <div class="row card-grid justify-content-center">
+        {% for course in courses %}
+        <div class="col-md-5 mb-5 d-flex justify-content-center">
+          <div class="card-col">
+              <a href="{% url 'student_report_course_details' course.pk %}" class="text-decoration-none text-dark">
+              <div class="course-oval">
+                  <div class="course-id">{{ course.course_id }}</div>
+                  <div class="course-title">{{ course.title }}</div>
+                  <div class="course-meta">
+                  <span class="label">Instructor: {{ course.instructor.email }}</span>
+                  </div>
+              </div>
+              </a>
+          </div>
         </div>
+        {% empty %}
+        <p class="text-muted">No courses enrolled yet.</p>
+        {% endfor %}
       </div>
-      {% empty %}
-      <p class="text-muted">No courses enrolled yet.</p>
-      {% endfor %}
     </div>
   </div>
-</div>
-<div id="student" class="tab-content" role="tabpanel" aria-labelledby="tab-student">
-  <!-- Student content -->
-  <div class="container report-container">
-  <h1 class="fw-bold">Your Student Journey</h1> 
-  <hr>
-  <h3 class="fw-bold">Current Progress: {{ progress|floatformat:1 }}%</h3>
 
-  <!-- Summary Section -->
-    <div class="row g-4">
-      <div class="col-md-3">
-        <div class="summary-card">
-          <h3>{{ current_credit }}</h3>
-          <p>Earned Credits</p>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="summary-card">
-          <h3>{{ enrolled_credit }}</h3>
-          <p>In Progress Credits</p>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="summary-card">
-          <h3>{{ remaining_include_enrolled }}</h3>
-          <p>Credits To Go</p>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="summary-card">
-          <h3>120</h3>
-          <p>Credit to Graduate</p>
-        </div>
-      </div>
-    </div>
+  <div id="student" class="tab-content" role="tabpanel" aria-labelledby="tab-student">
+    <!-- Student content -->
+    <div class="container report-container">
+      <h1 class="fw-bold">Your Student Journey</h1> 
+      <hr>
+      <h3 class="fw-bold">Current Progress: {{ progress|floatformat:1 }}%</h3>
 
-    <!-- Progress bar section --> 
-    <div class="mt-4"> 
-      <div class="d-flex justify-content-between"> 
-          <span>0</span> 
-          <span>{{ required }}</span> 
+      <!-- Summary Section -->
+      <div class="row g-4">
+        <div class="col-md-3">
+          <div class="summary-card">
+            <h3>{{ current_credit }}</h3>
+            <p>Earned Credits</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="summary-card">
+            <h3>{{ enrolled_credit }}</h3>
+            <p>In Progress Credits</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="summary-card">
+            <h3>{{ remaining_include_enrolled }}</h3>
+            <p>Credits To Go</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="summary-card">
+            <h3>120</h3>
+            <p>Credit to Graduate</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress bar section --> 
+      <div class="mt-4"> 
+        <div class="d-flex justify-content-between"> 
+            <span>0</span> 
+            <span>{{ required }}</span> 
+        </div> 
+        <div class="progress" style="height: 25px;"> 
+            <div class="progress-bar bg-success"
+                role="progressbar"
+                style="--progress: {{ progress }}%;"
+                aria-valuenow="{{ progress }}"
+                aria-valuemin="0"
+                aria-valuemax="{{ required }}">
+                {{ progress|floatformat:1 }}%
+            </div> 
+        </div> 
       </div> 
-      <div class="progress" style="height: 25px;"> 
-          <div class="progress-bar bg-success"
-              role="progressbar"
-              style="--progress: {{ progress }}%;"
-              aria-valuenow="{{ progress }}"
-              aria-valuemin="0"
-              aria-valuemax="{{ required }}">
-              {{ progress|floatformat:1 }}%
-          </div> 
-      </div> 
-    </div> 
 
-    <!-- Analysis Section -->
-    <div class="mt-5">
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item">
-          You have earned <span class="highlight">{{ current_credit }}</span> credits.
-        </li>
-        <li class="list-group-item">
-          You have currently <span class="highlight">{{ enrolled_credit }}</span> credits in progress.
-        </li>
-        <li class="list-group-item">
-          You will need enrollment for <span class="highlight">{{ remaining_include_enrolled }}</span> more credits.
-        </li>
-        <li class="list-group-item">
-          You will need <span class="highlight">{{ remaining_exclude_enrolled }}</span> more credits to graduate.
-        </li>
-        <li class="list-group-item">
-          Current completion: <span class="highlight">{{ progress|floatformat:1 }}%</span>
-        </li>
-      </ul>
+      <!-- Analysis Section -->
+      <div class="mt-5">
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">
+            You have earned <span class="highlight">{{ current_credit }}</span> credits.
+          </li>
+          <li class="list-group-item">
+            You have currently <span class="highlight">{{ enrolled_credit }}</span> credits in progress.
+          </li>
+          <li class="list-group-item">
+            You will need enrollment for <span class="highlight">{{ remaining_include_enrolled }}</span> more credits.
+          </li>
+          <li class="list-group-item">
+            You will need <span class="highlight">{{ remaining_exclude_enrolled }}</span> more credits to graduate.
+          </li>
+          <li class="list-group-item">
+            Current completion: <span class="highlight">{{ progress|floatformat:1 }}%</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Course Breakdown -->
+      <div class="mt-5">
+        <h3 class="fw-bold">Per-Course Breakdown</h3>
+        <table class="table table-striped mt-3">
+          <thead>
+            <tr>
+              <th>Course</th>
+              <th>Completed Credits</th>
+              <th>Enrolled Credits</th>
+              <th>Total Course Credits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for course in courses %}
+            <tr>
+              <td>{{ course.course_id }} - {{ course.title }}</td>
+              <td>{{ course.completed_credits|default:"0" }}</td>
+              <td>{{ course.enrolled_credits|default:"0" }}</td>
+              <td>{{ course.credit_points }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-muted">No courses enrolled yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
 
-    <!-- Course Breakdown -->
-    <div class="mt-5">
-      <h3 class="fw-bold">Per-Course Breakdown</h3>
-      <table class="table table-striped mt-3">
-        <thead>
-          <tr>
-            <th>Course</th>
-            <th>Completed Credits</th>
-            <th>Enrolled Credits</th>
-            <th>Total Course Credits</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for course in courses %}
-          <tr>
-            <td>{{ course.course_id }} - {{ course.title }}</td>
-            <td>{{ course.completed_credits|default:"0" }}</td>
-            <td>{{ course.enrolled_credits|default:"0" }}</td>
-            <td>{{ course.credit_points }}</td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="4" class="text-muted">No courses enrolled yet.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+{% else %}
+  <div class="container text-center mt-5">
+    <div class="alert alert-warning p-5 shadow-sm rounded-4">
+      <h2 class="fw-bold mb-3">Your account is currently inactive ⚠️</h2>
+      <p class="lead">
+        You can reactivate it anytime from your <strong>Profile page</strong>
+      </p>
     </div>
-
-</div>
+  </div>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -276,7 +290,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     if (!contents.course || !contents.student) {
-      // If either is missing something else is wrong — log and bail
       console.warn('Tab content elements not found:', contents);
       return;
     }
@@ -305,11 +318,9 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
 
-    // Initialize: show 'course' tab by default (or first button if different)
     const defaultBtn = document.querySelector('.toggle-btn[data-tab="course"]') || buttons[0];
     if (defaultBtn) activate(defaultBtn.dataset.tab || 'course', defaultBtn);
   } catch (err) {
-    // log a visible error for debugging
     console.error('Tab initialization error:', err);
   }
 });
