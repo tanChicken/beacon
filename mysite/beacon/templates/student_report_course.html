@@ -218,14 +218,16 @@ font-weight: 600;
     <div class="mt-5">
       <ul class="list-group list-group-flush">
         <li class="list-group-item">
-          You have <span class="highlight">{{ current_credit }}</span> completed credits.
+          You have earned <span class="highlight">{{ current_credit }}</span> credits.
         </li>
         <li class="list-group-item">
-          You are currently enrolled in <span class="highlight">{{ enrolled_credit }}</span> more credits.
+          You have currently <span class="highlight">{{ enrolled_credit }}</span> credits in progress.
         </li>
         <li class="list-group-item">
-          You need <span class="highlight">{{ remaining_exclude_enrolled }}</span> more credits if ignoring in-progress,
-          or <span class="highlight">{{ remaining_include_enrolled }}</span> if including them.
+          You will need enrollment for <span class="highlight">{{ remaining_include_enrolled }}</span> more credits.
+        </li>
+        <li class="list-group-item">
+          You will need <span class="highlight">{{ remaining_exclude_enrolled }}</span> more credits to graduate.
         </li>
         <li class="list-group-item">
           Current completion: <span class="highlight">{{ progress|floatformat:1 }}%</span>

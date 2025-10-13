@@ -45,7 +45,7 @@ input[name$="-DELETE"] {
     {% csrf_token %}
 
     <div class="row align-items-center mb-4">
-        <div class="col-md-8">
+        <div class="col-md-7">
             <h1 class="mb-0">Lesson: {{ lesson }}</h1>
         </div>
         <div class="col-md-4 text-end">
@@ -178,6 +178,12 @@ input[name$="-DELETE"] {
         </div>
         {% endif %}
     </div>
+    <!-- Classrooms Section -->
+    <div class="mb-3">
+      <a href="{% url 'create_classroom' course.pk %}" class="btn btn-sm btn-outline-primary">
+        + Add Classroom
+      </a>
+    </div>
 
     <!-- Reading List -->
     <h4>Reading List</h4>
@@ -200,7 +206,7 @@ input[name$="-DELETE"] {
     <h4>Assignments</h4>
     <div id="assignment-items">
         {% for item in assignment_items %}
-            <div class="row mb-2">
+            <div class="row mb-2 assignment-row">
                 <!-- Assignment title -->
                 <div class="col-8">
                     <input type="text" class="form-control"
@@ -213,6 +219,11 @@ input[name$="-DELETE"] {
                     <input type="date" class="form-control"
                         name="assignment_deadline_{{ item.id }}"
                         value="{{ item.deadline|date:'Y-m-d' }}">
+                </div>
+
+                <!-- Remove -->
+                <div class="col-1 d-grid">
+                    <button type="button" class="btn btn-danger remove-assignment-item" aria-label="Remove assignment">&times;</button>
                 </div>
             </div>
         {% endfor %}
@@ -331,15 +342,15 @@ document.addEventListener("click", function(e) {
 // Add Assignment Item
 document.getElementById("add-assignment-item").addEventListener("click", function() {
     const row = document.createElement('div');
-    row.className = 'row mb-2';
+    row.className = 'row mb-2 assignment-row';
 
     // Assignment title
     const colTitle = document.createElement('div');
-    colTitle.className = 'col-8';
+    colTitle.className = 'col-7';
     const inputTitle = document.createElement('input');
     inputTitle.type = 'text';
     inputTitle.className = 'form-control';
-    inputTitle.name = 'new_assignment_item[]';
+    inputTitle.name = 'new_assignment_item';
     colTitle.appendChild(inputTitle);
 
     // Assignment deadline
@@ -348,15 +359,34 @@ document.getElementById("add-assignment-item").addEventListener("click", functio
     const inputDate = document.createElement('input');
     inputDate.type = 'date';
     inputDate.className = 'form-control';
-    inputDate.name = 'new_assignment_deadline[]';
+    inputDate.name = 'new_assignment_deadline';
     colDate.appendChild(inputDate);
+
+    //Remove Button
+    const colRemove = document.createElement('div');
+    colRemove.className = 'col-1 d-grid';
+    const btnRemove = document.createElement('button');
+    btnRemove.type = 'button';
+    btnRemove.className = 'btn btn-danger remove-assignment-item';
+    btnRemove.innerHTML = '&times;';
+    colRemove.appendChild(btnRemove);
 
     // Add to row
     row.appendChild(colTitle);
     row.appendChild(colDate);
+    row.appendChild(colRemove);
+
 
     document.getElementById('assignment-items').appendChild(row);
 });
+
+document.addEventListener("click", function(e) {
+  if (e.target.classList.contains("remove-assignment-item")) {
+    const row = e.target.closest(".assignment-row");
+    if (row) row.remove();
+  }
+});
+
 </script>
 
 {% endblock %}

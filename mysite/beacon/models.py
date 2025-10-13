@@ -260,6 +260,7 @@ class StudentChecklistItem(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="checklist_items")
     title = models.CharField(max_length=255)
     item_type = models.CharField(max_length=20, choices=CHECKLIST_TYPE_CHOICES, default="OTHER")
+    deadline = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.title} ({self.item_type})"
