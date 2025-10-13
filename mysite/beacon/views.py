@@ -442,6 +442,7 @@ def lesson_detail_edit(request, pk):
             deleted_ids = existing_reading_ids - submitted_reading_ids
             StudentChecklistItem.objects.filter(id__in=deleted_ids, item_type="READING").delete()
 
+
             # Update existing reading items
             for item in lesson.checklist_items.filter(item_type="READING"):
                 key = f"reading_item_{item.id}"
@@ -492,6 +493,22 @@ def lesson_detail_edit(request, pk):
                     item.deadline = None
 
                 item.save()
+            
+            existing_assignment_ids = set(
+                lesson.checklist_items.filter(item_type="ASSIGNMENT").values_list("id", flat=True)
+            )
+            submitted_assignment_ids = set()
+            for key in request.POST.keys():
+                if key.startswith("assignment_item_"):
+                    try:
+                        submitted_assignment_ids.add(int(key.replace("assignment_item_", "")))
+                    except ValueError:
+                        pass
+
+            deleted_assignment_ids = existing_assignment_ids - submitted_assignment_ids
+            StudentChecklistItem.objects.filter(
+                id__in=deleted_assignment_ids, item_type="ASSIGNMENT"
+            ).delete()
             
             new_titles = [t.strip() for t in request.POST.getlist("new_assignment_item")]
             new_dates  = [d.strip() for d in request.POST.getlist("new_assignment_deadline")]
