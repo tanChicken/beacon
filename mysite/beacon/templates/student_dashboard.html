@@ -25,18 +25,18 @@
 
   body.dark-mode .list-group-item {
     background-color: #1e1e1e !important;
-    border-color: #41ca7c !important; 
+    border-color: #369e65 !important; 
     color: #e0e0e0 !important; 
   }
 
   body.dark-mode .list-group-item:hover {
-    background-color: #41ca7c !important; 
+    background-color: #369e65 !important; 
     color: #fff !important; 
     transition: background-color 0.2s ease;
   }
   
   .custom-course-card {
-    border: 2px solid #41ca7c;
+    border: 2px solid #369e65;
     border-radius: 10px;
     background-color: #ffffff;
     height: 250px;
@@ -52,12 +52,12 @@
   
   body.dark-mode .custom-course-card {
     background-color: #1e1e1e !important; 
-    border-color: #41ca7c !important; 
+    border-color: #369e65 !important; 
     color: #e0e0e0 !important; 
   }
 
   body.dark-mode .custom-course-card:hover {
-    background-color: #41ca7c !important; 
+    background-color: #369e65 !important; 
     color: #fff !important;
     transition: all 0.2s ease;
   }
@@ -85,7 +85,7 @@
     border-color: #41ca7c;
   }
   .custom-course-card {
-    border: 2px solid #41ca7c;
+    border: 2px solid #369e65;
     border-radius: 10px;
     background-color: #ffffff;
     height: 250px;
@@ -133,7 +133,7 @@
           <li class="list-group-item" data-course-id="{{ course.pk }}">
             <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
               <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-              <div class="small text-muted">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
+              <div class="small">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
             </a>
           </li>
         {% empty %}
