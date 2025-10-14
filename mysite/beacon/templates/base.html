@@ -400,7 +400,7 @@ body.dark-mode .progress {
     </style>
   </head>
 
-  <body>
+  <body class="{% if dark_mode %}dark-mode{% endif %}">
     <!-- Sidebar -->
     <div class="sidebar
       {% if user.is_authenticated and user.role|upper == 'INSTRUCTOR' %}instructor-sidebar{% endif %}
@@ -442,31 +442,56 @@ body.dark-mode .progress {
       {% block content %}{% endblock %}
     </div>
 
+  <!-- CSRF cookie helper: place this before any JS using fetch -->
     <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        const body = document.body;
-        const btn  = document.getElementById('darkModeToggle');
-        const icon = document.getElementById('darkModeIcon');
-        const text = document.getElementById('darkModeText');
-
-        const saved = localStorage.getItem('dark-mode');
-        if (saved === 'enabled') body.classList.add('dark-mode');
-
-        function updateButton() {
-          const on = body.classList.contains('dark-mode');
-          btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-          icon.textContent = on ? '☀️' : '🌙';
-          text.textContent = on ? 'Light mode' : 'Dark mode';
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
         }
+      }
+      return cookieValue;
+    }
+    </script>
 
-        btn.addEventListener('click', () => {
-          body.classList.toggle('dark-mode');
-          localStorage.setItem('dark-mode', body.classList.contains('dark-mode') ? 'enabled' : 'disabled');
-          updateButton();
-        });
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const body = document.body;
+      const btn = document.getElementById('darkModeToggle');
+      const icon = document.getElementById('darkModeIcon');
+      const text = document.getElementById('darkModeText');
 
+      function updateButton() {
+        const on = body.classList.contains('dark-mode');
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        icon.textContent = on ? '☀️' : '🌙';
+        text.textContent = on ? 'Light mode' : 'Dark mode';
+      }
+
+      btn.addEventListener('click', () => {
+        const enabled = !body.classList.contains('dark-mode');
+        body.classList.toggle('dark-mode', enabled);
         updateButton();
+
+        // Save to backend
+        fetch("{% url 'toggle_dark_mode' %}", {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ dark_mode: enabled })
+        });
       });
+
+      updateButton();
+    });
     </script>
   </body>
 </html>
