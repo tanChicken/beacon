@@ -173,9 +173,13 @@ input[name$="-DELETE"] {
         </div>
         
         {% if lesson.classroom %}
-        <div class="alert alert-info mb-0">
-            <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
-        </div>
+            <div class="alert alert-info mb-0">
+                <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
+            </div>
+        {% else %}
+            <div class="alert alert-danger mb-0">
+                <strong>Note:</strong> This lesson is not allocated to a classroom.
+            </div>
         {% endif %}
     </div>
     <!-- Classrooms Section -->

@@ -52,25 +52,6 @@
     <button type="button" class="btn btn-sm btn-outline-primary mb-4" onclick="addLesson()">
       + Add Lesson
     </button>
-    
-    <!-- Classrooms Section -->
-    <h4>Classrooms</h4>
-    <div class="list-group mb-3">
-      {% for classroom in classrooms %}
-        <a href="{% url 'edit_classroom' classroom.pk %}" class="list-group-item list-group-item-action">
-          <strong>{{ classroom.classroom_id }}</strong> - {{ classroom.get_duration_weeks_display }}
-        </a>
-      {% empty %}
-        <p class="text-muted">No classrooms yet.</p>
-      {% endfor %}
-    </div>
-    <div class="mb-3">
-      <a href="{% url 'create_classroom' course.pk %}" class="btn btn-sm btn-outline-primary">
-        + Add Classroom
-      </a>
-    </div>
-
-    <hr>
 
     <!-- Enrolled Students Progress -->
     <h4>Enrolled Students</h4>
@@ -80,15 +61,7 @@
             <li class="list-group-item">
                 <div class="d-flex justify-content-between align-items-center">
                     <span>{{ sp.student.studentprofile.first_name }} {{ sp.student.studentprofile.last_name }}</span>
-                    <!-- <small>{{ sp.completed }}/{{ sp.total }} completed</small> -->
                 </div>
-                <!-- <div class="progress mt-2">
-                    <div class="progress-bar progress-{{ sp.percent|floatformat:0 }}"
-                        role="progressbar"
-                        aria-valuenow="{{ sp.percent }}" aria-valuemin="0" aria-valuemax="100">
-                        {{ sp.percent }}%
-                    </div>
-                </div> -->
             </li>
             {% endfor %}
         </ul>

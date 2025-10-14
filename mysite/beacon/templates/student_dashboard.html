@@ -14,63 +14,54 @@
     padding: 15px;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    color: #000; /* Ensure text is black in light mode */
+    color: #000; 
   }
 
-  /* Light Mode List Hover: Corrected to use the lighter green for a subtle effect */
   .list-group-item:hover {
-    background-color: #eafaf1 !important; /* Added !important */
-    color: #000 !important; /* Ensure text stays black */
+    background-color: #eafaf1 !important; 
+    color: #000 !important; 
     transition: background-color 0.2s ease;
   }
 
-  /* DARK MODE: Default List Item Style (FIX) */
   body.dark-mode .list-group-item {
-    background-color: #1e1e1e !important; /* Use a dark background */
-    border-color: #41ca7c !important; /* Keep the green border */
-    color: #e0e0e0 !important; /* Ensure text is light */
+    background-color: #1e1e1e !important;
+    border-color: #41ca7c !important; 
+    color: #e0e0e0 !important; 
   }
 
-  /* DARK MODE List Hover */
-  body.dark-mode .list-group-item.course-card:hover {
-    background-color: #41ca7c !important; /* Bright green on hover */
+  body.dark-mode .list-group-item:hover {
+    background-color: #41ca7c !important; 
     color: #fff !important; 
     transition: background-color 0.2s ease;
   }
   
-  /* --- CARD VIEW STYLES --- */
   .custom-course-card {
     border: 2px solid #41ca7c;
     border-radius: 10px;
     background-color: #ffffff;
     height: 250px;
-    /* ... other styles ... */
-    color: #000; /* Ensure text is black in light mode */
+    color: #000; 
   }
   
-  /* Light Mode Card Hover */
   .custom-course-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    background-color: #eafaf1; /* Light green on hover */
+    background-color: #eafaf1; 
     transition: all 0.2s ease;
   }
   
-  /* DARK MODE: Default Card Style (FIX) */
   body.dark-mode .custom-course-card {
-    background-color: #1e1e1e !important; /* Use a dark background */
-    border-color: #41ca7c !important; /* Keep the green border */
-    color: #e0e0e0 !important; /* Ensure text is light */
+    background-color: #1e1e1e !important; 
+    border-color: #41ca7c !important; 
+    color: #e0e0e0 !important; 
   }
 
-  /* DARK MODE Card Hover */
   body.dark-mode .custom-course-card:hover {
-    background-color: #41ca7c !important; /* Bright green on hover */
+    background-color: #41ca7c !important; 
     color: #fff !important;
     transition: all 0.2s ease;
   }
 
-  /* Fix for text color inside links for dark mode cards/lists */
   body.dark-mode .stretched-link.text-dark {
       color: #e0e0e0 !important;
   }
@@ -84,7 +75,6 @@
     border-color: #369e65;
   }
 
-  /* Toggle buttons (List/Card view) */
   .btn-outline-primary {
     color: #41ca7c;
     border-color: #41ca7c;
