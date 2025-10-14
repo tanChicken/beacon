@@ -6,7 +6,6 @@
   h1, h3 { font-weight: bold; }
   h3 { margin-top: 20px; }
 
-  /* Theme: Green for Student */
   .list-group-item {
     background-color: #ffffff;
     border: 2px solid #41ca7c;
@@ -15,16 +14,73 @@
     padding: 15px;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    color: #000; /* Ensure text is black in light mode */
   }
-  .list-group-item:hover { background-color: #eafaf1; }
 
-  /* Primary button (enrol, create, etc.) */
+  /* Light Mode List Hover: Corrected to use the lighter green for a subtle effect */
+  .list-group-item:hover {
+    background-color: #eafaf1 !important; /* Added !important */
+    color: #000 !important; /* Ensure text stays black */
+    transition: background-color 0.2s ease;
+  }
+
+  /* DARK MODE: Default List Item Style (FIX) */
+  body.dark-mode .list-group-item {
+    background-color: #1e1e1e !important; /* Use a dark background */
+    border-color: #41ca7c !important; /* Keep the green border */
+    color: #e0e0e0 !important; /* Ensure text is light */
+  }
+
+  /* DARK MODE List Hover */
+  body.dark-mode .list-group-item.course-card:hover {
+    background-color: #41ca7c !important; /* Bright green on hover */
+    color: #fff !important; 
+    transition: background-color 0.2s ease;
+  }
+  
+  /* --- CARD VIEW STYLES --- */
+  .custom-course-card {
+    border: 2px solid #41ca7c;
+    border-radius: 10px;
+    background-color: #ffffff;
+    height: 250px;
+    /* ... other styles ... */
+    color: #000; /* Ensure text is black in light mode */
+  }
+  
+  /* Light Mode Card Hover */
+  .custom-course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background-color: #eafaf1; /* Light green on hover */
+    transition: all 0.2s ease;
+  }
+  
+  /* DARK MODE: Default Card Style (FIX) */
+  body.dark-mode .custom-course-card {
+    background-color: #1e1e1e !important; /* Use a dark background */
+    border-color: #41ca7c !important; /* Keep the green border */
+    color: #e0e0e0 !important; /* Ensure text is light */
+  }
+
+  /* DARK MODE Card Hover */
+  body.dark-mode .custom-course-card:hover {
+    background-color: #41ca7c !important; /* Bright green on hover */
+    color: #fff !important;
+    transition: all 0.2s ease;
+  }
+
+  /* Fix for text color inside links for dark mode cards/lists */
+  body.dark-mode .stretched-link.text-dark {
+      color: #e0e0e0 !important;
+  }
+
   .btn-primary {
     background-color: #41ca7c;
     border-color: #41ca7c;
   }
   .btn-primary:hover {
-    background-color: #369e65; /* darker green */
+    background-color: #369e65; 
     border-color: #369e65;
   }
 
@@ -61,61 +117,72 @@
     text-overflow: ellipsis;
   }
 </style>
-
 <div class="container mt-4">
   <h1>YOUR COURSES</h1>
 
+  {% if not user.is_semester_active %}
+    <div class="container text-center mt-5">
+      <div class="alert alert-warning p-5 shadow-sm rounded-4">
+        <h2 class="fw-bold mb-3">Your account is currently inactive ⚠️</h2>
+        <p class="lead">
+          You can reactivate it anytime from your <strong>Profile page</strong>.
+        </p>
+      </div>
+    </div>
+
+  {% else %}
   <div class="d-flex justify-content-end mb-3">
     <button id="listViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
     <button id="cardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
   </div>
 
-  <!-- List View -->
-  <div id="listView">
-    <ul class="list-group mt-3">
-      {% for course in courses %}
-        <li class="list-group-item course-card" data-course-id="{{ course.pk }}">
-          <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-            <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-            <div class="small text-muted">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
-          </a>
-        </li>
-      {% empty %}
-        <li class="list-group-item text-muted">No courses enrolled.</li>
-      {% endfor %}
-    </ul>
-  </div>
-
-  <!-- Card View -->
-  <div id="cardView" class="row d-none">
-    {% for course in courses %}
-      <div class="col-md-4 mb-4">
-        <div class="card custom-course-card">
-          <div class="card-body">
+    <!-- List View -->
+    <div id="listView">
+      <ul class="list-group mt-3">
+        {% for course in courses %}
+          <li class="list-group-item" data-course-id="{{ course.pk }}">
             <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-              <div class="course-meta">{{ course.course_id }}</div>
-              <h5 class="card-title">{{ course.title }}</h5>
-              <p class="course-meta">Status: {{ course.status }}</p>
-              <hr>
-              <p class="course-meta">Instructor: {{ course.instructor.email }}</p>
-              <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
-              <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+              <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
+              <div class="small text-muted">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
             </a>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">No courses enrolled.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Card View -->
+    <div id="cardView" class="row d-none">
+      {% for course in courses %}
+        <div class="col-md-4 mb-4">
+          <div class="card custom-course-card">
+            <div class="card-body">
+              <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+                <div class="course-meta">{{ course.course_id }}</div>
+                <h5 class="card-title">{{ course.title }}</h5>
+                <p class="course-meta">Status: {{ course.status }}</p>
+                <hr>
+                <p class="course-meta">Instructor: {{ course.instructor.email }}</p>
+                <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
+                <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+              </a>
+            </div>
           </div>
         </div>
-      </div>
-    {% empty %}
-      <p class="text-muted">No courses enrolled yet.</p>
-    {% endfor %}
-  </div>
-
-  <!-- Enrolment Button -->
-  {% if courses|length < 4 %}
-    <div class="mt-4 text-right">
-      <a href="{% url 'enrolment_page' %}" class="btn btn-primary">📚 Enrol in New Courses</a>
+      {% empty %}
+        <p class="text-muted">No courses enrolled yet.</p>
+      {% endfor %}
     </div>
-  {% endif %}
-</div>
+
+    <!-- Enrolment Button -->
+    {% if user.is_semester_active and courses|length < 4 %}
+        <div class="mt-4 text-right">
+          <a href="{% url 'enrolment_page' %}" class="btn btn-primary">📚 Enrol in New Courses</a>
+        </div>
+    {% endif %}
+  </div>
+{% endif %}
 
 <script>
   document.getElementById("listViewBtn").addEventListener("click", function() {

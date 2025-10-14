@@ -10,7 +10,6 @@ h3 {
   margin-top: 20px;
 }
 
-/* === Toggle buttons === */
 .toggle-container {
   display: flex;
 }
@@ -34,7 +33,6 @@ h3 {
 
 .tab-content { display: none; }
 
-/* === Course cards === */
 .card-grid {
   display: flex;
   flex-wrap: wrap;
@@ -59,13 +57,16 @@ h3 {
   align-items: center;
   padding: 15px;
   text-align: center;
-}
-.course-oval:hover {
-  background-color: #fff3e0; 
-  box-shadow: 0 6px 12px rgba(255, 140, 66, 0.2); 
-  transform: translateY(-4px); 
+  background-color: #fff; 
   transition: all 0.3s ease-in-out;
 }
+
+.course-oval:hover {
+  background-color: #fff3e0 !important; 
+  box-shadow: none !important; 
+  transform: none !important; 
+}
+
 .course-id {
   font-size: 0.85rem;
   text-transform: uppercase;
@@ -92,7 +93,6 @@ h3 {
   font-weight: 600;
 }
 
-/* === Student List === */
 .student-list {
   margin-top: 30px;
   border-radius: 12px;
@@ -123,17 +123,58 @@ h3 {
 }
 .student-list-item:hover {
   background-color: #fff3e0;
-  transform: translateX(3px);
+  transform: translateX(0); 
 }
 .student-list-item a {
   text-decoration: none;
   font-weight: 600;
-  color: #000;   /* 🔹 Black student name */
+  color: #000; 
   width: 100%;
   display: block;
 }
 .student-list-item a:hover {
-  color: #000;   /* Keep black on hover */
+  color: #000; 
+}
+
+body.dark-mode .course-oval {
+    background-color: #1e1e1e !important; 
+    border-color: #ff9e57 !important; 
+}
+body.dark-mode .course-title {
+    border-bottom-color: rgba(255,255,255,0.85) !important;
+}
+body.dark-mode .course-meta {
+    color: #e0e0e0 !important;
+}
+body.dark-mode .course-oval a,
+body.dark-mode .course-oval div {
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode .course-oval:hover {
+    background-color: #e67e22 !important; 
+    border-color: #e67e22 !important; 
+    transform: none !important; 
+    box-shadow: none !important;
+}
+body.dark-mode .student-list {
+    background: #1e1e1e !important;
+    box-shadow: 0 3px 10px rgba(255,255,255,0.08);
+}
+body.dark-mode .student-list-header {
+    background: #e67e22 !important;
+}
+body.dark-mode .student-list-item {
+    border-bottom: 1px solid #444 !important;
+}
+body.dark-mode .student-list-item a {
+    color: #e0e0e0 !important; 
+}
+body.dark-mode .student-list-item:hover {
+    background-color: #e67e22 !important; 
+}
+body.dark-mode .student-list-item:hover a {
+    color: #fff !important; 
 }
 </style>
 
