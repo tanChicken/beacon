@@ -109,6 +109,8 @@ def enrol_course(request, course_id):
 def unenrol_course(request, pk):
     course = get_object_or_404(Course, pk=pk)
     student = request.user
+
+    Enrolment.unenrol_student_from_course(student, course)
     
     # remove the student from the course enrolments
     if course.students.filter(id=student.id).exists():
