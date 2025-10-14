@@ -165,7 +165,7 @@ font-weight: 600;
       </div>
       <div class="col-md-3">
         <div class="summary-card">
-          <h3>120</h3>
+          <h3>{{ required }}</h3>
           <p>Credit to Graduate</p>
         </div>
       </div>
@@ -184,7 +184,7 @@ font-weight: 600;
               style="--progress: {{ current_credit }}%;"
               aria-valuenow="{{ current_credit }}"
               aria-valuemin="0"
-              aria-valuemax="120">
+              aria-valuemax="{{ required }}">
               {{ current_credit|floatformat:0 }}
           </div>
 
@@ -194,7 +194,7 @@ font-weight: 600;
               style="--progress: {{ enrolled_credit }}%;"
               aria-valuenow="{{ enrolled_credit }}"
               aria-valuemin="0"
-              aria-valuemax="120">
+              aria-valuemax="{{ required }}">
               {{ enrolled_credit|floatformat:0 }}
           </div>
       </div>
@@ -231,7 +231,7 @@ font-weight: 600;
 
     <!-- Course Breakdown -->
     <div class="mt-5">
-      <h3 class="fw-bold">Per-Course Breakdown</h3>
+      <h3 class="fw-bold">Course Breakdown</h3>
       <table class="table table-striped mt-3">
         <thead>
           <tr>
