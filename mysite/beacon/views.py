@@ -234,6 +234,11 @@ def toggle_checklist_item(request, item_id):
     student = request.user
     lesson = item.lesson
 
+    if not Enrolment.objects.filter(student=student, lesson=item.lesson).exists():
+        return JsonResponse({
+            "error": "⚠️ You must be enrolled in this course before you can mark progress."
+        }, status=403)
+
     progress, _ = StudentChecklistProgress.objects.get_or_create(
         student=student,
         item=item,
