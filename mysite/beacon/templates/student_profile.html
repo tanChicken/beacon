@@ -1,92 +1,133 @@
 {% extends "base.html" %}
 {% block title %}Student Profile{% endblock %}
+
 {% block content %}
 <style>
 .course-card-header {
   background-color: #549257;
+  color: white;
 }
 </style>
 <div class="container mt-4">
   <h1 class="mb-4"><strong>YOUR PROFILE</strong></h1>
-
-  <!-- Profile Information -->
+  <!-- Profile Info -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Personal Information</h4>
-        <a href="{% url 'student_change_password' %}" class="btn btn-outline-success btn-sm">
-          Change Password
-        </a>
+        <a href="{% url 'student_change_password' %}" class="btn btn-outline-success btn-sm">Change Password</a>
       </div>
-      
+
       <div class="row">
         <div class="col-md-6">
           <p><strong>Title:</strong> {{ profile.title }}</p>
           <p><strong>First Name:</strong> {{ profile.first_name }}</p>
           <p><strong>Last Name:</strong> {{ profile.last_name }}</p>
         </div>
+
         <div class="col-md-6">
           <p><strong>Email:</strong> {{ profile.user.email }}</p>
           <p><strong>Role:</strong> {{ profile.user.role }}</p>
           <p>
             <strong>Status:</strong>
-            {% if profile.user.is_active %}
-              <span class="badge badge-success">Active</span>
+            {% if profile.user.is_semester_active %}
+              <span class="badge bg-success">Active</span>
             {% else %}
-              <span class="badge badge-danger">Inactive</span>
+              <span class="badge bg-danger">Inactive</span>
             {% endif %}
           </p>
+
+          <!-- Toggle Status Button -->
+          <button id="toggleStatusBtn"
+                  class="btn {% if profile.user.is_semester_active %}btn-danger{% else %}btn-success{% endif %} mt-3">
+            {% if profile.user.is_semester_active %}
+              Set Semester Inactive
+            {% else %}
+              Reactivate Semester
+            {% endif %}
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Academic Information + Courses -->
+  <!-- Academic Info + Courses -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <h4 class="mb-3">Academic Information</h4>
-
-      <!-- Academic summary -->
-      <p class="mb-4">
-        <strong>Total Credit Accumulated:</strong>
-        <span class="text-dark">{{ total_credit }}</span>
-      </p>
-
-      <!-- Courses and lessons -->
+      <p class="mb-4"><strong>Total Credit Accumulated:</strong> {{ total_credit }}</p>
       <h5>Enrolled Courses & Lessons</h5>
-      {% for course in courses %}
-        <div class="card mb-3 shadow-sm">
-          <!-- <div class="card-header bg-success text-white"> -->
-          <div class="card-header course-card-header text-white">
-            <strong>{{ course.title }}</strong> ({{ course.course_id }})
+      {% if courses %}
+        {% for course in courses %}
+          <div class="card mb-3 shadow-sm">
+            <div class="card-header course-card-header">
+              <strong>{{ course.title }}</strong> ({{ course.course_id }})
+            </div>
+
+            <div class="card-body">
+              {% if course.lessons.all %}
+                <ul class="list-group list-group-flush">
+                  {% for lesson in course.lessons.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <span>{{ lesson.title }} ({{ lesson.lesson_id }})</span>
+                      {% if lesson.status == "Completed" %}
+                        <span class="badge bg-success">Completed</span>
+                      {% elif lesson.status == "In Progress" %}
+                        <span class="badge bg-warning text-dark">In Progress</span>
+                      {% elif lesson.status == "Not Started" %}
+                        <span class="badge bg-secondary">Not Started</span>
+                      {% else %}
+                        <span class="badge bg-danger">Not Enrolled</span>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="text-muted">No lessons in this course yet.</p>
+              {% endif %}
+            </div>
           </div>
-          <div class="card-body">
-            {% if course.lessons.all %}
-              <ul class="list-group list-group-flush">
-                {% for lesson in course.lessons.all %}
-                <li>
-                  <strong>{{ lesson.title }}</strong> ({{ lesson.lesson_id }})
-                  {% if lesson.status == "Completed" %}
-                    <span class="badge badge-success">Completed</span>
-                  {% elif lesson.status == "In Progress" %}
-                    <span class="badge badge-warning text-dark">In Progress</span>
-                  {% elif lesson.status == "Not Started" %}
-                    <span class="badge badge-secondary">Not Started</span>
-                  {% else %}
-                    <span class="badge badge-danger">Not Enrolled</span>
-                  {% endif %}
-                </li>
-              {% endfor %}
-              </ul>
-            {% else %}
-              <p class="text-muted">No lessons in this course yet.</p>
-            {% endif %}
-          </div>
-        </div>
-      {% empty %}
+        {% endfor %}
+      {% else %}
         <p class="text-muted">No courses enrolled.</p>
-      {% endfor %}
+      {% endif %}
     </div>
   </div>
 </div>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const btn = document.getElementById("toggleStatusBtn");
+  if (!btn) return;
+
+  btn.addEventListener("click", function() {
+    const isActive = "{{ profile.user.is_semester_active|yesno:'true,false' }}" === "true";
+
+    Swal.fire({
+      title: 'Confirm Status Change',
+      html: isActive
+        ? 'Are you sure you want to <strong>set your status to inactive</strong>?<br><small>All existing course and lesson progress will be removed.</small>'
+        : 'Are you sure you want to <strong>reactivate your status</strong>?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: isActive ? '#dc3545' : '#28a745',
+      confirmButtonText: 'Yes, proceed',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        document.getElementById("statusForm").submit();
+      }
+    });
+  });
+});
+</script>
+
+<!-- Hidden form -->
+<form method="POST" action="{% url 'student_toggle_status' %}" id="statusForm">
+  {% csrf_token %}
+</form>
+
 {% endblock %}

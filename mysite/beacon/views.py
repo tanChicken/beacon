@@ -741,18 +741,22 @@ def student_profile(request):
 @role_required("STUDENT")
 def student_report_course(request):
     student = request.user
+
+    if not student.is_semester_active:
+        return render(request, "student_report_course.html", {
+            "inactive": True,   # Flag for template to hide everything
+        })
+
+    # --- Normal logic when active ---
     enrolled_courses = student.courses_enroling.all()
+    required = 120
 
-    required = 120  # total credits required
-
-    # --- Global progress ---
     current_credit = (
         Enrolment.objects.filter(
             student=student,
             completed=True,
             lesson__status="PUBLISHED"
-        )
-        .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+        ).aggregate(total=Sum("lesson__credit_point"))["total"] or 0
     )
 
     enrolled_credit = (
@@ -760,19 +764,15 @@ def student_report_course(request):
             student=student,
             completed=False,
             lesson__status="PUBLISHED"
-        )
-        .aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+        ).aggregate(total=Sum("lesson__credit_point"))["total"] or 0
     )
 
     remaining_exclude_enrolled = max(required - current_credit, 0)
     remaining_include_enrolled = max(required - (current_credit + enrolled_credit), 0)
-
     progress = (current_credit / required) * 100 if required > 0 else 0
 
-    # --- Per course breakdown ---
     courses = (
-        enrolled_courses
-        .annotate(
+        enrolled_courses.annotate(
             completed_credits=Sum(
                 "lessons__credit_point",
                 filter=Q(
@@ -793,6 +793,7 @@ def student_report_course(request):
     )
 
     context = {
+        "inactive": False,
         "courses": courses,
         "current_credit": current_credit,
         "enrolled_credit": enrolled_credit,
@@ -801,8 +802,8 @@ def student_report_course(request):
         "progress": progress,
         "required": required,
     }
-
     return render(request, "student_report_course.html", context)
+
 
 @role_required("STUDENT")
 def student_report_course_details(request, pk):
@@ -1067,3 +1068,27 @@ def instructor_student_overall_progress(request, student_id):
     }
 
     return render(request, "instructor_report_student_overall_progress.html", context)
+
+@role_required("STUDENT")
+def student_toggle_status(request):
+    if request.method == "POST":
+        user = request.user  
+
+        if user.is_semester_active:
+            user.courses_enroling.clear()
+            Enrolment.objects.filter(student=user).delete()
+            StudentChecklistProgress.objects.filter(student=user).delete()
+            user.is_semester_active = False
+            messages.success(
+                request,
+                "Your account is now inactive. All course and lesson progress has been removed."
+            )
+        else:
+            user.is_semester_active = True
+            messages.success(
+                request,
+                "Your account has been reactivated. You can enroll in courses again."
+            )
+
+        user.save()
+        return redirect("student_profile")
