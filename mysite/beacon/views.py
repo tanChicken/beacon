@@ -109,6 +109,8 @@ def enrol_course(request, course_id):
 def unenrol_course(request, pk):
     course = get_object_or_404(Course, pk=pk)
     student = request.user
+
+    Enrolment.unenrol_student_from_course(student, course)
     
     # remove the student from the course enrolments
     if course.students.filter(id=student.id).exists():
@@ -231,6 +233,11 @@ def toggle_checklist_item(request, item_id):
     item = get_object_or_404(StudentChecklistItem, id=item_id)
     student = request.user
     lesson = item.lesson
+
+    if not Enrolment.objects.filter(student=student, lesson=item.lesson).exists():
+        return JsonResponse({
+            "error": "⚠️ You must be enrolled in this course before you can mark progress."
+        }, status=403)
 
     progress, _ = StudentChecklistProgress.objects.get_or_create(
         student=student,
@@ -625,6 +632,10 @@ def unenrol_lesson(request, pk):
     
     enrolment = Enrolment.objects.filter(student=student, lesson=lesson, completed=False).first()
     if enrolment:
+        StudentChecklistProgress.objects.filter(
+            student=student,
+            item__lesson=lesson
+        ).delete()
         enrolment.delete()  
     return redirect("student_course_details", pk=lesson.course.pk)
 
