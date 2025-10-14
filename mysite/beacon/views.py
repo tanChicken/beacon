@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student
+from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student, StudentProfile, InstructorProfile
 from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
@@ -9,6 +9,8 @@ from.authz import role_required
 from django.db.models import Sum, Prefetch
 from datetime import datetime
 from django.db.models import Sum, Prefetch, Q, F, Count
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -1092,3 +1094,25 @@ def student_toggle_status(request):
 
         user.save()
         return redirect("student_profile")
+
+@csrf_exempt
+def toggle_dark_mode(request):
+    if request.method == "POST" and request.user.is_authenticated:
+        data = json.loads(request.body)
+        dark_mode = data.get("dark_mode", False)
+
+        if request.user.role.upper() == "STUDENT":
+            profile = StudentProfile.objects.get(user=request.user)
+        elif request.user.role.upper() == "INSTRUCTOR":
+            profile = InstructorProfile.objects.get(user=request.user)
+        else:
+            return JsonResponse({"error": "Invalid role"}, status=400)
+
+        profile.dark_mode = dark_mode
+        profile.save()
+
+        request.session["dark_mode"] = dark_mode
+        request.session.modified = True
+
+        return JsonResponse({"success": True})
+    return JsonResponse({"error": "Invalid request"}, status=400)
