@@ -632,6 +632,10 @@ def unenrol_lesson(request, pk):
     
     enrolment = Enrolment.objects.filter(student=student, lesson=lesson, completed=False).first()
     if enrolment:
+        StudentChecklistProgress.objects.filter(
+            student=student,
+            item__lesson=lesson
+        ).delete()
         enrolment.delete()  
     return redirect("student_course_details", pk=lesson.course.pk)
 
