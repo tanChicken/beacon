@@ -161,6 +161,7 @@ class StudentProfile(models.Model):
         blank=True,
         null=True
     )
+    dark_mode = models.BooleanField(default=False)
 
 class InstructorManager(models.Manager):
     def get_queryset(self, *args, **kwargs):
@@ -181,6 +182,7 @@ class Instructor(User):
 class InstructorProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="instructorprofile")
     bio = models.TextField(blank=True, null=True)
+    dark_mode = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Instructor Profile: {self.user.email}"

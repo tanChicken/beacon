@@ -118,6 +118,9 @@ class LessonDetailForm(forms.ModelForm):
         if self.course:
             self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
 
+            if not self.fields["prerequisites"].queryset.exists():
+                del self.fields["prerequisites"]
+
         fld = self.fields.get("classroom")
         if fld:
             fld.required = False

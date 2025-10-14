@@ -67,9 +67,10 @@ body.dark-mode .task-table td {
                     <label class="form-label">Last Updated:</label>
                     <input type="text" class="form-control" value="{{ lesson.updated_at|date:'M d, Y H:i'  }}" readonly>
                 </div>
-                <p>
-                    Designed by: {{ lesson.designer.get_full_name|default:lesson.designer.email }}
-                </p>
+                <div class="mb-2">
+                    <label class="form-label">Designed by:</label>
+                    <input type="text" class="form-control" value="{{ lesson.designer.get_full_name|default:lesson.designer.email }}" readonly>
+                </div>
             </p>
         </div>
     </div>
