@@ -367,7 +367,7 @@ def course_detail(request, pk):
                     course=course,
                     title=title.strip(),
                     designer=request.user,
-                    credit_point=0,
+                    credit_point=1,
                     status="DRAFT"
                 )
         if new_titles:
