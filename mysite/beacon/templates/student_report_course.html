@@ -182,7 +182,7 @@ body.dark-mode .course-oval:hover * {
     <div class="container report-container">
       <h1 class="fw-bold">Your Student Journey</h1> 
       <hr>
-      <h3 class="fw-bold">Current Progress: {{ progress|floatformat:1 }}%</h3>
+      <h3 class="fw-bold">Completion Progress: {{ progress|floatformat:1 }}% ({{ current_credit }}/{{ required }})</h3>
 
       <!-- Summary Section -->
       <div class="row g-4">
@@ -206,7 +206,7 @@ body.dark-mode .course-oval:hover * {
         </div>
         <div class="col-md-3">
           <div class="summary-card">
-            <h3>120</h3>
+            <h3>{{ required }}</h3>
             <p>Credit to Graduate</p>
           </div>
         </div>
@@ -218,17 +218,36 @@ body.dark-mode .course-oval:hover * {
             <span>0</span> 
             <span>{{ required }}</span> 
         </div> 
-        <div class="progress" style="height: 25px;"> 
+        <div class="progress" style="height: 25px;">
+            <!-- Completed Credits -->
             <div class="progress-bar bg-success"
                 role="progressbar"
-                style="--progress: {{ progress }}%;"
-                aria-valuenow="{{ progress }}"
+                style="--progress: {{ current_credit }}%;"
+                aria-valuenow="{{ current_credit }}"
                 aria-valuemin="0"
                 aria-valuemax="{{ required }}">
-                {{ progress|floatformat:1 }}%
-            </div> 
-        </div> 
-      </div> 
+                {{ current_credit|floatformat:0 }}
+            </div>
+
+            <!-- In-Progress Credits -->
+            <div class="progress-bar bg-info"
+                role="progressbar"
+                style="--progress: {{ enrolled_credit }}%;"
+                aria-valuenow="{{ enrolled_credit }}"
+                aria-valuemin="0"
+                aria-valuemax="{{ required }}">
+                {{ enrolled_credit|floatformat:0 }}
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="d-flex justify-content-end mt-2">
+            <small>
+                <span class="badge bg-success">&nbsp;</span> Completed &nbsp;
+                <span class="badge bg-info">&nbsp;</span> In Progress
+            </small>
+        </div>
+      </div>
 
       <!-- Analysis Section -->
       <div class="mt-5">
@@ -253,7 +272,7 @@ body.dark-mode .course-oval:hover * {
 
       <!-- Course Breakdown -->
       <div class="mt-5">
-        <h3 class="fw-bold">Per-Course Breakdown</h3>
+        <h3 class="fw-bold">Course Breakdown</h3>
         <table class="table table-striped mt-3">
           <thead>
             <tr>
