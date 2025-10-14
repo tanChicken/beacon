@@ -104,7 +104,7 @@ class LessonDetailForm(forms.ModelForm):
             "objective": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Learning objectives"}),
             "effort_per_week": forms.NumberInput(attrs={"class": "form-control", "placeholder": "Hours per week"}),
             "status": forms.Select(attrs={"class": "form-select"}),
-            "credit_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
+            "credit_point": forms.NumberInput(attrs={"class": "form-control", "min": 1, "max": 30}),
             "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
             "classroom": forms.HiddenInput(),
         }

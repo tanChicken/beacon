@@ -228,20 +228,22 @@ class Lesson(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.lesson_id and self.course:
-            existing_ids = (
-                Lesson.objects.filter(course=self.course).values_list("lesson_id", flat=True)
-            )
+            existing_ids = Lesson.objects.filter(course=self.course).values_list("lesson_id", flat=True)
             used_numbers = [
                 int(lid.split("-")[-1])
-                for lid in existing_ids if lid and "-" in lid and lid.split("-")[-1].isdigit()
+                for lid in existing_ids
+                if lid and "-" in lid and lid.split("-")[-1].isdigit()
             ]
-
 
             n = 1
             while n in used_numbers:
                 n += 1
 
             self.lesson_id = f"{self.course.course_id}-{n}"
+
+        if self.effort_per_week < 1:
+            self.effort_per_week = 1
+
         super().save(*args, **kwargs)
     
 class LessonTask(models.Model):

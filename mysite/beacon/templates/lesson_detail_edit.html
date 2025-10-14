@@ -34,6 +34,15 @@
 input[name$="-DELETE"] {
   display: none;
 }
+body.dark-mode .task-table th {
+  background-color: #e67e22 !important;
+  color: #fff !important;
+}
+body.dark-mode .task-table,
+body.dark-mode .task-table th,
+body.dark-mode .task-table td {
+  border: 1px solid #e67e22 !important;
+}
 </style>
 
 <div class="container mt-4">
@@ -174,9 +183,13 @@ input[name$="-DELETE"] {
         </div>
         
         {% if lesson.classroom %}
-        <div class="alert alert-info mb-0">
-            <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
-        </div>
+            <div class="alert alert-info mb-0">
+                <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
+            </div>
+        {% else %}
+            <div class="alert alert-danger mb-0">
+                <strong>Note:</strong> This lesson is not allocated to a classroom.
+            </div>
         {% endif %}
     </div>
     <!-- Classrooms Section -->

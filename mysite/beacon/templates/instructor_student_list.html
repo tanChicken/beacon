@@ -43,6 +43,32 @@
 .student-link:hover {
   text-decoration: none;
 }
+
+body.dark-mode .student-card {
+    background: #1e1e1e !important;
+    border: 1px solid #444 !important; /* Ensure border is visible */
+    color: #e0e0e0 !important;
+    box-shadow: none;
+}
+
+/* Dark Mode Default Text Color */
+body.dark-mode .student-card .student-name {
+    color: #e0e0e0 !important;
+}
+
+/* Dark Mode Hover: Darker Orange (Standard Instructor Theme) */
+body.dark-mode .student-card:hover {
+    background: #e67e22 !important; /* Darker orange hover */
+    /* Remove lift and shadow for a cleaner dark-mode look, keep transition */
+    transform: none !important;
+    box-shadow: none !important;
+    color: #fff !important;
+}
+
+/* Dark Mode Hover Text Color Fix */
+body.dark-mode .student-card:hover .student-name {
+    color: #fff !important;
+}
 </style>
 
 <div class="container student-container">
