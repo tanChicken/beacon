@@ -30,7 +30,6 @@
 .reading-item .remove-reading-item {
   flex: 0 0 auto;
 }
-
 input[name$="-DELETE"] {
   display: none;
 }
@@ -42,6 +41,26 @@ body.dark-mode .task-table,
 body.dark-mode .task-table th,
 body.dark-mode .task-table td {
   border: 1px solid #e67e22 !important;
+}
+.assignment-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.assignment-row > .col-8,
+.assignment-row > .col-4,
+.assignment-row > .col-1 {
+  flex: 0 0 auto;
+}
+.assignment-row > .col-8 {
+  width: 100%;
+}
+.assignment-row > .col-4 {
+  width: 25%; /* control date input width */
+}
+.assignment-row > .col-1 {
+  width: auto; /* make remove button snug */
+  margin-left: 0; /* push it to the far right if needed */
 }
 </style>
 
