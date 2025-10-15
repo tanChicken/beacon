@@ -159,7 +159,7 @@ def student_course_details(request, pk):
         )
     )
 
-    # 👇 Progress bar calculation (like student_report_course_details)
+    # Progress bar calculation 
     active_lessons = course.lessons.filter(status="PUBLISHED")
     reading_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="READING")
     assignment_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="ASSIGNMENT")
@@ -178,7 +178,7 @@ def student_course_details(request, pk):
     return render(request, "student_course_details.html", {
         "course": course,
         "lesson_status": lesson_status_sorted,
-        "progress": round(progress, 1),   # 👈 send progress to template
+        "progress": round(progress, 1),   
     })
 
 @role_required("STUDENT")
@@ -408,12 +408,15 @@ def course_detail(request, pk):
     else:
         form = CourseForm(instance=course)
 
+    enrolled_students = course.students.all()
+
     return render(request, "course_details.html", {
         "course": course,
         "form": form,
         "lessons": lessons,
         "classrooms": classrooms,
-        "remaining_points": remaining_credit_points,  # Optional for template display
+        "enrolled_students": enrolled_students,
+        "remaining_points": remaining_credit_points,  
     })
 
 @role_required("INSTRUCTOR")
@@ -440,7 +443,6 @@ def lesson_detail_edit(request, pk):
             formset.instance = lesson
             formset.save()
 
-            # --- DELETE removed reading items ---
             existing_reading_ids = set(lesson.checklist_items.filter(item_type="READING").values_list("id", flat=True))
             submitted_reading_ids = set()
 
@@ -473,21 +475,6 @@ def lesson_detail_edit(request, pk):
                         item_type="READING"
                     )
 
-            # Update existing assignment items
-            # for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
-            #     key = f"assignment_item_{item.id}"
-            #     if key in request.POST:
-            #         item.title = request.POST[key].strip()
-            #         item.save()
-
-            # # Add new assignment items
-            # for title in request.POST.getlist("new_assignment_item"):
-            #     if title.strip():
-            #         StudentChecklistItem.objects.create(
-            #             lesson=lesson,
-            #             title=title.strip(),
-            #             item_type="ASSIGNMENT"
-            #         )
             for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
                 title_key = f"assignment_item_{item.id}"
                 date_key  = f"assignment_deadline_{item.id}"
@@ -495,13 +482,11 @@ def lesson_detail_edit(request, pk):
                 if title_key in request.POST:
                     item.title = request.POST[title_key].strip()
 
-                # Parse YYYY-MM-DD (empty allowed)
                 raw_date = request.POST.get(date_key, "").strip()
                 if raw_date:
                     try:
                         item.deadline = datetime.strptime(raw_date, "%Y-%m-%d").date()
                     except ValueError:
-                        # Optional: attach a message / ignore invalid dates
                         pass
                 else:
                     item.deadline = None
@@ -557,6 +542,7 @@ def lesson_detail_edit(request, pk):
 
     reading_items = lesson.checklist_items.filter(item_type="READING")
     assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
+    enrolled_students = Enrolment.objects.filter(lesson=lesson).select_related("student__studentprofile")
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
@@ -569,6 +555,7 @@ def lesson_detail_edit(request, pk):
         "remaining_points": remaining_points,
         "reading_items": reading_items,
         "assignment_items": assignment_items,
+        "enrolled_students": enrolled_students,
     })
 
 @role_required("INSTRUCTOR")
@@ -765,7 +752,6 @@ def student_report_course(request):
             "inactive": True,   # Flag for template to hide everything
         })
 
-    # --- Normal logic when active ---
     enrolled_courses = student.courses_enroling.all()
     required = 120
 
@@ -1027,7 +1013,6 @@ def instructor_student_overall_progress(request, student_id):
 
     required = 120  # total credits required
 
-    # --- Global progress ---
     current_credit = (
         Enrolment.objects.filter(
             student=student,
