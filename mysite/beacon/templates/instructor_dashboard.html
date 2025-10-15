@@ -103,7 +103,7 @@
         <li class="list-group-item" data-course-id="{{ course.pk }}">
           <a href="{% url 'course_detail' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
             <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-            <div class="small text-muted">Instructor: {{ course.instructor.email }}</div>
+            <div class="small">Instructor: {{ course.instructor.email }}</div>
           </a>
         </li>
       {% empty %}

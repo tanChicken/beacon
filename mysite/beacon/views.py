@@ -354,54 +354,59 @@ def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = course.lessons.all()
     classrooms = Classroom.objects.filter(course_id=course)
+    total_credit_points = lessons.aggregate(total=Sum("credit_point"))["total"] or 0
+    remaining_credit_points = 30 - total_credit_points
+
     if request.method == "POST":
         form = CourseForm(request.POST, instance=course)
 
         if form.is_valid():
-            form.save()  
+            form.save()
             messages.success(request, "Course updated successfully!")
 
-        # Handle new inline lessons
         new_titles = request.POST.getlist("new_lesson_title")
-        for title in new_titles:
-            if title.strip():
-                Lesson.objects.create(
-                    course=course,
-                    title=title.strip(),
-                    designer=request.user,
-                    credit_point=1,
-                    status="DRAFT"
-                )
-        if new_titles:
-            messages.success(request, f"{len(new_titles)} lesson(s) added successfully!")
+        added_count = 0
 
-        return redirect("course_detail", pk=course.pk)  # reloads page with updated info
+        if remaining_credit_points <= 0:
+            messages.error(
+                request,
+                "Cannot add new lesson — total credit points for this course have reached the limit of 30."
+            )
+        else:
+            for title in new_titles:
+                if title.strip():
+                    # Each new lesson consumes 1 credit point
+                    if remaining_credit_points <= 0:
+                        messages.warning(
+                            request,
+                            "Only some lessons were added before reaching the 30-point limit."
+                        )
+                        break
+
+                    Lesson.objects.create(
+                        course=course,
+                        title=title.strip(),
+                        designer=request.user,
+                        credit_point=1,
+                        status="DRAFT"
+                    )
+                    remaining_credit_points -= 1
+                    added_count += 1
+
+            if added_count > 0:
+                messages.success(request, f"{added_count} lesson(s) added successfully!")
+
+        return redirect("course_detail", pk=course.pk)
 
     else:
         form = CourseForm(instance=course)
-
-    # Student progress
-    students_progress = []
-    for student in course.students.all():
-        total_items = StudentChecklistItem.objects.filter(lesson__course=course).count()
-        completed_items = StudentChecklistProgress.objects.filter(
-            student=student, completed=True, item__lesson__course=course
-        ).count()
-        percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
-
-        students_progress.append({
-            "student": student,
-            "completed": completed_items,
-            "total": total_items,
-            "percent": percent_complete,
-        })
 
     return render(request, "course_details.html", {
         "course": course,
         "form": form,
         "lessons": lessons,
         "classrooms": classrooms,
-        "students_progress": students_progress,
+        "remaining_points": remaining_credit_points,  # Optional for template display
     })
 
 @role_required("INSTRUCTOR")
