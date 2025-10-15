@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db.models.signals import post_save 
@@ -307,3 +307,11 @@ class Enrolment(models.Model):
     def __str__(self):
         status = "Completed" if self.completed else "In Progress"
         return f"{self.student.email} enrolled in {self.lesson.title} ({status})"
+    
+    @staticmethod
+    def unenrol_student_from_course(student, course):
+        with transaction.atomic():
+            lessons = Lesson.objects.filter(course=course)
+            Enrolment.objects.filter(student=student, lesson__in = lessons).delete()
+            checklist_items = StudentChecklistItem.objects.filter(lesson__in=lessons)
+            StudentChecklistProgress.objects.filter(student=student, item__in=checklist_items).delete()
