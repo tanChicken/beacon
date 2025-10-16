@@ -253,26 +253,48 @@
     </section>
 
     <section class="mb-4">
-        <h3 class="mb-3">Assignments</h3>
-        <div class="checklist">
-        {% for item in lesson.checklist_items.all %}
-            {% if item.item_type == "ASSIGNMENT" %}
-            <div class="check-item">
-            <div class="desc-box">{{ item.title }}</div>
-            <div class="check-wrap">
+    <h3 class="mb-3">Assignments</h3>
+    <div class="assignment-list">
+    {% for item in lesson.checklist_items.all %}
+        {% if item.item_type == "ASSIGNMENT" %}
+        <div class="assignment-item-wrapper d-flex align-items-center justify-content-between mb-3">
+            <div class="assignment-block p-3 border rounded flex-grow-1 me-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">{{ item.title }}</h5>
+                    <small class="text-muted">
+                        {% if item.deadline %}
+                            Due: {{ item.deadline|date:"M d, Y" }}
+                        {% else %}
+                            No deadline
+                        {% endif %}
+                    </small>
+                </div>
+
+                {% if item.instructions %}
+                    <div class="instruction-box p-2 border rounded bg-light">
+                        <p class="mb-0">{{ item.instructions|linebreaksbr }}</p>
+                    </div>
+                {% else %}
+                    <div class="instruction-box p-2 border rounded bg-light text-muted fst-italic">
+                        <p class="mb-0">No instructions provided.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="check-wrap d-flex align-items-center">
                 <input
-                type="checkbox"
-                class="check-toggle"
-                data-item-id="{{ item.id }}"
-                {% if item.id in completed_item_ids %}checked{% endif %}
+                    type="checkbox"
+                    class="check-toggle"
+                    data-item-id="{{ item.id }}"
+                    {% if item.id in completed_item_ids %}checked{% endif %}
                 >
             </div>
-            </div>
-            {% endif %}
-        {% empty %}
-            <p class="text-muted">No assignments yet.</p>
-        {% endfor %}
         </div>
+        {% endif %}
+    {% empty %}
+        <p class="text-muted">No assignments yet.</p>
+    {% endfor %}
+    </div>
     </section>
 
     </div>
