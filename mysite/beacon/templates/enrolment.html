@@ -2,22 +2,25 @@
 {% block title %}Enrolment{% endblock %}
 
 {% block content %}
-<div class="mb-3">
-  <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
-</div>
+<!-- FIXED: Wrap everything in container -->
+<div class="container mt-4">
+  <div class="mb-3">
+    <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
+  </div>
 
-<h2>Available Courses to Enrol</h2>
-<ul class="list-group mt-3">
-  {% for course in available_courses %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <div>
-        <strong>{{ course.course_id }} - {{ course.title }}</strong> ({{ course.status }})
-        <div class="small text-muted">Instructor: {{ course.instructor.email }}</div>
-      </div>
-      <a href="{% url 'enrol_course' course.id %}" class="btn btn-sm btn-primary">Enrol</a>
-    </li>
-  {% empty %}
-    <li class="list-group-item text-muted">No available courses to enrol.</li>
-  {% endfor %}
-</ul>
+  <h2>Available Courses to Enrol</h2>
+  <ul class="list-group mt-3">
+    {% for course in available_courses %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ course.course_id }} - {{ course.title }}</strong> ({{ course.status }})
+          <div class="small text-muted">Instructor: {{ course.instructor.email }}</div>
+        </div>
+        <a href="{% url 'enrol_course' course.id %}" class="btn btn-sm btn-primary">Enrol</a>
+      </li>
+    {% empty %}
+      <li class="list-group-item text-muted">No available courses to enrol.</li>
+    {% endfor %}
+  </ul>
+</div>
 {% endblock %}

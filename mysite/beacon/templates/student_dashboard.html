@@ -4,14 +4,14 @@
 {% block content %}
 <style>
   h1, h3 { font-weight: bold; }
-  h3 { margin-top: 20px; }
+  h3 { margin-top: 1.25rem; }
 
   .list-group-item {
     background-color: #ffffff;
     border: 2px solid #41ca7c;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    padding: 15px;
+    border-radius: 0.3125rem;
+    margin-bottom: 0.625rem;
+    padding: 0.9375rem;
     cursor: pointer;
     transition: background-color 0.2s ease;
     color: #000; 
@@ -35,17 +35,24 @@
     transition: background-color 0.2s ease;
   }
   
+  /* FIXED: Use min-height with rem instead of fixed height */
   .custom-course-card {
     border: 2px solid #369e65;
-    border-radius: 10px;
+    border-radius: 0.625rem;
     background-color: #ffffff;
-    height: 250px;
-    color: #000; 
+    min-height: 15rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    color: #000;
   }
   
   .custom-course-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transform: translateY(-0.3125rem);
+    box-shadow: 0 0.25rem 0.9375rem rgba(0,0,0,0.2);
     background-color: #eafaf1; 
     transition: all 0.2s ease;
   }
@@ -63,7 +70,7 @@
   }
 
   body.dark-mode .stretched-link.text-dark {
-      color: #e0e0e0 !important;
+    color: #e0e0e0 !important;
   }
 
   .btn-primary {
@@ -84,22 +91,7 @@
     color: #fff;
     border-color: #41ca7c;
   }
-  .custom-course-card {
-    border: 2px solid #369e65;
-    border-radius: 10px;
-    background-color: #ffffff;
-    height: 250px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    cursor: pointer;
-  }
-  .custom-course-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  }
+
   .card-title,
   .course-meta {
     white-space: nowrap;
@@ -107,6 +99,7 @@
     text-overflow: ellipsis;
   }
 </style>
+
 <div class="container mt-4">
   <h1>YOUR COURSES</h1>
 
