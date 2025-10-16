@@ -62,6 +62,30 @@ body.dark-mode .task-table td {
   width: auto; /* make remove button snug */
   margin-left: 0; /* push it to the far right if needed */
 }
+.assignment-instruction-box {
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+  font-size: 0.95rem;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.assignment-instruction-box::placeholder {
+  color: #999;
+}
+.assignment-instruction {
+  margin-bottom: 1rem; /* adds space below each instruction box */
+}
+.assignment-instruction-box:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  outline: none;
+}
 </style>
 
 <div class="container mt-4">
@@ -259,6 +283,11 @@ body.dark-mode .task-table td {
                     <button type="button" class="btn btn-danger remove-assignment-item" aria-label="Remove assignment">&times;</button>
                 </div>
             </div>
+            <div class="assignment-instruction mt-1">
+                <textarea class="form-control assignment-instruction-box"
+                    name="assignment_instruction_{{ item.id }}"
+                    placeholder="Instructions">{{ item.instructions|default_if_none:'' }}</textarea>
+            </div>
         {% endfor %}
     </div>
 
@@ -374,12 +403,15 @@ document.addEventListener("click", function(e) {
 
 // Add Assignment Item
 document.getElementById("add-assignment-item").addEventListener("click", function() {
+    const block = document.createElement('div');
+    block.className = 'assignment-block mb-3';
+
     const row = document.createElement('div');
     row.className = 'row mb-2 assignment-row';
 
     // Assignment title
     const colTitle = document.createElement('div');
-    colTitle.className = 'col-7';
+    colTitle.className = 'col-8';
     const inputTitle = document.createElement('input');
     inputTitle.type = 'text';
     inputTitle.className = 'form-control';
@@ -409,15 +441,19 @@ document.getElementById("add-assignment-item").addEventListener("click", functio
     row.appendChild(colDate);
     row.appendChild(colRemove);
 
+    // Instruction box below
+    const instructionBox = document.createElement('div');
+    instructionBox.className = 'assignment-instruction mt-1';
+    instructionBox.innerHTML = `
+        <textarea class="form-control assignment-instruction-box"
+                  name="new_assignment_instruction"
+                  placeholder="Instructions"></textarea>
+    `;
 
-    document.getElementById('assignment-items').appendChild(row);
-});
+    block.appendChild(row);
+    block.appendChild(instructionBox);
 
-document.addEventListener("click", function(e) {
-  if (e.target.classList.contains("remove-assignment-item")) {
-    const row = e.target.closest(".assignment-row");
-    if (row) row.remove();
-  }
+    document.getElementById('assignment-items').appendChild(block);
 });
 
 </script>
