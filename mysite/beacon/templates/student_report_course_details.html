@@ -7,7 +7,7 @@
     font-weight: bold;
   }
   h3 {
-    margin-top: 20px;
+    margin-top: 1.25rem;
   }
 
   /* Progress bar dynamic width */
@@ -15,92 +15,100 @@
     --progress: 0%;
     width: var(--progress);
   }
+  
+  /* Fixed height for progress bars using rem */
+  .progress {
+    height: 1.5625rem;
+  }
 </style>
 
-<div class="mb-3">
-    <a href="{% url 'student_report_course' %}" class="btn btn-outline-secondary">&larr; Back</a>  
-</div>
+<!-- FIXED: Wrap everything in container -->
+<div class="container mt-4">
+  <div class="mb-3">
+      <a href="{% url 'student_report_course' %}" class="btn btn-outline-secondary">&larr; Back</a>  
+  </div>
 
-<h1 class="fw-bold">Your {{ course }} Journey</h1> 
+  <h1 class="fw-bold">Your {{ course }} Journey</h1> 
 
-<hr>
+  <hr>
 
-<h3>Current Progress: {{ total_percent }}%</h3>
+  <h3>Current Progress: {{ total_percent }}%</h3>
 
-<!-- Progress bar section --> 
-<div class="mt-4"> 
-    <div class="d-flex justify-content-between"> 
-        <span>0</span> 
-        <span>{{ total_item|default:0 }}</span> 
-    </div> 
-    <div class="progress" style="height: 25px;"> 
-        <div class="progress-bar bg-success"
-             role="progressbar"
-             style="--progress: {{ total_percent }}%;"
-             aria-valuenow="{{ total_percent }}"
-             aria-valuemin="0"
-             aria-valuemax="100">
-            {{ total_percent }}%
-        </div> 
-    </div> 
-</div> 
+  <!-- Progress bar section --> 
+  <div class="mt-4"> 
+      <div class="d-flex justify-content-between"> 
+          <span>0</span> 
+          <span>{{ total_item|default:0 }}</span> 
+      </div> 
+      <div class="progress"> 
+          <div class="progress-bar bg-success"
+               role="progressbar"
+               style="--progress: {{ total_percent }}%;"
+               aria-valuenow="{{ total_percent }}"
+               aria-valuemin="0"
+               aria-valuemax="100">
+              {{ total_percent }}%
+          </div> 
+      </div> 
+  </div> 
 
-<!-- Remaining message --> 
-<div class="mt-4 alert alert-info">
-    {% if reading_left == 0 and assignment_left == 0 %}
-        There is nothing more for you to read or complete for {{ course }}.
-    {% elif reading_left == 0 %}
-        There is no more reading for you in {{ course }}. 
-        {% if assignment_left > 0 %}
-            You still have {{ assignment_left }} assignment{% if assignment_left > 1 %}s{% endif %} to complete.
-        {% endif %}
-    {% elif assignment_left == 0 %}
-        There are {{ reading_left }} reading{% if reading_left > 1 %}s{% endif %} left for {{ course }}. 
-        There are no more assignments to complete.
-    {% else %}
-        There are {{ reading_left }} reading{% if reading_left > 1 %}s{% endif %} and {{ assignment_left }} assignment{% if assignment_left > 1 %}s{% endif %} left to complete for {{ course }}.
-    {% endif %}
-</div>
+  <!-- Remaining message --> 
+  <div class="mt-4 alert alert-info">
+      {% if reading_left == 0 and assignment_left == 0 %}
+          There is nothing more for you to read or complete for {{ course }}.
+      {% elif reading_left == 0 %}
+          There is no more reading for you in {{ course }}. 
+          {% if assignment_left > 0 %}
+              You still have {{ assignment_left }} assignment{% if assignment_left > 1 %}s{% endif %} to complete.
+          {% endif %}
+      {% elif assignment_left == 0 %}
+          There are {{ reading_left }} reading{% if reading_left > 1 %}s{% endif %} left for {{ course }}. 
+          There are no more assignments to complete.
+      {% else %}
+          There are {{ reading_left }} reading{% if reading_left > 1 %}s{% endif %} and {{ assignment_left }} assignment{% if assignment_left > 1 %}s{% endif %} left to complete for {{ course }}.
+      {% endif %}
+  </div>
 
-<hr>
+  <hr>
 
-<h3>Progress Breakdown</h3>
+  <h3>Progress Breakdown</h3>
 
-<div class="progress-section mt-4">
-    <!-- Stats section --> 
-    <div class="row mt-4"> 
-        <div class="col-md-6"> 
-            <p><strong>Reading List:</strong> {{ reading_done }}/{{ total_readings }} ({{ reading_percent }}%)</p>
-            <div class="progress mb-3">
-                <div class="progress-bar bg-info"
-                     role="progressbar"
-                     style="--progress: {{ reading_percent }}%;"
-                     aria-valuenow="{{ reading_percent }}"
-                     aria-valuemin="0"
-                     aria-valuemax="100">
-                    {{ reading_percent }}%
-                </div>
-            </div>
-            <h5>Total Reading List: {{ total_readings }}</h5> 
-            <h5>Completed Reading List: {{ reading_done }}</h5> 
-        </div> 
+  <div class="progress-section mt-4">
+      <!-- Stats section --> 
+      <div class="row mt-4"> 
+          <div class="col-md-6"> 
+              <p><strong>Reading List:</strong> {{ reading_done }}/{{ total_readings }} ({{ reading_percent }}%)</p>
+              <div class="progress mb-3">
+                  <div class="progress-bar bg-info"
+                       role="progressbar"
+                       style="--progress: {{ reading_percent }}%;"
+                       aria-valuenow="{{ reading_percent }}"
+                       aria-valuemin="0"
+                       aria-valuemax="100">
+                      {{ reading_percent }}%
+                  </div>
+              </div>
+              <h5>Total Reading List: {{ total_readings }}</h5> 
+              <h5>Completed Reading List: {{ reading_done }}</h5> 
+          </div> 
 
-        <div class="col-md-6"> 
-            <p><strong>Assignments:</strong> {{ assignment_done }}/{{ total_assignments }} ({{ assignment_percent }}%)</p>
-            <div class="progress mb-3">
-                <div class="progress-bar bg-warning"
-                     role="progressbar"
-                     style="--progress: {{ assignment_percent }}%;"
-                     aria-valuenow="{{ assignment_percent }}"
-                     aria-valuemin="0"
-                     aria-valuemax="100">
-                    {{ assignment_percent }}%
-                </div>
-            </div>
-            <h5>Total Assignments: {{ total_assignments }}</h5> 
-            <h5>Completed Assignments: {{ assignment_done }}</h5> 
-        </div> 
-    </div> 
+          <div class="col-md-6"> 
+              <p><strong>Assignments:</strong> {{ assignment_done }}/{{ total_assignments }} ({{ assignment_percent }}%)</p>
+              <div class="progress mb-3">
+                  <div class="progress-bar bg-warning"
+                       role="progressbar"
+                       style="--progress: {{ assignment_percent }}%;"
+                       aria-valuenow="{{ assignment_percent }}"
+                       aria-valuemin="0"
+                       aria-valuemax="100">
+                      {{ assignment_percent }}%
+                  </div>
+              </div>
+              <h5>Total Assignments: {{ total_assignments }}</h5> 
+              <h5>Completed Assignments: {{ assignment_done }}</h5> 
+          </div> 
+      </div> 
+  </div>
 </div>
 
 <script>

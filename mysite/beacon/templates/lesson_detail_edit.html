@@ -20,12 +20,12 @@
 .reading-item {
   display: flex;
   align-items: center;
-  gap: 8px;           /* space between input and button */
+  gap: 8px;           
   margin-bottom: 0.5rem;
 }
 .reading-item .form-control {
-  flex: 1 1 auto;     /* grow/shrink so button stays on one line */
-  min-width: 0;       /* important to allow shrinking inside flex */
+  flex: 1 1 auto;     
+  min-width: 0;       
 }
 .reading-item .remove-reading-item {
   flex: 0 0 auto;
@@ -293,14 +293,19 @@ body.dark-mode .task-table td {
 
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-assignment-item">+ Add Assignment</button>
 
-    <!-- Enrolled Students -->
     <h4>Enrolled Students</h4>
     {% if enrolled_students %}
     <ul class="list-group mb-4">
-        {% for student in enrolled_students %}
+        {% for enrolment in enrolled_students %}
         <li class="list-group-item">
-            {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
-            <small class="text-muted">({{ student.email }})</small>
+            {% with profile=enrolment.student.studentprofile %}
+                {% if profile.first_name and profile.last_name %}
+                    {{ profile.first_name }} {{ profile.last_name }}
+                {% else %}
+                    **Profile Missing**
+                {% endif %}
+            {% endwith %}
+            <small>({{ enrolment.student.email }})</small>
         </li>
         {% endfor %}
     </ul>

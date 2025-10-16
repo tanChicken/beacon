@@ -8,90 +8,168 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
 
     <style>
-      /* ============== LIGHT (default) ============== */
+/* ============== LIGHT (default) ============== */
+html { font-size: 100%; }          /* M = default (no class) */
+html.size-s { font-size: 75%; }    /* S = 75% root font-size */
+html.size-l { font-size: 150%; }   /* L = 150% root font-size */
+
 body {
   background-color: #ffffff;
   color: #111;
   font-family: Arial, sans-serif;
+  line-height: 1.6;
+  transition: font-size 0.2s ease;
 }
 
-/* Sidebar */
+/* ============== SIDEBAR STRUCTURE ============== */
 .sidebar {
   height: 100vh;
   border-right: 1px solid #ddd;
-  padding: 20px;
+  padding: 0;
   position: fixed;
   top: 0;
   left: 0;
-  width: 240px;
+  width: 15rem;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   z-index: 1000;
+  overflow: hidden;
+
+  /* pulled in from incoming change */
   pointer-events: auto;
   background-clip: padding-box;
 }
-.sidebar h2 {
-  font-size: 20px;
-  margin-bottom: 20px;
+
+/* Top: Logo (fixed, never scrolls) */
+.sidebar-header {
+  flex-shrink: 0;
+  padding: 1.25rem;
+  padding-bottom: 0.625rem;
 }
+
+/* Sidebar elements */
+.sidebar h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.625rem;
+}
+
+/* Middle: Navigation (scrollable when needed) */
+.sidebar-nav {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.625rem 1.25rem;
+  min-height: 0;
+}
+
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+.sidebar-nav::-webkit-scrollbar-thumb:hover { background: #999; }
+
 .sidebar a {
   display: block;
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   color: #333;
   text-decoration: none;
-  border-radius: 6px;
-  margin-bottom: 5px;
+  border-radius: 0.375rem;
+  margin-bottom: 0.3125rem;
   transition: all 0.2s ease;
 }
+
 .sidebar a:hover {
   color: #fff;
   background-color: #555;
 }
+
+.sidebar h2 a {
+  color: inherit;
+  padding: 0;
+  margin: 0;
+}
+
 .sidebar h2 a:hover {
   color: #fff !important;
+  background: none;
+}
+
+/* Bottom section - Controls (pushed to bottom) */
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+  flex-shrink: 0;
 }
 
 /* Instructor (Orange Theme) */
-.instructor-sidebar {
-  background-color: #fae3d3;
-}
+.instructor-sidebar { background-color: #fae3d3; }
 .instructor-sidebar h2 a {
   color: #e67e22;
   text-decoration: none;
   font-weight: bold;
 }
-.instructor-sidebar h2 a:hover {
-  color: #fff;
-}
+.instructor-sidebar h2 a:hover { color: #fff; }
 .instructor-sidebar a:hover {
   background-color: #e67e22;
   color: #fff;
 }
 
 /* Student (Green Theme) */
-.student-sidebar {
-  background-color: #d8fae6;
-}
+.student-sidebar { background-color: #d8fae6; }
 .student-sidebar h2 a {
   color: #34a464;
   text-decoration: none;
   font-weight: bold;
 }
-.student-sidebar h2 a:hover {
-  color: #fff;
-}
+.student-sidebar h2 a:hover { color: #fff; }
 .student-sidebar a:hover {
   background-color: #34a464;
   color: #fff;
 }
 
-/* Bottom toggle area */
-.sidebar-bottom {
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid #ddd;
+/* Resize controls */
+.resize-controls { margin-bottom: 12px; }
+.resize-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+  display: block;
+  font-weight: 600;
 }
+.resize-buttons {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+.resize-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+.resize-btn:hover { background-color: #f3f3f3; }
+.resize-btn.active {
+  background-color: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+.instructor-sidebar .resize-btn.active {
+  background-color: #e67e22;
+  border-color: #e67e22;
+}
+.student-sidebar .resize-btn.active {
+  background-color: #34a464;
+  border-color: #34a464;
+}
+
+/* Theme toggle */
 .theme-toggle {
   width: 100%;
   display: inline-flex;
@@ -104,32 +182,68 @@ body {
   background: #fff;
   color: #111;
   cursor: pointer;
-  position: relative;
-  z-index: 1001;
   transition: all 0.3s ease;
 }
-.theme-toggle:hover {
-  background-color: #f3f3f3;
-}
+.theme-toggle:hover { background-color: #f3f3f3; }
 
-/* Main content */
+/* ============== MAIN CONTENT (RESPONSIVE) ============== */
 .main-content {
-  margin-left: 260px;
-  padding: 20px;
+  margin-left: 15rem;
+  padding: 1.25rem;
   transition: margin-left 0.3s ease;
   position: relative;
   z-index: 1;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+  max-width: calc(100vw - 15rem);
+  overflow-x: hidden;
 }
 
-/* Responsive */
-@media (max-width: 991px) {
-  .sidebar {
-    width: 200px;
-  }
+/* Ensure containers don't overflow */
+.container,
+.container-fluid {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Make sure cards and items are responsive */
+.course-list-item,
+.course-card,
+.border,
+.rounded {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ============== RESPONSIVE BREAKPOINTS ============== */
+
+/* Large Laptops and smaller monitors (1366px - 1600px) */
+@media (max-width: 1600px) {
+  .main-content { padding: 1rem; }
+}
+
+/* Standard Laptops (1366px and below) */
+@media (max-width: 1366px) {
+  .sidebar { width: 12.5rem; }
   .main-content {
-    margin-left: 210px;
+    margin-left: 12.5rem;
+    max-width: calc(100vw - 12.5rem);
+    padding: 1rem;
   }
 }
+
+/* Tablets and Small Laptops (768px - 991px) */
+@media (max-width: 991px) {
+  .sidebar { width: 11rem; }
+  .main-content {
+    margin-left: 11rem;
+    max-width: calc(100vw - 11rem);
+    padding: 0.875rem;
+  }
+}
+
+/* Tablets Portrait and Large Phones (481px - 767px) */
 @media (max-width: 767px) {
   .sidebar {
     position: relative;
@@ -137,87 +251,143 @@ body {
     height: auto;
     border-right: none;
     border-bottom: 1px solid #ddd;
-    z-index: 1000;
+    overflow: visible;
+  }
+  .sidebar-header { padding: 1.25rem; }
+  .sidebar-nav { overflow: visible; padding: 0 1.25rem; }
+  .sidebar-bottom {
+    padding: 0.75rem 1.25rem 1.25rem 1.25rem;
+    border-top: none;
   }
   .main-content {
     margin-left: 0;
+    max-width: 100vw;
+    padding: 1rem;
   }
-  .sidebar a {
-    display: inline-block;
-    margin-right: 10px;
-  }
-  .sidebar-bottom {
-    border-top: none;
-  }
+  .sidebar a { display: block; margin-bottom: 0.5rem; }
 }
 
-/* ==================== DARK MODE ==================== */
-body.dark-mode {
-  background-color: #121212;
+/* Small Phones (480px and below) */
+@media (max-width: 480px) {
+  .main-content { padding: 0.75rem; }
+  .sidebar-header { padding: 1rem; }
+  .sidebar-nav { padding: 0 1rem; }
+  .sidebar-bottom { padding: 0.75rem 1rem; }
+}
+
+    body.dark-mode {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+body.dark-mode .resize-label {
+  color: #ccc;
+}
+
+body.dark-mode .resize-btn {
+  background: #1e1e1e;
   color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .resize-btn:hover {
+  background: #2a2a2a;
+}
+
+body.dark-mode .resize-btn.active {
+  background-color: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+body.dark-mode .instructor-sidebar .resize-btn.active {
+  background-color: #e67e22;
+  border-color: #e67e22;
+}
+
+body.dark-mode .student-sidebar .resize-btn.active {
+  background-color: #34a464;
+  border-color: #34a464;
 }
 
 /* Student sidebar dark mode */
-body.dark-mode .student-sidebar {
+body.dark-mode .student-sidebar,
+body.dark-mode .student-sidebar .sidebar-header,
+body.dark-mode .student-sidebar .sidebar-nav,
+body.dark-mode .student-sidebar .sidebar-bottom {
   background-color: #1e1e1e !important;
   color: #e0e0e0 !important;
 }
+
 body.dark-mode .student-sidebar a {
   color: #ccc !important;
 }
+
 body.dark-mode .student-sidebar a:hover {
   background-color: #34a464 !important;
   color: #fff !important;
 }
 
 /* Instructor sidebar dark mode */
-body.dark-mode .instructor-sidebar {
+body.dark-mode .instructor-sidebar,
+body.dark-mode .instructor-sidebar .sidebar-header,
+body.dark-mode .instructor-sidebar .sidebar-nav,
+body.dark-mode .instructor-sidebar .sidebar-bottom {
   background-color: #1e1e1e !important;
   color: #e0e0e0 !important;
 }
+
 body.dark-mode .instructor-sidebar a {
   color: #ccc !important;
 }
+
 body.dark-mode .instructor-sidebar a:hover {
   background-color: #e67e22 !important;
   color: #fff !important;
 }
 
-/* Sidebar hover improvement */
 body.dark-mode .sidebar a:hover {
   color: #fff !important;
 }
 
-/* Dark mode toggle button */
+/* Dark mode scrollbar */
+body.dark-mode .sidebar-nav::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+body.dark-mode .sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
 body.dark-mode .theme-toggle {
   background: #1e1e1e;
   color: #e0e0e0;
   border-color: #444;
 }
+
 body.dark-mode .theme-toggle:hover {
   background: #2a2a2a;
 }
 
-/* Content area */
 body.dark-mode .main-content {
   background-color: #121212;
 }
 
-/* Common components dark mode */
-body.dark-mode .alert,
-body.dark-mode .card,
-body.dark-mode .border,
-body.dark-mode .list-group-item,
-body.dark-mode .rounded,
-body.dark-mode .shadow,
-body.dark-mode .shadow-sm,
-body.dark-mode .bg-white,
-body.dark-mode .student-card,
-body.dark-mode .student-list-item {
-  background-color: #1e1e1e !important;
-  color: #e0e0e0 !important;
-  border-color: #444 !important;
-}
+    /* Common components dark mode */
+    body.dark-mode .alert,
+    body.dark-mode .card,
+    body.dark-mode .border,
+    body.dark-mode .list-group-item,
+    body.dark-mode .rounded,
+    body.dark-mode .shadow,
+    body.dark-mode .shadow-sm,
+    body.dark-mode .bg-white,
+    body.dark-mode .student-card,
+    body.dark-mode .student-list-item {
+      background-color: #1e1e1e !important;
+      color: #e0e0e0 !important;
+      border-color: #444 !important;
+    }
 
 /* Tables */
 body.dark-mode table,
@@ -225,11 +395,13 @@ body.dark-mode .table {
   color: #e0e0e0;
   background-color: #1a1a1a;
 }
+
 body.dark-mode .table thead th {
   border-bottom-color: #444 !important;
   background: #2a2a2a !important;
   color: #fff !important;
 }
+
 body.dark-mode .table td,
 body.dark-mode .table th {
   border-top-color: #333 !important;
@@ -245,11 +417,13 @@ body.dark-mode .form-control:focus {
   border-color: #444 !important;
   caret-color: #ffffff;
 }
+
 body.dark-mode select,
 body.dark-mode option {
   background-color: #1a1a1a !important;
   color: #ffffff !important;
 }
+
 body.dark-mode ::placeholder {
   color: #9aa0a6 !important;
 }
@@ -260,21 +434,24 @@ body.dark-mode .btn-light {
   color: #e0e0e0 !important;
   border-color: #444 !important;
 }
+
 body.dark-mode .btn-outline-secondary {
   color: #e0e0e0 !important;
   border-color: #666 !important;
 }
+
 body.dark-mode .btn-outline-secondary:hover {
   background: #2b2b2b !important;
 }
 
 body.dark-mode .student-sidebar ~ .main-content .btn-primary {
-  background-color: #34a464 !important; /* green */
+  background-color: #34a464 !important;
   border-color: #34a464 !important;
   color: #fff !important;
 }
+
 body.dark-mode .student-sidebar ~ .main-content .btn-primary:hover {
-  background-color: #2e8b57 !important; /* darker green */
+  background-color: #2e8b57 !important;
   border-color: #2e8b57 !important;
 }
 
@@ -283,6 +460,7 @@ body.dark-mode .instructor-sidebar ~ .main-content .btn-primary {
   border-color: #e67e22 !important;
   color: #fff !important;
 }
+
 body.dark-mode .instructor-sidebar ~ .main-content .btn-primary:hover {
   background-color: #cf6c17 !important;
   border-color: #cf6c17 !important;
@@ -292,28 +470,54 @@ body.dark-mode .instructor-sidebar ~ .main-content .btn-primary:hover {
 body.dark-mode a {
   color: #9dc6ff;
 }
+
 body.dark-mode a:hover {
   color: #ffffff;
 }
 
-/* General text fallback */
-body.dark-mode h1,
-body.dark-mode h2,
-body.dark-mode h3,
-body.dark-mode h4,
-body.dark-mode h5,
-body.dark-mode h6,
-body.dark-mode p,
-body.dark-mode span,
-body.dark-mode label,
-body.dark-mode td,
-body.dark-mode th,
-body.dark-mode a,
-body.dark-mode .card *,
-body.dark-mode .list-group-item,
-body.dark-mode .form-control {
+    /* General text fallback */
+    body.dark-mode h1,
+    body.dark-mode h2,
+    body.dark-mode h3,
+    body.dark-mode h4,
+    body.dark-mode h5,
+    body.dark-mode h6,
+    body.dark-mode p,
+    body.dark-mode span,
+    body.dark-mode label,
+    body.dark-mode td,
+    body.dark-mode th,
+    body.dark-mode a,
+    body.dark-mode .card *,
+    body.dark-mode .list-group-item,
+    body.dark-mode .form-control {
+      color: #ffffff !important;
+    }
+
+/* ========== FIX: Gray text in course items and content ========== */
+body.dark-mode small,
+body.dark-mode .text-muted,
+body.dark-mode .text-secondary,
+body.dark-mode .small {
+  color: #cccccc !important;
+}
+
+/* Ensure all text in bordered/rounded containers is white */
+body.dark-mode .border *,
+body.dark-mode .rounded *,
+body.dark-mode .course-list-item *,
+body.dark-mode .course-card * {
   color: #ffffff !important;
 }
+
+/* Force all main content text to be white unless specified otherwise */
+body.dark-mode .main-content {
+  color: #ffffff !important;
+}
+body.dark-mode .main-content * {
+  color: inherit;
+}
+/* ========== END OF FIX ========== */
 
 /* Report tabs bar */
 body.dark-mode #report-tabs {
@@ -338,6 +542,33 @@ body.dark-mode #report-tabs .selected {
   border-color: #e67e22 !important;
 }
 
+/* ========== NEW: Tab Text Visibility Fix ========== */
+/* Fix inactive tabs with white background to have black text */
+body.dark-mode #report-tabs .nav-link:not(.active):not(.selected),
+body.dark-mode #report-tabs .btn:not(.active):not(.selected),
+body.dark-mode #report-tabs .tab-link:not(.active):not(.selected) {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* For student - green active tabs */
+body.dark-mode .student-sidebar ~ .main-content #report-tabs .nav-link.active,
+body.dark-mode .student-sidebar ~ .main-content #report-tabs .btn.active,
+body.dark-mode .student-sidebar ~ .main-content #report-tabs .tab-link.active,
+body.dark-mode .student-sidebar ~ .main-content #report-tabs .selected {
+  background-color: #34a464 !important;
+  color: #ffffff !important;
+}
+
+/* General fix: any white background element should have black text */
+body.dark-mode .bg-white:not(.sidebar):not(.card):not(.alert) {
+  color: #000000 !important;
+}
+body.dark-mode .bg-white:not(.sidebar):not(.card):not(.alert) * {
+  color: #000000 !important;
+}
+/* ========== END OF TAB FIX ========== */
+
 /* KPI / Summary boxes */
 body.dark-mode .kpi-box,
 body.dark-mode .kpi,
@@ -354,28 +585,28 @@ body.dark-mode .summary-card {
   border-color: #444 !important;
 }
 
-/* Rounded tiles in content */
-body.dark-mode .main-content .rounded.p-3,
-body.dark-mode .main-content .rounded.p-4,
-body.dark-mode .main-content .rounded-lg.p-3,
-body.dark-mode .main-content .rounded-lg.p-4 {
-  background-color: #1e1e1e !important;
-  color: #ffffff !important;
-  border: 1px solid #444 !important;
-}
+    /* Rounded tiles in content */
+    body.dark-mode .main-content .rounded.p-3,
+    body.dark-mode .main-content .rounded.p-4,
+    body.dark-mode .main-content .rounded-lg.p-3,
+    body.dark-mode .main-content .rounded-lg.p-4 {
+      background-color: #1e1e1e !important;
+      color: #ffffff !important;
+      border: 1px solid #444 !important;
+    }
 
-/* Progress bar track */
-body.dark-mode .progress {
-  background-color: #2a2a2a !important;
-}
+    /* Progress bar track */
+    body.dark-mode .progress {
+      background-color: #2a2a2a !important;
+    }
 
-/* Student role */
-.student-sidebar ~ .main-content .course-list-item:hover,
-.student-sidebar ~ .main-content .course-card:hover {
-  background-color: #34a464 !important;
-  color: #fff !important;
-  border-color: #34a464 !important;
-}
+    /* Student role */
+    .student-sidebar ~ .main-content .course-list-item:hover,
+    .student-sidebar ~ .main-content .course-card:hover {
+      background-color: #34a464 !important;
+      color: #fff !important;
+      border-color: #34a464 !important;
+    }
 
 /* Ensure all text + links inside also turn white */
 .student-sidebar ~ .main-content .course-list-item:hover *,
@@ -384,47 +615,65 @@ body.dark-mode .progress {
   text-decoration: none !important;
 }
 
-/* Instructor role */
-.instructor-sidebar ~ .main-content .course-list-item:hover,
-.instructor-sidebar ~ .main-content .course-card:hover {
-  background-color: #e67e22 !important;
-  color: #fff !important;
-  border-color: #e67e22 !important;
-}
+    /* Instructor role */
+    .instructor-sidebar ~ .main-content .course-list-item:hover,
+    .instructor-sidebar ~ .main-content .course-card:hover {
+      background-color: #e67e22 !important;
+      color: #fff !important;
+      border-color: #e67e22 !important;
+    }
 
-.instructor-sidebar ~ .main-content .course-list-item:hover *,
-.instructor-sidebar ~ .main-content .course-card:hover * {
-  color: #fff !important;
-  text-decoration: none !important;
-}
+    .instructor-sidebar ~ .main-content .course-list-item:hover *,
+    .instructor-sidebar ~ .main-content .course-card:hover * {
+      color: #fff !important;
+      text-decoration: none !important;
+    }
     </style>
   </head>
 
   <body class="{% if dark_mode %}dark-mode{% endif %}">
-    <!-- Sidebar -->
+    <!-- Sidebar with 3-section structure -->
     <div class="sidebar
       {% if user.is_authenticated and user.role|upper == 'INSTRUCTOR' %}instructor-sidebar{% endif %}
       {% if user.is_authenticated and user.role|upper == 'STUDENT' %}student-sidebar{% endif %}">
-      <h2 class="logo"><a href="{% url 'home' %}">Beacon</a></h2>
+      
+      <!-- TOP: Logo (never scrolls) -->
+      <div class="sidebar-header">
+        <h2 class="logo"><a href="{% url 'home' %}">Beacon</a></h2>
+      </div>
 
-      {% if user.is_authenticated %}
-        {% if user.role|upper == "STUDENT" %}
-          <a href="{% url 'student_dashboard' %}">Courses</a>
-          <a href="{% url 'student_classroom' %}">Classroom</a>
-          <a href="{% url 'student_profile' %}">Student</a>
-          <a href="{% url 'student_report_course' %}">Report</a>
-        {% elif user.role|upper == "INSTRUCTOR" %}
-          <a href="{% url 'instructor_dashboard' %}">Courses</a>
-          <a href="{% url 'instructor_classroom' %}">Classroom</a>
-          <a href="{% url 'instructor_student_list' %}">Student</a>
-          <a href="{% url 'instructor_report' %}">Report</a>
+      <!-- MIDDLE: Navigation (scrolls when zoomed) -->
+      <div class="sidebar-nav">
+        {% if user.is_authenticated %}
+          {% if user.role|upper == "STUDENT" %}
+            <a href="{% url 'student_dashboard' %}">Courses</a>
+            <a href="{% url 'student_classroom' %}">Classroom</a>
+            <a href="{% url 'student_profile' %}">Student</a>
+            <a href="{% url 'student_report_course' %}">Report</a>
+          {% elif user.role|upper == "INSTRUCTOR" %}
+            <a href="{% url 'instructor_dashboard' %}">Courses</a>
+            <a href="{% url 'instructor_classroom' %}">Classroom</a>
+            <a href="{% url 'instructor_student_list' %}">Student</a>
+            <a href="{% url 'instructor_report' %}">Report</a>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'home' %}">Home</a>
         {% endif %}
-      {% else %}
-        <a href="{% url 'home' %}">Home</a>
-      {% endif %}
+      </div>
 
-      <!-- Toggle at the BOTTOM of the sidebar -->
+      <!-- BOTTOM: Controls (always visible, never scrolls) -->
       <div class="sidebar-bottom">
+        <!-- Resize Controls -->
+        <div class="resize-controls">
+          <span class="resize-label">Screen Size</span>
+          <div class="resize-buttons">
+            <button class="resize-btn" data-size="s">S</button>
+            <button class="resize-btn active" data-size="m">M</button>
+            <button class="resize-btn" data-size="l">L</button>
+          </div>
+        </div>
+
+        <!-- Dark Mode Toggle -->
         <button id="darkModeToggle" type="button" class="theme-toggle" aria-pressed="false">
           <span id="darkModeIcon" aria-hidden="true">🌙</span>
           <span id="darkModeText">Dark mode</span>
@@ -444,7 +693,7 @@ body.dark-mode .progress {
       {% block content %}{% endblock %}
     </div>
 
-  <!-- CSRF cookie helper: place this before any JS using fetch -->
+  <!-- CSRF cookie helper -->
     <script>
     function getCookie(name) {
       let cookieValue = null;
@@ -462,6 +711,7 @@ body.dark-mode .progress {
     }
     </script>
 
+    <!-- Dark Mode Toggle Script -->
     <script>
     document.addEventListener('DOMContentLoaded', function () {
       const body = document.body;
@@ -481,7 +731,6 @@ body.dark-mode .progress {
         body.classList.toggle('dark-mode', enabled);
         updateButton();
 
-        // Save to backend
         fetch("{% url 'toggle_dark_mode' %}", {
           method: "POST",
           headers: {
@@ -493,6 +742,38 @@ body.dark-mode .progress {
       });
 
       updateButton();
+    });
+    </script>
+
+    <!-- Zoom/Resize Script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const htmlEl = document.documentElement;
+      const resizeButtons = document.querySelectorAll('.resize-btn');
+
+      // Load saved preference
+      const savedSize = localStorage.getItem('uiTextSize') || 'm';
+      applySize(savedSize);
+
+      resizeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const size = this.getAttribute('data-size');
+          applySize(size);
+          localStorage.setItem('uiTextSize', size);
+        });
+      });
+
+      function applySize(size) {
+        // Remove classes; for 'm' we add NO class to keep original layout
+        htmlEl.classList.remove('size-s', 'size-l');
+        if (size === 's') htmlEl.classList.add('size-s');
+        if (size === 'l') htmlEl.classList.add('size-l');
+
+        // Update active state
+        resizeButtons.forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-size') === size);
+        });
+      }
     });
     </script>
   </body>
