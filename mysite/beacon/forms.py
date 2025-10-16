@@ -104,7 +104,7 @@ class LessonDetailForm(forms.ModelForm):
             "objective": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Learning objectives"}),
             "effort_per_week": forms.NumberInput(attrs={"class": "form-control", "placeholder": "Hours per week"}),
             "status": forms.Select(attrs={"class": "form-select"}),
-            "credit_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
+            "credit_point": forms.NumberInput(attrs={"class": "form-control", "min": 1, "max": 30}),
             "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
             "classroom": forms.HiddenInput(),
         }
@@ -117,6 +117,9 @@ class LessonDetailForm(forms.ModelForm):
 
         if self.course:
             self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
+
+            if not self.fields["prerequisites"].queryset.exists():
+                del self.fields["prerequisites"]
 
         fld = self.fields.get("classroom")
         if fld:

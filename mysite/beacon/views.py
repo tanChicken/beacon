@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student
+from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student, StudentProfile, InstructorProfile
 from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
@@ -9,6 +9,8 @@ from.authz import role_required
 from django.db.models import Sum, Prefetch
 from datetime import datetime
 from django.db.models import Sum, Prefetch, Q, F, Count
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -107,6 +109,8 @@ def enrol_course(request, course_id):
 def unenrol_course(request, pk):
     course = get_object_or_404(Course, pk=pk)
     student = request.user
+
+    Enrolment.unenrol_student_from_course(student, course)
     
     # remove the student from the course enrolments
     if course.students.filter(id=student.id).exists():
@@ -155,7 +159,7 @@ def student_course_details(request, pk):
         )
     )
 
-    # 👇 Progress bar calculation (like student_report_course_details)
+    # Progress bar calculation 
     active_lessons = course.lessons.filter(status="PUBLISHED")
     reading_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="READING")
     assignment_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="ASSIGNMENT")
@@ -174,7 +178,7 @@ def student_course_details(request, pk):
     return render(request, "student_course_details.html", {
         "course": course,
         "lesson_status": lesson_status_sorted,
-        "progress": round(progress, 1),   # 👈 send progress to template
+        "progress": round(progress, 1),   
     })
 
 @role_required("STUDENT")
@@ -229,6 +233,11 @@ def toggle_checklist_item(request, item_id):
     item = get_object_or_404(StudentChecklistItem, id=item_id)
     student = request.user
     lesson = item.lesson
+
+    if not Enrolment.objects.filter(student=student, lesson=item.lesson).exists():
+        return JsonResponse({
+            "error": "⚠️ You must be enrolled in this course before you can mark progress."
+        }, status=403)
 
     progress, _ = StudentChecklistProgress.objects.get_or_create(
         student=student,
@@ -352,54 +361,62 @@ def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     lessons = course.lessons.all()
     classrooms = Classroom.objects.filter(course_id=course)
+    total_credit_points = lessons.aggregate(total=Sum("credit_point"))["total"] or 0
+    remaining_credit_points = 30 - total_credit_points
+
     if request.method == "POST":
         form = CourseForm(request.POST, instance=course)
 
         if form.is_valid():
-            form.save()  
+            form.save()
             messages.success(request, "Course updated successfully!")
 
-        # Handle new inline lessons
         new_titles = request.POST.getlist("new_lesson_title")
-        for title in new_titles:
-            if title.strip():
-                Lesson.objects.create(
-                    course=course,
-                    title=title.strip(),
-                    designer=request.user,
-                    credit_point=0,
-                    status="DRAFT"
-                )
-        if new_titles:
-            messages.success(request, f"{len(new_titles)} lesson(s) added successfully!")
+        added_count = 0
 
-        return redirect("course_detail", pk=course.pk)  # reloads page with updated info
+        if remaining_credit_points <= 0:
+            messages.error(
+                request,
+                "Cannot add new lesson — total credit points for this course have reached the limit of 30."
+            )
+        else:
+            for title in new_titles:
+                if title.strip():
+                    # Each new lesson consumes 1 credit point
+                    if remaining_credit_points <= 0:
+                        messages.warning(
+                            request,
+                            "Only some lessons were added before reaching the 30-point limit."
+                        )
+                        break
+
+                    Lesson.objects.create(
+                        course=course,
+                        title=title.strip(),
+                        designer=request.user,
+                        credit_point=1,
+                        status="DRAFT"
+                    )
+                    remaining_credit_points -= 1
+                    added_count += 1
+
+            if added_count > 0:
+                messages.success(request, f"{added_count} lesson(s) added successfully!")
+
+        return redirect("course_detail", pk=course.pk)
 
     else:
         form = CourseForm(instance=course)
 
-    # Student progress
-    students_progress = []
-    for student in course.students.all():
-        total_items = StudentChecklistItem.objects.filter(lesson__course=course).count()
-        completed_items = StudentChecklistProgress.objects.filter(
-            student=student, completed=True, item__lesson__course=course
-        ).count()
-        percent_complete = int((completed_items / total_items) * 100) if total_items > 0 else 0
-
-        students_progress.append({
-            "student": student,
-            "completed": completed_items,
-            "total": total_items,
-            "percent": percent_complete,
-        })
+    enrolled_students = course.students.all()
 
     return render(request, "course_details.html", {
         "course": course,
         "form": form,
         "lessons": lessons,
         "classrooms": classrooms,
-        "students_progress": students_progress,
+        "enrolled_students": enrolled_students,
+        "remaining_points": remaining_credit_points,  
     })
 
 @role_required("INSTRUCTOR")
@@ -426,7 +443,6 @@ def lesson_detail_edit(request, pk):
             formset.instance = lesson
             formset.save()
 
-            # --- DELETE removed reading items ---
             existing_reading_ids = set(lesson.checklist_items.filter(item_type="READING").values_list("id", flat=True))
             submitted_reading_ids = set()
 
@@ -459,21 +475,6 @@ def lesson_detail_edit(request, pk):
                         item_type="READING"
                     )
 
-            # Update existing assignment items
-            # for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
-            #     key = f"assignment_item_{item.id}"
-            #     if key in request.POST:
-            #         item.title = request.POST[key].strip()
-            #         item.save()
-
-            # # Add new assignment items
-            # for title in request.POST.getlist("new_assignment_item"):
-            #     if title.strip():
-            #         StudentChecklistItem.objects.create(
-            #             lesson=lesson,
-            #             title=title.strip(),
-            #             item_type="ASSIGNMENT"
-            #         )
             for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
                 title_key = f"assignment_item_{item.id}"
                 date_key  = f"assignment_deadline_{item.id}"
@@ -481,13 +482,11 @@ def lesson_detail_edit(request, pk):
                 if title_key in request.POST:
                     item.title = request.POST[title_key].strip()
 
-                # Parse YYYY-MM-DD (empty allowed)
                 raw_date = request.POST.get(date_key, "").strip()
                 if raw_date:
                     try:
                         item.deadline = datetime.strptime(raw_date, "%Y-%m-%d").date()
                     except ValueError:
-                        # Optional: attach a message / ignore invalid dates
                         pass
                 else:
                     item.deadline = None
@@ -543,6 +542,7 @@ def lesson_detail_edit(request, pk):
 
     reading_items = lesson.checklist_items.filter(item_type="READING")
     assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
+    enrolled_students = Enrolment.objects.filter(lesson=lesson).select_related("student__studentprofile")
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
@@ -555,6 +555,7 @@ def lesson_detail_edit(request, pk):
         "remaining_points": remaining_points,
         "reading_items": reading_items,
         "assignment_items": assignment_items,
+        "enrolled_students": enrolled_students,
     })
 
 @role_required("INSTRUCTOR")
@@ -623,6 +624,10 @@ def unenrol_lesson(request, pk):
     
     enrolment = Enrolment.objects.filter(student=student, lesson=lesson, completed=False).first()
     if enrolment:
+        StudentChecklistProgress.objects.filter(
+            student=student,
+            item__lesson=lesson
+        ).delete()
         enrolment.delete()  
     return redirect("student_course_details", pk=lesson.course.pk)
 
@@ -747,7 +752,6 @@ def student_report_course(request):
             "inactive": True,   # Flag for template to hide everything
         })
 
-    # --- Normal logic when active ---
     enrolled_courses = student.courses_enroling.all()
     required = 120
 
@@ -1009,7 +1013,6 @@ def instructor_student_overall_progress(request, student_id):
 
     required = 120  # total credits required
 
-    # --- Global progress ---
     current_credit = (
         Enrolment.objects.filter(
             student=student,
@@ -1092,3 +1095,25 @@ def student_toggle_status(request):
 
         user.save()
         return redirect("student_profile")
+
+@csrf_exempt
+def toggle_dark_mode(request):
+    if request.method == "POST" and request.user.is_authenticated:
+        data = json.loads(request.body)
+        dark_mode = data.get("dark_mode", False)
+
+        if request.user.role.upper() == "STUDENT":
+            profile = StudentProfile.objects.get(user=request.user)
+        elif request.user.role.upper() == "INSTRUCTOR":
+            profile = InstructorProfile.objects.get(user=request.user)
+        else:
+            return JsonResponse({"error": "Invalid role"}, status=400)
+
+        profile.dark_mode = dark_mode
+        profile.save()
+
+        request.session["dark_mode"] = dark_mode
+        request.session.modified = True
+
+        return JsonResponse({"success": True})
+    return JsonResponse({"error": "Invalid request"}, status=400)

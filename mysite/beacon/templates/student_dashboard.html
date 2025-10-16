@@ -4,75 +4,73 @@
 {% block content %}
 <style>
   h1, h3 { font-weight: bold; }
-  h3 { margin-top: 20px; }
+  h3 { margin-top: 1.25rem; }
 
   .list-group-item {
     background-color: #ffffff;
     border: 2px solid #41ca7c;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    padding: 15px;
+    border-radius: 0.3125rem;
+    margin-bottom: 0.625rem;
+    padding: 0.9375rem;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    color: #000; /* Ensure text is black in light mode */
+    color: #000; 
   }
 
-  /* Light Mode List Hover: Corrected to use the lighter green for a subtle effect */
   .list-group-item:hover {
-    background-color: #eafaf1 !important; /* Added !important */
-    color: #000 !important; /* Ensure text stays black */
+    background-color: #eafaf1 !important; 
+    color: #000 !important; 
     transition: background-color 0.2s ease;
   }
 
-  /* DARK MODE: Default List Item Style (FIX) */
   body.dark-mode .list-group-item {
-    background-color: #1e1e1e !important; /* Use a dark background */
-    border-color: #41ca7c !important; /* Keep the green border */
-    color: #e0e0e0 !important; /* Ensure text is light */
+    background-color: #1e1e1e !important;
+    border-color: #369e65 !important; 
+    color: #e0e0e0 !important; 
   }
 
-  /* DARK MODE List Hover */
-  body.dark-mode .list-group-item.course-card:hover {
-    background-color: #41ca7c !important; /* Bright green on hover */
+  body.dark-mode .list-group-item:hover {
+    background-color: #369e65 !important; 
     color: #fff !important; 
     transition: background-color 0.2s ease;
   }
   
-  /* --- CARD VIEW STYLES --- */
+  /* FIXED: Use min-height with rem instead of fixed height */
   .custom-course-card {
-    border: 2px solid #41ca7c;
-    border-radius: 10px;
+    border: 2px solid #369e65;
+    border-radius: 0.625rem;
     background-color: #ffffff;
-    height: 250px;
-    /* ... other styles ... */
-    color: #000; /* Ensure text is black in light mode */
+    min-height: 15rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    color: #000;
   }
   
-  /* Light Mode Card Hover */
   .custom-course-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    background-color: #eafaf1; /* Light green on hover */
+    transform: translateY(-0.3125rem);
+    box-shadow: 0 0.25rem 0.9375rem rgba(0,0,0,0.2);
+    background-color: #eafaf1; 
     transition: all 0.2s ease;
   }
   
-  /* DARK MODE: Default Card Style (FIX) */
   body.dark-mode .custom-course-card {
-    background-color: #1e1e1e !important; /* Use a dark background */
-    border-color: #41ca7c !important; /* Keep the green border */
-    color: #e0e0e0 !important; /* Ensure text is light */
+    background-color: #1e1e1e !important; 
+    border-color: #369e65 !important; 
+    color: #e0e0e0 !important; 
   }
 
-  /* DARK MODE Card Hover */
   body.dark-mode .custom-course-card:hover {
-    background-color: #41ca7c !important; /* Bright green on hover */
+    background-color: #369e65 !important; 
     color: #fff !important;
     transition: all 0.2s ease;
   }
 
-  /* Fix for text color inside links for dark mode cards/lists */
   body.dark-mode .stretched-link.text-dark {
-      color: #e0e0e0 !important;
+    color: #e0e0e0 !important;
   }
 
   .btn-primary {
@@ -84,7 +82,6 @@
     border-color: #369e65;
   }
 
-  /* Toggle buttons (List/Card view) */
   .btn-outline-primary {
     color: #41ca7c;
     border-color: #41ca7c;
@@ -94,22 +91,7 @@
     color: #fff;
     border-color: #41ca7c;
   }
-  .custom-course-card {
-    border: 2px solid #41ca7c;
-    border-radius: 10px;
-    background-color: #ffffff;
-    height: 250px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    cursor: pointer;
-  }
-  .custom-course-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  }
+
   .card-title,
   .course-meta {
     white-space: nowrap;
@@ -117,6 +99,7 @@
     text-overflow: ellipsis;
   }
 </style>
+
 <div class="container mt-4">
   <h1>YOUR COURSES</h1>
 
@@ -143,7 +126,7 @@
           <li class="list-group-item" data-course-id="{{ course.pk }}">
             <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
               <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-              <div class="small text-muted">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
+              <div class="small">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
             </a>
           </li>
         {% empty %}

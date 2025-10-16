@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db.models.signals import post_save 
@@ -161,6 +161,7 @@ class StudentProfile(models.Model):
         blank=True,
         null=True
     )
+    dark_mode = models.BooleanField(default=False)
 
 class InstructorManager(models.Manager):
     def get_queryset(self, *args, **kwargs):
@@ -181,6 +182,7 @@ class Instructor(User):
 class InstructorProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="instructorprofile")
     bio = models.TextField(blank=True, null=True)
+    dark_mode = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Instructor Profile: {self.user.email}"
@@ -226,20 +228,22 @@ class Lesson(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.lesson_id and self.course:
-            existing_ids = (
-                Lesson.objects.filter(course=self.course).values_list("lesson_id", flat=True)
-            )
+            existing_ids = Lesson.objects.filter(course=self.course).values_list("lesson_id", flat=True)
             used_numbers = [
                 int(lid.split("-")[-1])
-                for lid in existing_ids if lid and "-" in lid and lid.split("-")[-1].isdigit()
+                for lid in existing_ids
+                if lid and "-" in lid and lid.split("-")[-1].isdigit()
             ]
-
 
             n = 1
             while n in used_numbers:
                 n += 1
 
             self.lesson_id = f"{self.course.course_id}-{n}"
+
+        if self.effort_per_week < 1:
+            self.effort_per_week = 1
+
         super().save(*args, **kwargs)
     
 class LessonTask(models.Model):
@@ -303,3 +307,11 @@ class Enrolment(models.Model):
     def __str__(self):
         status = "Completed" if self.completed else "In Progress"
         return f"{self.student.email} enrolled in {self.lesson.title} ({status})"
+    
+    @staticmethod
+    def unenrol_student_from_course(student, course):
+        with transaction.atomic():
+            lessons = Lesson.objects.filter(course=course)
+            Enrolment.objects.filter(student=student, lesson__in = lessons).delete()
+            checklist_items = StudentChecklistItem.objects.filter(lesson__in=lessons)
+            StudentChecklistProgress.objects.filter(student=student, item__in=checklist_items).delete()
