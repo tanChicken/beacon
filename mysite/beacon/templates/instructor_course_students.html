@@ -39,13 +39,30 @@ body.dark-mode .table-hover tbody tr:hover {
 body.dark-mode .table-hover tbody tr:hover a {
     color: #fff !important;
 }
+.chart-btn {
+    border: none;
+    background: none;
+    color: #e67e22;
+    font-size: 1.8rem;
+    margin-left: 10px;
+    transition: color 0.2s ease;
+}
+.chart-btn:hover {
+    color: #cf711f;
+}
 </style>
 
 <div class="container mt-4">
     <div class="mb-3">
         <a href="{% url 'instructor_report' %}" class="btn btn-outline-secondary">&larr; Back</a>
     </div>
-    <h2><strong>Students Enrolled in {{ course.title }}</strong></h2>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0"><strong>Students Enrolled in {{ course.title }}</strong></h2>
+        <!-- Bar chart button -->
+        <a href="{% url 'course_bar_chart' course.id %}" class="btn btn-warning btn-sm" title="View Course Statistics">
+            <i class="bi bi-bar-chart-fill"></i> View Chart
+        </a>
+    </div>
     <table class="table table-bordered table-hover mt-4 shadow-sm rounded">
         <thead class="table-warning">
             <tr>
@@ -71,4 +88,5 @@ body.dark-mode .table-hover tbody tr:hover a {
         </tbody>
     </table>
 </div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 {% endblock %}
