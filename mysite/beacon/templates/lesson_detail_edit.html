@@ -456,6 +456,27 @@ document.getElementById("add-assignment-item").addEventListener("click", functio
     document.getElementById('assignment-items').appendChild(block);
 });
 
+// Remove Assignment Item
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-assignment-item")) {
+        const block = e.target.closest(".assignment-block");
+        if (block) {
+            // For new assignments (block wrapper)
+            block.remove();
+        } else {
+            // For existing assignments (separate row + instruction divs)
+            const row = e.target.closest(".assignment-row");
+            if (row) {
+                const next = row.nextElementSibling;
+                if (next && next.classList.contains("assignment-instruction")) {
+                    next.remove();
+                }
+                row.remove();
+            }
+        }
+    }
+});
+
 </script>
 
 {% endblock %}
