@@ -961,6 +961,45 @@ def instructor_course_students(request, course_id):
     })
 
 @role_required("INSTRUCTOR")
+def course_bar_chart(request, course_id):
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+
+    # Fetch all students in this course
+    students = course.students.all().select_related("studentprofile")
+
+    labels = []
+    values = []
+
+    for student in students:
+        # Active lessons
+        active_lessons = course.lessons.filter(status="PUBLISHED")
+
+        # Checklist items
+        reading_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="READING")
+        assignment_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="ASSIGNMENT")
+
+        # Completed items
+        reading_done = StudentChecklistProgress.objects.filter(student=student, item__in=reading_items, completed=True).count()
+        assignment_done = StudentChecklistProgress.objects.filter(student=student, item__in=assignment_items, completed=True).count()
+
+        # Totals
+        total_items = reading_items.count() + assignment_items.count()
+        total_done = reading_done + assignment_done
+
+        total_percent = (total_done / total_items * 100) if total_items else 0
+
+        # Append to lists
+        labels.append(f"{student.studentprofile.first_name} {student.studentprofile.last_name}")
+        values.append(round(total_percent, 1))  # e.g., 78.5
+
+    context = {
+        'course': course,
+        'labels': labels,
+        'values': values
+    }
+    return render(request, 'course_bar_chart.html', context)
+
+@role_required("INSTRUCTOR")
 def instructor_report_course_student_progress(request, course_id, student_id):
     course = get_object_or_404(Course, id=course_id)
     student = get_object_or_404(Student, id=student_id)
