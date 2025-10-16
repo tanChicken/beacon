@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} - Overall Student Progress{% endblock %}
+
+{% block content %}
+<style>
+.chart-container {
+    width: 100%;            /* full width of parent/container */
+    max-width: 1200px;      /* optional: limit max width if desired */
+    height: 80vh;           /* visible height, scrollable */
+    overflow-y: auto;       /* vertical scroll */
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    margin: auto;           /* center if max-width is set */
+}
+
+canvas {
+    width: 100% !important;
+    height: auto !important;
+}
+</style>
+
+<div class="container mt-4">
+    <a href="{% url 'instructor_course_students' course.id %}" class="btn btn-outline-secondary mb-3">&larr; Back</a>
+    <h2><strong>{{ course }} - Student Progress</strong></h2>
+
+    <div class="chart-container">
+        <canvas id="courseChart"></canvas>
+    </div>
+</div>
+
+<!-- Pass data safely to JS -->
+{{ labels|json_script:"labels-data" }}
+{{ values|json_script:"values-data" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const labels = JSON.parse(document.getElementById('labels-data').textContent);
+const values = JSON.parse(document.getElementById('values-data').textContent);
+
+// dynamically adjust canvas height
+const canvas = document.getElementById('courseChart');
+canvas.height = Math.max(400, labels.length * 40); // each bar ~40px
+
+
+const ctx = canvas.getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Progress %',
+            data: values,
+            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        indexAxis: 'y',       // ✅ horizontal bars
+        scales: {
+            x: {
+                beginAtZero: true,
+                max: 100,       // progress in percent
+                title: { display: true, text: 'Progress (%)' }
+            },
+            y: {
+                title: { display: true, text: 'Students' }
+            }
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.raw + '%';
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
