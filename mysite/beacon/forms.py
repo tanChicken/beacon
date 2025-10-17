@@ -94,9 +94,16 @@ LessonFormSet = inlineformset_factory(
 )
 
 class LessonDetailForm(forms.ModelForm):
+    designer = forms.ModelChoiceField(
+        queryset=Instructor.instructor.all(),
+        required=True,
+        label="Lesson Designer",
+        widget=forms.Select(attrs={"class": "form-select"})
+    )
+
     class Meta:
         model = Lesson
-        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom']
+        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom', 'designer']
         widgets = {
             "lesson_id": forms.TextInput(attrs={"class": "form-control", "readonly":"readonly"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
@@ -114,7 +121,8 @@ class LessonDetailForm(forms.ModelForm):
         self.instance = kwargs.get("instance", None)
         request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
-
+        self.fields["designer"].queryset = Instructor.instructor.all()
+        
         if self.course:
             self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
 

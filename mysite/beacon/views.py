@@ -305,8 +305,8 @@ def instructor_login(request):
 @role_required("INSTRUCTOR")
 def instructor_dashboard(request):
     courses = (
-        Course.objects.filter(instructor=request.user)
-        .order_by("status", "title") 
+        Course.objects.filter(
+    Q(instructor=request.user) | Q(lessons__designer=request.user)).distinct().order_by("status","course_id") 
     )
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
@@ -359,18 +359,26 @@ def delete_course(request, pk):
 @role_required("INSTRUCTOR")
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
-    lessons = course.lessons.all()
+    lessons = course.lessons.all().order_by("lesson_id")
     classrooms = Classroom.objects.filter(course_id=course)
     total_credit_points = lessons.aggregate(total=Sum("credit_point"))["total"] or 0
     remaining_credit_points = 30 - total_credit_points
+    is_director = (course.instructor == request.user)
 
     if request.method == "POST":
         form = CourseForm(request.POST, instance=course)
 
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Course updated successfully!")
+        # Only course director can edit course details
+        if is_director:
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Course details updated successfully!")
+            else:
+                messages.error(request, "Please fix the course form errors.")
+        else:
+            form = CourseForm(instance=course)
 
+        # Any instructor can add lessons
         new_titles = request.POST.getlist("new_lesson_title")
         added_count = 0
 
@@ -381,24 +389,26 @@ def course_detail(request, pk):
             )
         else:
             for title in new_titles:
-                if title.strip():
-                    # Each new lesson consumes 1 credit point
-                    if remaining_credit_points <= 0:
-                        messages.warning(
-                            request,
-                            "Only some lessons were added before reaching the 30-point limit."
-                        )
-                        break
+                title = title.strip()
+                if not title:
+                    continue
 
-                    Lesson.objects.create(
-                        course=course,
-                        title=title.strip(),
-                        designer=request.user,
-                        credit_point=1,
-                        status="DRAFT"
+                if remaining_credit_points <= 0:
+                    messages.warning(
+                        request,
+                        "Only some lessons were added before reaching the 30-point limit."
                     )
-                    remaining_credit_points -= 1
-                    added_count += 1
+                    break
+
+                Lesson.objects.create(
+                    course=course,
+                    title=title,
+                    designer=request.user,
+                    credit_point=1,
+                    status="DRAFT"
+                )
+                remaining_credit_points -= 1
+                added_count += 1
 
             if added_count > 0:
                 messages.success(request, f"{added_count} lesson(s) added successfully!")
@@ -407,6 +417,9 @@ def course_detail(request, pk):
 
     else:
         form = CourseForm(instance=course)
+        if not is_director:
+            for field in form.fields.values():
+                field.disabled = True
 
     enrolled_students = course.students.all()
 
@@ -416,12 +429,18 @@ def course_detail(request, pk):
         "lessons": lessons,
         "classrooms": classrooms,
         "enrolled_students": enrolled_students,
-        "remaining_points": remaining_credit_points,  
+        "remaining_points": remaining_credit_points,
+        "is_director": is_director,
     })
 
 @role_required("INSTRUCTOR")
 def lesson_detail_edit(request, pk):
-    lesson = get_object_or_404(Lesson, pk=pk)
+    lesson = get_object_or_404(
+    Lesson.objects.filter(
+        Q(designer=request.user) | Q(course__instructor=request.user)
+    ),
+    pk=pk
+)
     course = lesson.course
     available_classrooms = Classroom.objects.filter(course_id_id=course.pk).order_by("classroom_id")
 
@@ -567,7 +586,7 @@ def create_lesson(request, course_pk):
         if form.is_valid():
             lesson = form.save(commit=False)
             lesson.course = course
-            lesson.designer = request.user
+            # lesson.designer = request.user
             lesson.save()
             form.save_m2m()
             messages.success(request, f"Lesson '{lesson.title}' created successfully!")
@@ -586,7 +605,10 @@ def create_lesson(request, course_pk):
 
 @role_required("INSTRUCTOR")
 def delete_lesson(request, pk):
-    lesson = get_object_or_404(Lesson, pk=pk, designer=request.user)
+    lesson = get_object_or_404(
+        Lesson,
+        Q(pk=pk) & (Q(designer=request.user) | Q(course__instructor=request.user))
+    )
     course_pk = lesson.course.pk
     lesson.delete()
     messages.success(request, "Lesson deleted successfully!")
