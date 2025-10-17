@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Student Profile{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4 text-success"><strong>Your Profile</strong></h2>
+
+  <!-- Profile Information -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="text-success mb-0">Personal Information</h4>
+        <a href="{% url 'student_change_password' %}" class="btn btn-outline-success btn-sm">
+          Change Password
+        </a>
+      </div>
+      
+      <div class="row">
+        <div class="col-md-6">
+          <p><strong>Title:</strong> {{ profile.title }}</p>
+          <p><strong>First Name:</strong> {{ profile.first_name }}</p>
+          <p><strong>Last Name:</strong> {{ profile.last_name }}</p>
+        </div>
+        <div class="col-md-6">
+          <p><strong>Email:</strong> {{ profile.user.email }}</p>
+          <p><strong>Role:</strong> {{ profile.user.role }}</p>
+          <p>
+            <strong>Status:</strong>
+            {% if profile.user.is_active %}
+              <span class="badge badge-success">Active</span>
+            {% else %}
+              <span class="badge badge-danger">Inactive</span>
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Academic Information + Courses -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h4 class="text-success mb-3">Academic Information</h4>
+
+      <!-- Academic summary -->
+      <p class="lead mb-4">
+        <strong>Total Credit Accumulated:</strong>
+        <span class="text-dark">{{ total_credit }}</span>
+      </p>
+
+      <!-- Courses and lessons -->
+      <h5 class="text-success">Enrolled Courses & Lessons</h5>
+      {% for course in courses %}
+        <div class="card mb-3 shadow-sm">
+          <div class="card-header bg-success text-white">
+            <strong>{{ course.title }}</strong> ({{ course.course_id }})
+          </div>
+          <div class="card-body">
+            {% if course.lessons.all %}
+              <ul class="list-group list-group-flush">
+                {% for lesson in course.lessons.all %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ lesson.title }}
+                    {% if lesson.enrolment %}
+                      {% if lesson.enrolment.completed %}
+                        <span class="badge badge-success">Completed</span>
+                      {% else %}
+                        <span class="badge badge-warning text-dark">In Progress</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="badge badge-secondary">Not Enrolled</span>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted">No lessons in this course yet.</p>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-muted">No courses enrolled.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

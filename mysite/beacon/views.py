@@ -1,15 +1,13 @@
-from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentChecklistProgress, Student, StudentProfile, User, StudentChecklistItem, Instructor, InstructorProfile, Enrolment
-from .forms import CourseForm, InstructorLoginForm, LessonDetailForm, StudentLoginForm, StudentSignupForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment
+from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, get_user_model
+from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
-
-from .models import Course, Student, StudentProfile, User
-from django.db import models
 from.authz import role_required
+from django.db.models import Sum
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -202,8 +200,6 @@ def student_lesson_details(request, pk):
         "completed_item_ids": list(completed_item_ids),
     })
 
-from django.http import JsonResponse
-
 @login_required
 def toggle_checklist_item(request, item_id):
     item = get_object_or_404(StudentChecklistItem, id=item_id)
@@ -221,8 +217,6 @@ def toggle_checklist_item(request, item_id):
 
 @role_required("STUDENT")
 def student_classroom(request):
-    # classrooms = Classroom.objects.prefetch_related("lessons").all()
-    # classrooms = Classroom.objects.filter(...).exclude(students=student)
     student = request.user
     classrooms = (
         Classroom.objects
@@ -366,8 +360,6 @@ def course_detail(request, pk):
         "students_progress": students_progress,
     })
 
-from django.db.models import Sum
-
 @role_required("INSTRUCTOR")
 def lesson_detail_edit(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
@@ -508,7 +500,7 @@ def enrol_lesson(request, lesson_id):
     messages.success(request, f"You are now enrolled in {lesson.title}.")
     return redirect("student_lesson_details", pk=lesson.id)
 
-@role_required("INSTRUCTOR")
+@role_required("STUDENT")
 def unenrol_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
     student = request.user
@@ -571,6 +563,7 @@ def create_classroom(request, pk=None):
         "form": form,
         "course": preselected_course,
     })
+
 @role_required("INSTRUCTOR")
 def delete_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
@@ -580,3 +573,94 @@ def delete_classroom(request, pk):
         classroom.delete()
         messages.success(request, "Classroom deleted successfully!")
         return redirect("course_detail", pk=course_pk)
+
+@role_required("STUDENT")
+def student_profile(request):
+    profile = get_object_or_404(StudentProfile, user=request.user)
+    courses = Course.objects.filter(students=request.user).prefetch_related("lessons")
+    enrolments = Enrolment.objects.filter(student=request.user).select_related("lesson")
+    enrolments_map = {e.lesson.id: e for e in enrolments}
+
+    # Attach enrolment object directly to each lesson
+    for course in courses:
+        for lesson in course.lessons.all():
+            lesson.enrolment = enrolments_map.get(lesson.id)
+
+    total_credit = sum(e.credit_earned for e in enrolments)
+
+    return render(request, "student_profile.html", {
+        "profile": profile,
+        "courses": courses,
+        "total_credit": total_credit,
+    })
+
+
+@role_required("STUDENT")
+def student_report_course(request):
+    student = request.user
+    enrolled = student.courses_enroling.all()
+
+    return render(request, "student_report_course.html", {"courses":enrolled})
+
+@role_required("STUDENT")
+def student_report_course_details(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    student = request.user
+
+    # Only active lessons
+    active_lessons = course.lessons.filter(status="PUBLISHED")
+
+    # Checklist items by type
+    reading_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="READING")
+    assignment_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="ASSIGNMENT")
+
+    # Student progress for checklist
+    reading_done = StudentChecklistProgress.objects.filter(student=student, item__in=reading_items, completed=True).count()
+    assignment_done = StudentChecklistProgress.objects.filter(student=student, item__in=assignment_items, completed=True).count()
+
+    # Totals
+    total_readings = reading_items.count()
+    total_assignments = assignment_items.count()
+
+    reading_left = total_readings - reading_done
+    assignment_left = total_assignments - assignment_done
+
+    reading_percent = (reading_done / total_readings * 100) if total_readings else 0
+    assignment_percent = (assignment_done / total_assignments * 100) if total_assignments else 0
+
+    total_item = total_readings + total_assignments
+    total_done = reading_done + assignment_done
+    total_percentage = (total_done / total_item * 100) if total_item else 0
+
+    context = {
+        "course": course,
+        "reading_percent": round(reading_percent, 1),
+        "assignment_percent": round(assignment_percent, 1),
+        "total_readings": total_readings,
+        "total_assignments": total_assignments,
+        "reading_done": reading_done,
+        "assignment_done": assignment_done,
+        "reading_left": reading_left,
+        "assignment_left": assignment_left,
+        "total_item": total_readings + total_assignments,
+        "total_done": total_done,
+        "total_percent": total_percentage,
+    }
+    return render(request, "student_report_course_details.html", context)
+
+@role_required("STUDENT")
+def student_change_password(request):
+    if request.method == "POST":
+        form = StudentPasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            new_password = form.cleaned_data["new_password"]
+            request.user.set_password(new_password)
+            request.user.save()
+            update_session_auth_hash(request, request.user)  
+            messages.success(request, "Your password has been changed successfully.")
+            return redirect("student_profile")  
+        else:
+            messages.error(request, "Unable to change password. Please correct the errors below.")
+    else:
+        form = StudentPasswordChangeForm(request.user)
+    return render(request, "student_change_password.html", {"form": form})
