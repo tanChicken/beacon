@@ -900,7 +900,7 @@ def student_report_course_details(request, pk):
         "assignment_left": assignment_left,
         "total_item": total_readings + total_assignments,
         "total_done": total_done,
-        "total_percent": total_percentage,
+        "total_percent": round(total_percentage, 1),
     }
     return render(request, "student_report_course_details.html", context)
 
@@ -1091,7 +1091,7 @@ def instructor_report_course_student_progress(request, course_id, student_id):
         "assignment_left": assignment_left,
         "total_item": total_readings + total_assignments,
         "total_done": total_done,
-        "total_percent": total_percentage,
+        "total_percent": round(total_percentage, 1),
     })
 
 @role_required("INSTRUCTOR")

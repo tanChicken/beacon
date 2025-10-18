@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.db import models, transaction
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -207,7 +208,6 @@ def ensure_profiles(sender, instance, created, **kwargs):
 
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
-    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name="lessons")
     lesson_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -290,6 +290,31 @@ class StudentChecklistProgress(models.Model):
     def __str__(self):
         return f"{self.student.email} - {self.item.title}: {'Done' if self.completed else 'Not Done'}"
     
+class LessonClassroomAllocation(models.Model):
+    PERIOD_CHOICES = [
+        (2, "2 Weeks"),
+        (3, "3 Weeks"),
+        (4, "4 Weeks"),
+    ]
+
+    lesson = models.ForeignKey("Lesson", on_delete=models.CASCADE, related_name="allocations")
+    classroom = models.ForeignKey("Classroom", on_delete=models.CASCADE, related_name="allocations")
+    period_weeks = models.IntegerField(choices=PERIOD_CHOICES)
+    start_date = models.DateField(default=timezone.now)
+    expiry_date = models.DateField(blank=True, null=True)
+    schedule = models.CharField(max_length=100, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.expiry_date:
+            self.expiry_date = self.start_date + timedelta(weeks=self.period_weeks)
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        return timezone.now().date() > self.expiry_date
+
+    def __str__(self):
+        return f"{self.lesson.title} → {self.classroom.classroom_id} ({self.period_weeks} weeks)"
+
 class Enrolment(models.Model):
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -304,6 +329,8 @@ class Enrolment(models.Model):
     completed = models.BooleanField(default=False)  
     enrolled_at = models.DateTimeField(auto_now_add=True)
     credit_earned = models.IntegerField(default=0)
+    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name="enrolments", null=True, blank=True)  # NEW
+    allocation = models.ForeignKey(LessonClassroomAllocation, on_delete=models.SET_NULL, null=True, blank=True)  # NEW
 
     class Meta:
         unique_together = ("student", "lesson")
