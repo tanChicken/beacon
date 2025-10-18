@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-t5e(sw8he2v29zrp38f0!i%2n0%14=3z*ohsj+vmfxj9+pp2d9
 DEBUG = True
 
 ALLOWED_HOSTS = ["beacon-ejd1.onrender.com", ".onrender.com", "localhost", "127.0.0.1"]
-CSRF_TRUSTED_ORIGINS = ["https://beacon-ejd1.onrender.com", "https://*.onrender.com"]
+CSRF_TRUSTED_ORIGINS = ["https://beacon-jfdd.onrender.com", "https://*.onrender.com"]
 
 # Application definition
 
@@ -82,7 +82,9 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 DATABASES = {
     'default': 
         dj_database_url.config(
-            default=os.getenv("DATABASE_URL")
+            default=os.getenv("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True
         )
 }
 # DATABASES = {
