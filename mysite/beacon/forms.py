@@ -122,7 +122,7 @@ class LessonDetailForm(forms.ModelForm):
         request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
         self.fields["designer"].queryset = Instructor.instructor.all()
-        
+
         if self.course:
             self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
 
@@ -210,13 +210,14 @@ class ClassroomForm(forms.ModelForm):
 
     class Meta:
         model = Classroom
-        fields = ["course_id", "duration_weeks", "supervisor",
+        fields = ["course_id", "duration_weeks", "supervisor", "schedule",
                   "building", "room", "online_link"]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
             "duration_weeks": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
+            "schedule": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Monday 9:00 am - 11:00 am"}),
             "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
@@ -244,12 +245,13 @@ class EditClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
     class Meta:
         model = Classroom
-        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor",
+        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor", "schedule",
                   "building", "room", "online_link"]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
             "duration_weeks": forms.Select(attrs={"class": "form-select"}),
+            "schedule": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Monday 9:00 am - 11:00 am"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
             "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),

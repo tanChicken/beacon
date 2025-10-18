@@ -322,7 +322,14 @@ def create_course(request):
 
                 for title in lesson_titles:
                     if title.strip():
-                        Lesson.objects.create(course=course, designer=request.user, title=title, objective='', assignment='')
+                        Lesson.objects.create(
+                        course=course,
+                        designer=request.user,
+                        title=title,
+                        objective='',
+                        assignment='',
+                        credit_point=1,  
+                    )
 
             messages.success(request, "Course created successfully!")
             return redirect("course_detail", pk=course.pk)
@@ -458,6 +465,19 @@ def lesson_detail_edit(request, pk):
             # Save lesson
             lesson = form.save()
 
+            # Handle classroom & schedule manually
+            classroom_id = request.POST.get("classroom")
+            schedule_val = request.POST.get("classroom_schedule", "").strip()
+
+            if classroom_id:
+                classroom = Classroom.objects.get(pk=classroom_id)
+                classroom.schedule = schedule_val
+                classroom.save()
+                lesson.classroom = classroom
+            else:
+                lesson.classroom = None
+
+
             # Save tasks
             formset.instance = lesson
             formset.save()
@@ -496,10 +516,14 @@ def lesson_detail_edit(request, pk):
 
             for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
                 title_key = f"assignment_item_{item.id}"
-                date_key  = f"assignment_deadline_{item.id}"
+                date_key = f"assignment_deadline_{item.id}"
+                instruction_key = f"assignment_instruction_{item.id}"
 
                 if title_key in request.POST:
                     item.title = request.POST[title_key].strip()
+
+                if instruction_key in request.POST:
+                    item.instructions = request.POST[instruction_key].strip()
 
                 raw_date = request.POST.get(date_key, "").strip()
                 if raw_date:
@@ -511,7 +535,8 @@ def lesson_detail_edit(request, pk):
                     item.deadline = None
 
                 item.save()
-            
+
+            # Delete removed assignments
             existing_assignment_ids = set(
                 lesson.checklist_items.filter(item_type="ASSIGNMENT").values_list("id", flat=True)
             )
@@ -529,11 +554,12 @@ def lesson_detail_edit(request, pk):
             ).delete()
             
             new_titles = [t.strip() for t in request.POST.getlist("new_assignment_item")]
-            new_dates  = [d.strip() for d in request.POST.getlist("new_assignment_deadline")]
+            new_dates = [d.strip() for d in request.POST.getlist("new_assignment_deadline")]
+            new_instructions = [i.strip() for i in request.POST.getlist("new_assignment_instruction")]
 
             # zip_longest to be defensive if counts mismatch
             from itertools import zip_longest
-            for title, raw_date in zip_longest(new_titles, new_dates, fillvalue=""):
+            for title, raw_date, instruction in zip_longest(new_titles, new_dates, new_instructions, fillvalue=""):
                 if not title:
                     continue
                 deadline_val = None
@@ -547,6 +573,7 @@ def lesson_detail_edit(request, pk):
                     title=title,
                     item_type="ASSIGNMENT",
                     deadline=deadline_val,
+                    instructions=instruction,
                 )
 
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")

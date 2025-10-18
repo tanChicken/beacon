@@ -17,6 +17,15 @@
       <dt class="col-sm-3">Supervisor</dt>
       <dd class="col-sm-9">{{ classroom.supervisor }}</dd>
 
+      <dt class="col-sm-3">Schedule / Time</dt>
+      <dd class="col-sm-9">
+        {% if classroom.schedule %}
+          {{ classroom.schedule }}
+        {% else %}
+          <span class="text-muted">Not scheduled yet</span>
+        {% endif %}
+      </dd>
+      
       <dt class="col-sm-3">Building</dt>
       <dd class="col-sm-9">
         {% if classroom.building %}{{ classroom.building }}{% else %}<span class="text-muted">N/A</span>{% endif %}

@@ -31,7 +31,13 @@ class Course(models.Model):
     instructor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="courses_teaching")
     students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="courses_enroling", blank=True)
     #lessons = 
-    #classroom_count = 
+    #classroom_count =
+    def is_visible_to(self, user):
+        """Check if this course should be visible to a given user."""
+        if user == self.instructor:
+            return True  # course director
+        # visible if the user is a lesson designer of any lesson in this course
+        return self.lessons.filter(designer=user).exists()
 
     def __str__(self):
         return f"{self.course_id} - {self.title}"
@@ -57,7 +63,7 @@ class Classroom(models.Model):
     course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
     duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
     supervisor = models.CharField(max_length=100)
-
+    schedule = models.CharField(max_length=100, blank=True, null=True)
     # Location attributes
     building = models.CharField(max_length=100, blank=True, null=True)
     room = models.CharField(max_length=50, blank=True, null=True)
@@ -223,6 +229,10 @@ class Lesson(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,default="DRAFT")
     prerequisites = models.ManyToManyField("self", symmetrical=False, blank=True, related_name="unlocking_lessons")
 
+    @property
+    def designer_name(self):
+        return self.designer.get_full_name() if self.designer else "Unassigned"
+        
     def __str__(self):
         return f"{self.lesson_id} - {self.title}"
     
@@ -266,7 +276,8 @@ class StudentChecklistItem(models.Model):
     title = models.CharField(max_length=255)
     item_type = models.CharField(max_length=20, choices=CHECKLIST_TYPE_CHOICES, default="OTHER")
     deadline = models.DateField(null=True, blank=True)
-
+    instructions = models.TextField(blank=True, null=True)
+    
     def __str__(self):
         return f"{self.title} ({self.item_type})"
 

@@ -220,14 +220,18 @@ body.dark-mode .task-table td {
             
             <div class="col-md-6 mb-3">
                 <label class="form-label">Schedule/Time</label>
-                <input type="text" name="lesson_schedule" class="form-control" 
-                       placeholder="e.g., Monday 10:00-12:00">
+                <input type="text" name="classroom_schedule" class="form-control"
+                value="{{ lesson.classroom.schedule|default_if_none:'' }}"
+                placeholder="e.g., Monday 10:00–12:00">
             </div>
         </div>
         
         {% if lesson.classroom %}
             <div class="alert alert-info mb-0">
                 <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
+                {% if lesson.classroom.schedule %}
+                ({{ lesson.classroom.schedule }}) 
+                {% endif %}
             </div>
         {% else %}
             <div class="alert alert-danger mb-0">
