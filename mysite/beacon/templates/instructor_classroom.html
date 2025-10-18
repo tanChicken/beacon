@@ -3,148 +3,264 @@
 
 {% block content %}
 <style>
-  h1, h3 { font-weight: bold; }
-  h3 { margin-top: 20px; }
+h1, h3 { font-weight: bold; }
+h3 { margin-top: 20px; }
 
-  .btn-primary {
-    background-color: #e67e22;
-    border-color: #e67e22;
-  }
+.btn-primary {
+  background-color: #e67e22;
+  border-color: #e67e22;
+}
+.btn-primary:hover {
+  background-color: #cf711f;
+  border-color: #cf711f;
+}
+.btn-outline-primary {
+    color: #ea730b;
+    border-color: #ea730b;
+}
+.btn-outline-primary:hover {
+  background-color: #e67e22;
+  color: #fff;
+}
 
- .btn-primary:hover {
-    background-color: #cf711f;
-    border-color: #cf711f;
-  }
+.list-group-item {
+  background-color: #ffffff;
+  border: 2px solid #e67e22;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  padding: 15px;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
 
-  .btn-outline-primary {
-      color: #ea730b;
-      border-color: #ea730b;
-    }
+.list-group-item:hover { background-color: #eafaf1; }
 
-  .btn-outline-primary:hover {
-    background-color: #e67e22;
-    color: #fff;
-  }
+.list-course {
+  position: absolute;
+  text-transform: uppercase;
+  align-self: flex-start;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
 
-  /* List View */
-  .list-group-item {
-    background-color: #ffffff;
-    border: 2px solid #41ca7c;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    padding: 15px;
-    height: 100px;
+.list-classroom {
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 35px;
+}
+
+.list-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  margin-top: auto;
+}
+
+.list-duration {
+  align-self: flex-start;
+}
+
+.list-supervisor {
+  align-self: flex-end;
+}
+
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.card {
+  background-color: #ffffff;
+  border: 2px solid #f5d0a9;
+  border-radius: 5px;
+  transition: background-color 0.2s ease, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  height: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+  transform: translateY(-2px);
+}
+
+.card:hover { 
+    background-color: #fff3e0 !important;
+    transform: translateY(0px) !important;
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15) !important;
+    border-color: #f5d0a9 !important;
+}
+
+.classroom-card {
+    position: relative;
+    text-decoration: none;
+    display: block;
+    color: #212529;
+    width: 100%;
+}
+
+.classroom-oval {
+    box-sizing: border-box;
+    width: 100%;
+    height: 220px;
+    border-radius: 40px;
+    border: 3px solid #222;
+    padding: 18px 22px;
+    text-align: center;
+    background-clip: padding-box;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    position: relative;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
+    align-items: center;
+}
 
-  .list-group-item:hover { background-color: #eafaf1; }
-
-  .list-course {
-    position: absolute;
+.classroom-course {
+    font-size: 0.85rem;
     text-transform: uppercase;
-    align-self: flex-start;
-    font-size: 0.9rem;
-    font-weight: bold;
-  }
-
-  .list-classroom {
-    font-size: 1.4rem;
-    font-weight: bold;
+    letter-spacing: 1px;
     text-align: center;
-    margin-top: 35px; /* center vertically */
-  }
+    margin: 0;
+}
 
-  .list-footer {
-    display: flex;
-    justify-content: space-between;
-    font-size: 1rem;
+.classroom-id {
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    padding-bottom: 6px;
+    border-bottom: 3px solid rgba(0,0,0,0.85);
+    width: 70%;
+}
+
+.classroom-meta {
+    font-size: 0.95rem;
+    line-height: 1.3;
+    color: #333;
     margin-top: auto;
-  }
+}
 
-  .list-duration {
-    align-self: flex-start;
-  }
+.classroom-meta .label {
+    display: block;
+    font-weight: 600;
+}
 
-  .list-supervisor {
-    align-self: flex-end;
-  }
+/* === DARK MODE STYLES === */
 
-  /* Card Grid */
-  .card-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-    margin-top: 20px;
-  }
-  .card {
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    transition: transform 0.2s ease-in-out;
-  }
+body.dark-mode .card {
+    background-color: #1e1e1e !important;
+    border-color: #f5d0a9 !important;
+    color: #e0e0e0 !important;
+    box-shadow: 0 4px 6px rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-mode .card-body .text-muted, 
+body.dark-mode .classroom-meta {
+    color: #b0b0b0 !important;
+}
+body.dark-mode .classroom-id {
+    border-bottom: 3px solid rgba(255,255,255,0.85) !important;
+}
 
-  .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
+body.dark-mode .card:hover {
+    background-color: #e67e22 !important;
+    border-color: #e67e22 !important; 
+    color: #fff !important; 
+    transform: translateY(0px) !important; 
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2) !important;
+}
 
-  .classroom-card {
-      position: relative;
-      text-decoration: none; /* Make the entire card a link */
-      display: block;
-      color: #212529; /* Text color for the link */
-      width: 100%;
-  }
+body.dark-mode .card:hover h5,
+body.dark-mode .card:hover h6,
+body.dark-mode .card:hover p,
+body.dark-mode .card:hover strong,
+body.dark-mode .card:hover .text-muted {
+     color: #fff !important;
+}
 
-  .classroom-oval {
-      box-sizing: border-box;
-      width: 100%;
-      height: 220px;
-      border-radius: 40px;
-      border: 3px solid #222;
-      padding: 18px 22px;
-      text-align: center;
-      background-clip: padding-box;
-      
-      /* Flexbox for vertical alignment */
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: center;
-  }
+#cardView {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px; /* space between cards horizontally and vertically */
+  margin-top: 20px;
+}
 
-  .classroom-course {
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      text-align: center;
-      margin: 0;
-  }
+#cardView .col-12.col-md-6 {
+  flex: 1 1 calc(50% - 24px); /* two cards per row with spacing */
+  max-width: calc(50% - 24px);
+}
 
-  .classroom-id {
-      font-size: 1.45rem;
-      font-weight: 700;
-      margin: 0 0 8px 0;
-      padding-bottom: 6px;
-      border-bottom: 3px solid rgba(0,0,0,0.85);
-      width: 70%;
-  }
+#cardView .card {
+  width: 100%;
+  box-sizing: border-box;
+}
 
-  .classroom-meta {
-      font-size: 0.95rem;
-      line-height: 1.3;
-      color: #333;
-      margin-top: auto; /* Push this section to the bottom */
-  }
+#cardView .card:hover {
+  box-shadow: 0 8px 18px rgba(230, 126, 34, 0.25); 
+  transform: translateY(-4px);
+  background-color: #fff8f0 !important; 
+  border-color: #e67e22;
+}
 
-  .classroom-meta .label {
-      display: block;
-      font-weight: 600;
-  }
+#cardView .card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 1.25rem;
+}
+
+#cardView h5.card-title {
+  font-weight: 700;
+  font-size: 1.25rem;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+#cardView h6.card-subtitle {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+#cardView .card-text {
+  text-align: center;
+  font-size: 0.95rem;
+  margin: 3px 0;
+}
+
+/* Optional: subtle divider line between header & footer info */
+#cardView .card-body div:first-child {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #f0c998;
+  padding-bottom: 8px;
+}
+
+body.dark-mode #cardView .card {
+  background-color: #1e1e1e !important;
+  border: 1.5px solid #f5d0a9 !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode #cardView .card:hover {
+  background-color: #e67e22 !important;  /* 🔸 bright orange hover */
+  border-color: #e67e22 !important;
+  box-shadow: 0 8px 18px rgba(230, 126, 34, 0.45) !important;
+  color: #fff !important;
+  transform: translateY(-4px);
+}
+
+/* Ensure text stays white on hover */
+body.dark-mode #cardView .card:hover h5,
+body.dark-mode #cardView .card:hover h6,
+body.dark-mode #cardView .card:hover p,
+body.dark-mode #cardView .card:hover strong,
+body.dark-mode #cardView .card:hover .text-muted {
+  color: #fff !important;
+}
 </style>
 
 <div class="container mt-4">
@@ -177,7 +293,7 @@
   </div>
 
    <!-- Card View -->
-  <div id="cardView" class="row d-none g-4">
+  <div id="cardView" class="row d-none">
     {% for classroom in classrooms %}
     <div class="col-12 col-md-6">
         <a href="{% url 'edit_classroom' classroom.pk %}" class="card h-100 text-decoration-none text-dark">

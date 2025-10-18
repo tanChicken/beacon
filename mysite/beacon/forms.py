@@ -65,12 +65,24 @@ class CourseForm(forms.ModelForm):
 
     class Meta:
         model = Course
-        fields = ["course_id", "title", "status", "instructor"]
+        fields = ["title", "status", "instructor"]
         widgets = {
-            "course_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. CRS-001"}),
+            "course_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Course Title"}),
             "status": forms.Select(attrs={"class": "form-select"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.pk:
+            self.fields["course_id"] = forms.CharField(
+                initial=self.instance.course_id,
+                disabled=True,
+                required=False,
+                label="Course ID",
+                widget=forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"})
+            )
 
 class LessonForm(forms.ModelForm):
     class Meta:
@@ -84,15 +96,15 @@ LessonFormSet = inlineformset_factory(
 class LessonDetailForm(forms.ModelForm):
     class Meta:
         model = Lesson
-        fields = ['status', 'lesson_id', 'title', 'lesson_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom']
+        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom']
         widgets = {
-            "lesson_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. LSN-001"}),
+            "lesson_id": forms.TextInput(attrs={"class": "form-control", "readonly":"readonly"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Write a short description"}),
             "objective": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Learning objectives"}),
             "effort_per_week": forms.NumberInput(attrs={"class": "form-control", "placeholder": "Hours per week"}),
             "status": forms.Select(attrs={"class": "form-select"}),
-            "lesson_point": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 30}),
+            "credit_point": forms.NumberInput(attrs={"class": "form-control", "min": 1, "max": 30}),
             "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
             "classroom": forms.HiddenInput(),
         }
@@ -105,6 +117,9 @@ class LessonDetailForm(forms.ModelForm):
 
         if self.course:
             self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
+
+            if not self.fields["prerequisites"].queryset.exists():
+                del self.fields["prerequisites"]
 
         fld = self.fields.get("classroom")
         if fld:
@@ -137,24 +152,24 @@ class LessonDetailForm(forms.ModelForm):
             raise forms.ValidationError("This lesson ID already exists. Please choose a different one.")
         return lesson_id
     
-    def clean_lesson_point(self):
-        lesson_point = self.cleaned_data.get("lesson_point", 0)
+    def clean_credit_point(self):
+        credit_point = self.cleaned_data.get("credit_point", 0)
 
         if self.course:
             total_existing = (
                 Lesson.objects.filter(course=self.course)
                 .exclude(pk=self.instance.pk if self.instance else None)
-                .aggregate(total=models.Sum("lesson_point"))["total"] or 0
+                .aggregate(total=models.Sum("credit_point"))["total"] or 0
             )
         else:
             total_existing = 0
 
-        total_after = total_existing + lesson_point
+        total_after = total_existing + credit_point
         if total_after > 30:
             raise forms.ValidationError(
                 f"Total credit points for this course cannot exceed 30 (currently {total_existing})."
             )
-        return lesson_point
+        return credit_point
 
 class LessonForm(forms.ModelForm):
     class Meta:
@@ -180,16 +195,17 @@ class ChecklistItemForm(forms.ModelForm):
         fields = ["title"]
 
 DURATION_CHOICES = [(2, "2 weeks"), (3, "3 weeks"), (4, "4 weeks")]
+
 class ClassroomForm(forms.ModelForm):
     duration_weeks = forms.TypedChoiceField(choices=DURATION_CHOICES, coerce=int)
     supervisor = forms.ChoiceField(choices=[])
 
     class Meta:
         model = Classroom
-        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor",
+        fields = ["course_id", "duration_weeks", "supervisor",
                   "building", "room", "online_link"]
         widgets = {
-            "classroom_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. CLS-001"}),
+            "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
             "duration_weeks": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
@@ -223,7 +239,7 @@ class EditClassroomForm(forms.ModelForm):
         fields = ["classroom_id", "course_id", "duration_weeks", "supervisor",
                   "building", "room", "online_link"]
         widgets = {
-            "classroom_id": forms.TextInput(attrs={"class": "form-control"}),
+            "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
             "duration_weeks": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),

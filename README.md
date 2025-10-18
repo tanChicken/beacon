@@ -50,6 +50,8 @@ DO NOT ALTER LIST:
 sample instructors:
 instructor1@gmail.com
 instructor2@gmail.com
+instructor3@gmail.com
+instructor4@gmail.com
 same password: instructor1234
 
 sample students:

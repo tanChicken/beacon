@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Student List{% endblock %}
+
+{% block content %}
+<style>
+.student-container {
+  margin-top: 40px;
+}
+
+.student-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.student-card:hover {
+  background: #fff3e0;  /* light orange hover */
+  transform: translateY(-3px);
+}
+
+.student-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #000;
+  margin: 0;
+}
+
+.student-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  width: 100%;
+}
+
+.student-link:hover {
+  text-decoration: none;
+}
+
+body.dark-mode .student-card {
+    background: #1e1e1e !important;
+    border: 1px solid #444 !important; /* Ensure border is visible */
+    color: #e0e0e0 !important;
+    box-shadow: none;
+}
+
+/* Dark Mode Default Text Color */
+body.dark-mode .student-card .student-name {
+    color: #e0e0e0 !important;
+}
+
+/* Dark Mode Hover: Darker Orange (Standard Instructor Theme) */
+body.dark-mode .student-card:hover {
+    background: #e67e22 !important; /* Darker orange hover */
+    /* Remove lift and shadow for a cleaner dark-mode look, keep transition */
+    transform: none !important;
+    box-shadow: none !important;
+    color: #fff !important;
+}
+
+/* Dark Mode Hover Text Color Fix */
+body.dark-mode .student-card:hover .student-name {
+    color: #fff !important;
+}
+</style>
+
+<div class="container student-container">
+    <h1><strong>ALL STUDENTS</strong></h1>
+    {% if students %}
+        {% for student in students %}
+            <a href="{% url 'instructor_student_detail' student.id %}" class="student-link">
+                <div class="student-card">
+                    <p class="student-name">
+                        {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
+                    </p>
+                </div>
+            </a>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted mt-4">No students found.</p>
+    {% endif %}
+</div>
+{% endblock %}

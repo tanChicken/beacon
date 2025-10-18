@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Students in {{ course.title }}{% endblock %}
+
+{% block content %}
+<style>
+.table-hover tbody tr {
+    transition: background-color 0.2s ease-in-out;
+}
+.table-hover tbody tr:hover {
+    background-color: #ffe5b4; 
+}
+.table-hover tbody td a {
+    display: block;
+    color: #333;
+    text-decoration: none;
+    padding: 5px;
+}
+.table-hover tbody td a:hover {
+    color: #000; 
+}
+
+body.dark-mode .table thead,
+body.dark-mode .table-warning {
+    background-color: #e67e22 !important;
+    color: #fff !important;
+    border-color: #cf711f !important; 
+}
+
+body.dark-mode .table-hover tbody td a {
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode .table-hover tbody tr:hover {
+    background-color: #e67e22 !important; 
+    color: #fff !important;
+}
+
+body.dark-mode .table-hover tbody tr:hover a {
+    color: #fff !important;
+}
+.chart-btn {
+    border: none;
+    background: none;
+    color: #e67e22;
+    font-size: 1.8rem;
+    margin-left: 10px;
+    transition: color 0.2s ease;
+}
+.chart-btn:hover {
+    color: #cf711f;
+}
+</style>
+
+<div class="container mt-4">
+    <div class="mb-3">
+        <a href="{% url 'instructor_report' %}" class="btn btn-outline-secondary">&larr; Back</a>
+    </div>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0"><strong>Students Enrolled in {{ course.title }}</strong></h2>
+        <!-- Bar chart button -->
+        <a href="{% url 'course_bar_chart' course.id %}" class="btn btn-warning btn-sm" title="View Course Statistics">
+            <i class="bi bi-bar-chart-fill"></i> View Chart
+        </a>
+    </div>
+    <table class="table table-bordered table-hover mt-4 shadow-sm rounded">
+        <thead class="table-warning">
+            <tr>
+                <th style="text-align: center;">Student Name</th>
+                <th style="text-align: center;">Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td style="text-align: center;">
+                    <a href="{% url 'instructor_report_course_student_progress' course.id student.id %}">
+                        {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
+                    </a>
+                </td>
+                <td style="text-align: center;">{{ student.email }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2" class="text-center">No students enrolled in this course.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+{% endblock %}

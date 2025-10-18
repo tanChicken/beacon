@@ -17,8 +17,74 @@
   background-color: #f2f2f2;
   text-align: center;
 }
+.reading-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;           
+  margin-bottom: 0.5rem;
+}
+.reading-item .form-control {
+  flex: 1 1 auto;     
+  min-width: 0;       
+}
+.reading-item .remove-reading-item {
+  flex: 0 0 auto;
+}
 input[name$="-DELETE"] {
   display: none;
+}
+body.dark-mode .task-table th {
+  background-color: #e67e22 !important;
+  color: #fff !important;
+}
+body.dark-mode .task-table,
+body.dark-mode .task-table th,
+body.dark-mode .task-table td {
+  border: 1px solid #e67e22 !important;
+}
+.assignment-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.assignment-row > .col-8,
+.assignment-row > .col-4,
+.assignment-row > .col-1 {
+  flex: 0 0 auto;
+}
+.assignment-row > .col-8 {
+  width: 100%;
+}
+.assignment-row > .col-4 {
+  width: 25%; /* control date input width */
+}
+.assignment-row > .col-1 {
+  width: auto; /* make remove button snug */
+  margin-left: 0; /* push it to the far right if needed */
+}
+.assignment-instruction-box {
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+  font-size: 0.95rem;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.assignment-instruction-box::placeholder {
+  color: #999;
+}
+.assignment-instruction {
+  margin-bottom: 1rem; /* adds space below each instruction box */
+}
+.assignment-instruction-box:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  outline: none;
 }
 </style>
 
@@ -31,7 +97,7 @@ input[name$="-DELETE"] {
     {% csrf_token %}
 
     <div class="row align-items-center mb-4">
-        <div class="col-md-8">
+        <div class="col-md-7">
             <h1 class="mb-0">Lesson: {{ lesson }}</h1>
         </div>
         <div class="col-md-4 text-end">
@@ -44,9 +110,10 @@ input[name$="-DELETE"] {
                     <label class="form-label">Last Updated:</label>
                     <input type="text" class="form-control" value="{{ lesson.updated_at|date:'M d, Y H:i'  }}" readonly>
                 </div>
-                <p>
-                    Designed by: {{ lesson.designer.get_full_name|default:lesson.designer.email }}
-                </p>
+                <div class="mb-2">
+                    <label class="form-label">Designed by:</label>
+                    <input type="text" class="form-control" value="{{ lesson.designer.get_full_name|default:lesson.designer.email }}" readonly>
+                </div>
             </p>
         </div>
     </div>
@@ -60,11 +127,11 @@ input[name$="-DELETE"] {
         <div class="mb-3">
             <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
 
-            {% if field.name == "lesson_point" %}
+            {% if field.name == "credit_point" %}
                 {{ field }}
                 <div class="form-text">
-                    <p><strong>Total Allocated Lesson Points  (all lessons):</strong> {{ total_points }}/30</p>
-                    <p><strong>Remaining Lesson Points:</strong> {{ remaining_points }}</p>
+                    <p><strong>Total Allocated Credit Points  (all lessons):</strong> {{ total_points }}/30</p>
+                    <p><strong>Remaining Credit Points:</strong> {{ remaining_points }}</p>
                 </div>
 
             {% elif field.name == "prerequisites" %}
@@ -89,8 +156,8 @@ input[name$="-DELETE"] {
         {% endif %}
     {% endfor %}
 
-
     <!-- Tasks -->
+     {{ formset.management_form }}
     <h4>Tasks</h4>
     <table class="task-table">
     <thead>
@@ -102,7 +169,7 @@ input[name$="-DELETE"] {
     </thead>
 
     <tbody id="task-rows">
-        {{ formset.management_form }}
+        <!-- {{ formset.management_form }} -->
         {% for form in formset %}
         <tr>
             {{ form.id }}  <!-- hidden ID field for existing tasks -->
@@ -159,22 +226,36 @@ input[name$="-DELETE"] {
         </div>
         
         {% if lesson.classroom %}
-        <div class="alert alert-info mb-0">
-            <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
-        </div>
+            <div class="alert alert-info mb-0">
+                <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
+            </div>
+        {% else %}
+            <div class="alert alert-danger mb-0">
+                <strong>Note:</strong> This lesson is not allocated to a classroom.
+            </div>
         {% endif %}
+    </div>
+    <!-- Classrooms Section -->
+    <div class="mb-3">
+      <a href="{% url 'create_classroom' course.pk %}" class="btn btn-sm btn-outline-primary">
+        + Add Classroom
+      </a>
     </div>
 
     <!-- Reading List -->
     <h4>Reading List</h4>
     <div id="reading-items">
-        {% for item in reading_items %}
-            <div class="mb-2">
-                <input type="text" class="form-control" 
-                    name="reading_item_{{ item.id }}" 
-                    value="{{ item.title }}">
-            </div>
-        {% endfor %}
+    {% for item in reading_items %}
+        <div class="reading-item">
+        <input type="text"
+                class="form-control"
+                name="reading_item_{{ item.id }}"
+                value="{{ item.title }}">
+        <button type="button"
+                class="btn btn-danger remove-reading-item"
+                aria-label="Remove reading item">&times;</button>
+        </div>
+    {% endfor %}
     </div>
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-reading-item">+ Add Reading Item</button>
 
@@ -182,23 +263,49 @@ input[name$="-DELETE"] {
     <h4>Assignments</h4>
     <div id="assignment-items">
         {% for item in assignment_items %}
-            <div class="mb-2">
-                <input type="text" class="form-control" 
-                    name="assignment_item_{{ item.id }}" 
-                    value="{{ item.title }}">
+            <div class="row mb-2 assignment-row">
+                <!-- Assignment title -->
+                <div class="col-8">
+                    <input type="text" class="form-control"
+                        name="assignment_item_{{ item.id }}"
+                        value="{{ item.title }}">
+                </div>
+
+                <!-- Deadline -->
+                <div class="col-4">
+                    <input type="date" class="form-control"
+                        name="assignment_deadline_{{ item.id }}"
+                        value="{{ item.deadline|date:'Y-m-d' }}">
+                </div>
+
+                <!-- Remove -->
+                <div class="col-1 d-grid">
+                    <button type="button" class="btn btn-danger remove-assignment-item" aria-label="Remove assignment">&times;</button>
+                </div>
+            </div>
+            <div class="assignment-instruction mt-1">
+                <textarea class="form-control assignment-instruction-box"
+                    name="assignment_instruction_{{ item.id }}"
+                    placeholder="Instructions">{{ item.instructions|default_if_none:'' }}</textarea>
             </div>
         {% endfor %}
     </div>
+
     <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-assignment-item">+ Add Assignment</button>
 
-    <!-- Enrolled Students -->
     <h4>Enrolled Students</h4>
     {% if enrolled_students %}
     <ul class="list-group mb-4">
-        {% for student in enrolled_students %}
+        {% for enrolment in enrolled_students %}
         <li class="list-group-item">
-            {{ student.studentprofile.first_name }} {{ student.studentprofile.last_name }}
-            <small class="text-muted">({{ student.email }})</small>
+            {% with profile=enrolment.student.studentprofile %}
+                {% if profile.first_name and profile.last_name %}
+                    {{ profile.first_name }} {{ profile.last_name }}
+                {% else %}
+                    **Profile Missing**
+                {% endif %}
+            {% endwith %}
+            <small>({{ enrolment.student.email }})</small>
         </li>
         {% endfor %}
     </ul>
@@ -221,10 +328,28 @@ input[name$="-DELETE"] {
 <script>
 const addTaskBtn = document.getElementById("add-task");
 const taskRows = document.getElementById("task-rows");
-const totalForms = document.querySelector('#id_form-TOTAL_FORMS');
 
+// Find or create management form
+let totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+
+if (!totalFormsInput) {
+    const existingForms = taskRows.querySelectorAll('tr').length;
+    const form = document.querySelector('form');
+    const managementDiv = document.createElement('div');
+    managementDiv.style.display = 'none';
+    managementDiv.innerHTML = `
+        <input type="hidden" name="form-TOTAL_FORMS" id="id_form-TOTAL_FORMS" value="${existingForms}">
+        <input type="hidden" name="form-INITIAL_FORMS" id="id_form-INITIAL_FORMS" value="${existingForms}">
+        <input type="hidden" name="form-MIN_NUM_FORMS" id="id_form-MIN_NUM_FORMS" value="0">
+        <input type="hidden" name="form-MAX_NUM_FORMS" id="id_form-MAX_NUM_FORMS" value="1000">
+    `;
+    form.insertBefore(managementDiv, form.firstChild);
+    totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
+}
+
+// Add Task
 addTaskBtn.addEventListener("click", function () {
-    const formIdx = parseInt(totalForms.value);
+    const formIdx = parseInt(totalFormsInput.value);
     const newRow = document.getElementById("empty-form").cloneNode(true);
     newRow.removeAttribute("id");
     newRow.style.display = "";
@@ -233,41 +358,130 @@ addTaskBtn.addEventListener("click", function () {
         if (input.name) input.name = input.name.replace(/__prefix__/g, formIdx);
         if (input.id) input.id = input.id.replace(/__prefix__/g, formIdx);
         if (input.type === "checkbox") input.checked = false;
-        if (input.type === "hidden" && input.name.endsWith("-id")) input.value = ""; // reset ID for new
+        if (input.type === "hidden" && input.name.endsWith("-id")) input.value = "";
     });
 
     taskRows.appendChild(newRow);
-    totalForms.value = formIdx + 1;
+    totalFormsInput.value = formIdx + 1;
 });
 
+// Remove Task
 document.addEventListener("click", function(e) {
     if (e.target.classList.contains("remove-task")) {
         const row = e.target.closest("tr");
-        const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-        if (deleteCheckbox) deleteCheckbox.checked = true;
-        row.style.display = "none"; 
+        const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
+        if (deleteCheckbox) {
+            deleteCheckbox.checked = true;
+            row.style.display = "none";
+        }
     }
 });
 
-// Dynamic Reading Items
+// Add Reading Item
 document.getElementById("add-reading-item").addEventListener("click", function() {
     const container = document.getElementById('reading-items');
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'input-group mb-2 reading-item';
+    
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'form-control mb-2';
+    input.className = 'form-control';
     input.name = 'new_reading_item';
-    container.appendChild(input);
+    
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-danger remove-reading-item';
+    btn.innerHTML = '&times;';
+    
+    wrapper.appendChild(input);
+    wrapper.appendChild(btn);
+    container.appendChild(wrapper);
 });
 
-// Dynamic Assignment Items
-document.getElementById("add-assignment-item").addEventListener("click", function() {
-    const container = document.getElementById('assignment-items');
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-control mb-2';
-    input.name = 'new_assignment_item';
-    container.appendChild(input);
+// Remove Reading Items
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-reading-item")) {
+        e.target.closest(".reading-item").remove();
+    }
 });
+
+// Add Assignment Item
+document.getElementById("add-assignment-item").addEventListener("click", function() {
+    const block = document.createElement('div');
+    block.className = 'assignment-block mb-3';
+
+    const row = document.createElement('div');
+    row.className = 'row mb-2 assignment-row';
+
+    // Assignment title
+    const colTitle = document.createElement('div');
+    colTitle.className = 'col-8';
+    const inputTitle = document.createElement('input');
+    inputTitle.type = 'text';
+    inputTitle.className = 'form-control';
+    inputTitle.name = 'new_assignment_item';
+    colTitle.appendChild(inputTitle);
+
+    // Assignment deadline
+    const colDate = document.createElement('div');
+    colDate.className = 'col-4';
+    const inputDate = document.createElement('input');
+    inputDate.type = 'date';
+    inputDate.className = 'form-control';
+    inputDate.name = 'new_assignment_deadline';
+    colDate.appendChild(inputDate);
+
+    //Remove Button
+    const colRemove = document.createElement('div');
+    colRemove.className = 'col-1 d-grid';
+    const btnRemove = document.createElement('button');
+    btnRemove.type = 'button';
+    btnRemove.className = 'btn btn-danger remove-assignment-item';
+    btnRemove.innerHTML = '&times;';
+    colRemove.appendChild(btnRemove);
+
+    // Add to row
+    row.appendChild(colTitle);
+    row.appendChild(colDate);
+    row.appendChild(colRemove);
+
+    // Instruction box below
+    const instructionBox = document.createElement('div');
+    instructionBox.className = 'assignment-instruction mt-1';
+    instructionBox.innerHTML = `
+        <textarea class="form-control assignment-instruction-box"
+                  name="new_assignment_instruction"
+                  placeholder="Instructions"></textarea>
+    `;
+
+    block.appendChild(row);
+    block.appendChild(instructionBox);
+
+    document.getElementById('assignment-items').appendChild(block);
+});
+
+// Remove Assignment Item
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-assignment-item")) {
+        const block = e.target.closest(".assignment-block");
+        if (block) {
+            // For new assignments (block wrapper)
+            block.remove();
+        } else {
+            // For existing assignments (separate row + instruction divs)
+            const row = e.target.closest(".assignment-row");
+            if (row) {
+                const next = row.nextElementSibling;
+                if (next && next.classList.contains("assignment-instruction")) {
+                    next.remove();
+                }
+                row.remove();
+            }
+        }
+    }
+});
+
 </script>
 
 {% endblock %}
