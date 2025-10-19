@@ -144,11 +144,6 @@ class Student(User):
 
     def welcome(self):
         return "Only for students"       
-    
-@receiver(post_save, sender=Student)
-def create_student_profile(sender, instance, created, **kwargs):
-    if created and instance.role == "STUDENT":
-        StudentProfile.objects.create(user=instance)
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -163,9 +158,17 @@ class StudentProfile(models.Model):
         null=True
     )
     dark_mode = models.BooleanField(default=False)
-
     graduated = models.BooleanField(default=False)
-    graduation_date = models.BooleanField(blank=True, null=True)
+    graduation_date = models.DateField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.title or ''} {self.first_name or ''} {self.last_name or ''}".strip()
+    
+    
+@receiver(post_save, sender=Student)
+def create_student_profile(sender, instance, created, **kwargs):
+    if created and instance.role == "STUDENT":
+        StudentProfile.objects.create(user=instance)
 
 class InstructorManager(models.Manager):
     def get_queryset(self, *args, **kwargs):
