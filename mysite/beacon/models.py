@@ -161,6 +161,16 @@ class StudentProfile(models.Model):
     graduated = models.BooleanField(default=False)
     graduation_date = models.DateField(blank=True, null=True)
 
+    font_size = models.CharField(
+        max_length=10,
+        choices=[
+            ("small", "Small"),
+            ("medium", "Medium"),
+            ("large", "Large"),
+        ],
+        default="medium",
+    )
+
     def __str__(self):
         return f"{self.title or ''} {self.first_name or ''} {self.last_name or ''}".strip()
     
@@ -190,6 +200,15 @@ class InstructorProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="instructorprofile")
     bio = models.TextField(blank=True, null=True)
     dark_mode = models.BooleanField(default=False)
+    font_size = models.CharField(
+        max_length=10,
+        choices=[
+            ("small", "Small"),
+            ("medium", "Medium"),
+            ("large", "Large"),
+        ],
+        default="medium",
+    )
 
     def __str__(self):
         return f"Instructor Profile: {self.user.email}"
