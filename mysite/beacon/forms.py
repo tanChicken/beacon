@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
+from .models import Course, LessonClassroomAllocation, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.db import models
@@ -200,20 +200,16 @@ class ChecklistItemForm(forms.ModelForm):
         model = StudentChecklistItem
         fields = ["title"]
 
-DURATION_CHOICES = [(2, "2 weeks"), (3, "3 weeks"), (4, "4 weeks")]
-
 class ClassroomForm(forms.ModelForm):
-    duration_weeks = forms.TypedChoiceField(choices=DURATION_CHOICES, coerce=int)
     supervisor = forms.ChoiceField(choices=[])
 
     class Meta:
         model = Classroom
-        fields = ["course_id", "duration_weeks", "supervisor",
+        fields = ["course_id", "supervisor",
                   "building", "room", "online_link"]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
-            "duration_weeks": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
             "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
@@ -242,12 +238,11 @@ class EditClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
     class Meta:
         model = Classroom
-        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor",
+        fields = ["classroom_id", "course_id", "supervisor",
                   "building", "room", "online_link"]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
-            "duration_weeks": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
             "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
@@ -264,7 +259,39 @@ class EditClassroomForm(forms.ModelForm):
         choices += list(instructors.values_list("email", "email"))
         self.fields["supervisor"].choices = choices
         self.fields["course_id"].disabled = True
-        self.fields["duration_weeks"].disabled = True
+        self.fields['course_id'].queryset = Course.objects.all()
+        self.fields['course_id'].label_from_instance = lambda obj: obj.course_id
+
+class LessonAllocationForm(forms.ModelForm):
+    class Meta:
+        model = LessonClassroomAllocation
+        fields = ["lesson", "period_weeks", "start_date", "expiry_date", "schedule"]
+        widgets = {
+            "lesson": forms.HiddenInput(),  # keep it hidden
+            "period_weeks": forms.Select(attrs={"class": "form-select"}),
+            "start_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "expiry_date": forms.DateInput(attrs={"class": "form-control", "type": "date", "readonly": "readonly"}),
+            "schedule": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Monday 10:00-12:00"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        course = kwargs.pop("course", None)
+        super().__init__(*args, **kwargs)
+
+        if course:
+            # Filter lessons to only those under this course
+            self.fields["lesson"].queryset = Lesson.objects.filter(course=course, status="PUBLISHED").order_by("title")
+        else:
+            # fallback (should rarely happen)
+            self.fields["lesson"].queryset = Lesson.objects.none()
+
+LessonAllocationFormSet = inlineformset_factory(
+    Classroom,
+    LessonClassroomAllocation,
+    form=LessonAllocationForm,
+    extra=0,
+    can_delete=False,
+)
 
 class StudentPasswordChangeForm(forms.Form):
     old_password = forms.CharField(

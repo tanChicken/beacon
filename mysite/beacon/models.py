@@ -50,14 +50,8 @@ class Course(models.Model):
         super().save(*args, **kwargs)
     
 class Classroom(models.Model):
-    DURATION_CHOICES = [
-        (2, "2 weeks"),
-        (3, "3 weeks"),
-        (4, "4 weeks"),
-    ]
     classroom_id = models.CharField(max_length=20, unique=True)
     course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
-    duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
     supervisor = models.CharField(max_length=100)
 
     # Location attributes
@@ -66,7 +60,7 @@ class Classroom(models.Model):
     online_link = models.URLField(blank=True, null=True)
 
     def __str__(self):
-        return f"Classroom {self.classroom_id} for {self.course_id.course_id} ({self.duration_weeks} weeks)"
+        return f"Classroom {self.classroom_id} for {self.course_id.course_id}"
 
     def location_display(self):
         if self.online_link:
@@ -349,7 +343,7 @@ class LessonClassroomAllocation(models.Model):
             except (TypeError, ValueError):
                 pass  # leave it unchanged if it's invalid
 
-        if not self.expiry_date and self.start_date and self.period_weeks:
+        if self.start_date and self.period_weeks:
             self.expiry_date = self.start_date + timedelta(weeks=int(self.period_weeks))
 
         super().save(*args, **kwargs)

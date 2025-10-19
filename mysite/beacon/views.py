@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Classroom, Course, Lesson, LessonClassroomAllocation, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student, StudentProfile, InstructorProfile
-from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
+from .forms import CourseForm, LessonAllocationFormSet, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
 from django.db import transaction
@@ -726,19 +726,28 @@ def instructor_classroom(request):
 @role_required("INSTRUCTOR")
 def edit_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
+    course = classroom.course_id
     if request.method == "POST":
         form = EditClassroomForm(request.POST, instance=classroom, request=request)
-        if form.is_valid():
+        allocation_formset = LessonAllocationFormSet(request.POST, instance=classroom, form_kwargs={'course': course})
+        print("== DEBUG: allocation_formset data ==")
+        print(request.POST)
+        print(allocation_formset.errors)
+        print(allocation_formset.non_form_errors())
+        print(allocation_formset.total_form_count())
+        print(allocation_formset.management_form)
+        print(LessonClassroomAllocation.objects.filter(classroom=classroom))
+        if form.is_valid() and allocation_formset.is_valid():
             form.save()
+            allocation_formset.save()
             messages.success(request, "Classroom updated successfully.")
-            return redirect("instructor_classroom")
-
         else:
             messages.error(request, "Please fix the errors below.")
     else:
         form = EditClassroomForm(instance=classroom, request=request)
+        allocation_formset = LessonAllocationFormSet(instance=classroom, form_kwargs={'course': course}, queryset=LessonClassroomAllocation.objects.filter(classroom=classroom))
 
-    return render(request, "edit_classroom.html", {"classroom": classroom, "form": form})
+    return render(request, "edit_classroom.html", {"classroom": classroom, "form": form, "allocation_formset": allocation_formset})
 
 @role_required("INSTRUCTOR")
 def create_classroom(request, pk=None):
