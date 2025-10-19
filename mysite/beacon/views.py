@@ -7,7 +7,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from.authz import role_required
 from django.db.models import Sum, Prefetch
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -342,7 +342,7 @@ def create_course(request):
                     if title.strip():
                         Lesson.objects.create(
                         course=course,
-                        designer=request.user,
+                        designer=course.instructor,
                         title=title,
                         objective='',
                         assignment='',
@@ -653,6 +653,7 @@ def lesson_detail_edit(request, pk):
         'available_classrooms': list(available_classrooms),
         "duration": duration,
         "isAllocated": isAllocated,
+        "today": date.today(),
     })
 
 @role_required("INSTRUCTOR")

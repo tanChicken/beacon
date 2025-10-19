@@ -103,7 +103,7 @@ class LessonDetailForm(forms.ModelForm):
 
     class Meta:
         model = Lesson
-        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week']
+        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week', 'designer']
         widgets = {
             "lesson_id": forms.TextInput(attrs={"class": "form-control", "readonly":"readonly"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),

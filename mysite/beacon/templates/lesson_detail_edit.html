@@ -296,7 +296,8 @@ body.dark-mode .task-table td {
                 <div class="col-4">
                     <input type="date" class="form-control"
                         name="assignment_deadline_{{ item.id }}"
-                        value="{{ item.deadline|date:'Y-m-d' }}">
+                        value="{{ item.deadline|date:'Y-m-d' }}"
+                        min="{{ today|date:'Y-m-d' }}">
                 </div>
 
                 <!-- Remove -->
