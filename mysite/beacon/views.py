@@ -274,7 +274,7 @@ def student_classroom(request):
     classrooms = (
         Classroom.objects
         .select_related("course_id")          
-        .prefetch_related("lessons")
+        .prefetch_related("allocations__lesson")
         .filter(course_id__students=student)  
         .distinct()
     )
@@ -590,40 +590,6 @@ def lesson_detail_edit(request, pk):
         "duration": duration,
     })
 
-def lesson_allocations_view(request, lesson_id):
-    lesson = get_object_or_404(Lesson, id=lesson_id)
-    available_classrooms = Classroom.objects.all()
-
-    if request.method == "POST":
-        classroom_id = request.POST.get("classroom")
-        period_weeks = int(request.POST.get("period_weeks", 2))
-        start_date = timezone.now().date()
-
-        if classroom_id:
-            classroom = get_object_or_404(Classroom, id=classroom_id)
-            LessonClassroomAllocation.objects.create(
-                lesson=lesson,
-                classroom=classroom,
-                period_weeks=period_weeks,
-                start_date=start_date,
-            )
-
-        messages.success(request, "Classroom allocation added successfully.")
-        return redirect("lesson_detail_edit.html", lesson_id=lesson.id)
-
-    allocations = lesson.allocations.select_related("classroom")
-    return render(request, "lesson_detail_edit.html", {
-        "lesson": lesson,
-        "available_classrooms": available_classrooms,
-        "allocations": allocations,
-    })
-def delete_allocation(request, allocation_id):
-    allocation = get_object_or_404(LessonClassroomAllocation, id=allocation_id)
-    lesson_id = allocation.lesson.id
-    allocation.delete()
-    messages.success(request, "Allocation removed successfully.")
-    return redirect("lesson_detail_edit", lesson_id=lesson_id)
-
 @role_required("INSTRUCTOR")
 def create_lesson(request, course_pk):
     course = get_object_or_404(Course, pk=course_pk, instructor=request.user)
@@ -703,7 +669,7 @@ def instructor_classroom(request):
     classrooms = (
         Classroom.objects
         .select_related("course_id")
-        .prefetch_related("lessons")
+        .prefetch_related("allocations__lesson")
         .filter(course_id__instructor=instructor)  
         .distinct()
     )

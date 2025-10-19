@@ -19,8 +19,6 @@ urlpatterns = [
     path('lesson/<int:pk>/', views.lesson_detail_edit, name='lesson_detail_edit'),
     path('course/<int:course_pk>/lesson/create/', views.create_lesson, name='create_lesson'),
     path('lesson/<int:pk>/delete/', views.delete_lesson, name='delete_lesson'),
-    path("lesson/<int:lesson_id>/allocations/", views.lesson_allocations_view, name="lesson_allocations"),
-    path("allocation/<int:allocation_id>/delete/", views.delete_allocation, name="delete_allocation"),
     # instructor classroom
     path("instructor/classroom/", views.instructor_classroom, name="instructor_classroom"),
     path("instructor/classroom/add/", views.create_classroom, name="create_classroom"),
