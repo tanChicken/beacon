@@ -114,6 +114,9 @@ class LessonDetailForm(forms.ModelForm):
         request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
+        if self.instance and self.instance.pk:
+            self.fields['description'].required = True
+
         if self.course:
             self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
 
@@ -142,6 +145,10 @@ class LessonDetailForm(forms.ModelForm):
 
 
             fld.queryset = qs.order_by("classroom_id")
+
+            if self.instance and self.instance.status in ["PUBLISHED", "ARCHIVED"]:
+                for field in self.fields.values():
+                    field.disabled = True
 
     def clean_lesson_id(self):
         lesson_id = self.cleaned_data.get("lesson_id")

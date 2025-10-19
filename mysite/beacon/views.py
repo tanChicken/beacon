@@ -445,8 +445,13 @@ def lesson_detail_edit(request, pk):
 
     total_points = course.lessons.aggregate(total=Sum("credit_point"))["total"] or 0
     remaining_points = 30 - total_points
+    
+    can_edit = lesson.status == "DRAFT"
 
     if request.method == "POST":
+        if not can_edit:
+            messages.error(request, "This lesson cannot be modified after publication.")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
         # Main lesson form
         form = LessonDetailForm(request.POST, instance=lesson, course=course, request=request)
 
@@ -642,6 +647,17 @@ def delete_lesson(request, pk):
     lesson.delete()
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
+
+@role_required("INSTRUCTOR")
+def archive_lesson(request, pk):
+    lesson = get_object_or_404(Lesson, pk=pk)
+    if lesson.status == "PUBLISHED":
+        lesson.status = "ARCHIVED"
+        lesson.save()
+        messages.success(request, f"Lesson '{lesson.title}' has been archived.")
+    else:
+        messages.warning(request, "Only published lessons can be archived.")
+    return redirect("course_detail", pk=lesson.course.pk)
 
 @role_required("STUDENT")
 def enrol_lesson(request, lesson_id):
