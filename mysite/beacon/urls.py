@@ -57,4 +57,6 @@ urlpatterns = [
     path("student/report/course/<int:pk>/", views.student_report_course_details, name="student_report_course_details"),
 
     path("toggle-dark-mode/", views.toggle_dark_mode, name="toggle_dark_mode"),
+
+    path("graduate/", views.graduate, name="graduate"),
     ]

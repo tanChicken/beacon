@@ -10,6 +10,7 @@ from django.db.models import Sum, Prefetch
 from datetime import datetime, timezone
 from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 import json
 
 def home(request):
@@ -82,21 +83,38 @@ def student_dashboard(request):
     enrolled = student.courses_enroling.all()
     available_courses = Course.objects.filter(status="active").exclude(students=student)
     
+    total_cp = _get_student_credits(student)
+    eligible_to_graduate = (total_cp >= 120) and not student.studentprofile.graduated
+
     return render(request, "student_dashboard.html", {
         "courses": enrolled,
         "available_courses": available_courses,
-        "student": student
+        "student": student,
+        "total_credit": total_cp,
+        "eligible_to_graduate": eligible_to_graduate,
     })
     
 @role_required("STUDENT")
 def enrolment_page(request):
     student = request.user
     available_courses = Course.objects.filter(status="active").exclude(students=student)
-    return render(request, "enrolment.html", {"available_courses": available_courses, "student": student})
+
+    total_cp = _get_student_credits(student)
+    enrolment_blocked = (total_cp >= 120) or (getattr(student, "studentprofile", None) and student.studentprofile.graduated)
+    return render(request, "enrolment.html", {"available_courses": available_courses, "student": student, "total_credit": total_cp, "enrolment_blocked": enrolment_blocked,})
 
 @role_required("STUDENT")
 def enrol_course(request, course_id):
     student = request.user
+
+    total_cp = _get_student_credits(student)
+    if getattr(student, "studentprofile", None) and (student.studentprofile.graduated or total_cp >= 120):
+        messages.error(
+            request, 
+            "Enrolling in other courses is not possible anymore,"
+            "since you have already reached the 120 credit points limit."
+        )
+        return redirect("enrolment_page")
 
     # Only allow enrollment in active courses that the student isn't already enrolled in
     course = get_object_or_404(Course, id=course_id, status="active")
@@ -628,6 +646,16 @@ def delete_lesson(request, pk):
 @role_required("STUDENT")
 def enrol_lesson(request, lesson_id):
     student = request.user
+
+    total_cp = _get_student_credits(student)
+    if getattr(student, "studentprofile", None) and (student.studentprofile.graduated or total_cp >= 120):
+        messages.error(
+            request, 
+            "Enrolling in other courses/lessons is not possible anymore,"
+            "since you have already reached the 120 credit points limit."
+        )
+        return redirect("student_dashboard")
+
     lesson = get_object_or_404(Lesson, id=lesson_id)
 
     missing = []
@@ -838,6 +866,7 @@ def student_report_course(request):
         "remaining_include_enrolled": remaining_include_enrolled,
         "progress": progress,
         "required": required,
+        "graduated": getattr(request.user.studentprofile, "graduated", False),
     }
     return render(request, "student_report_course.html", context)
 
@@ -1189,3 +1218,39 @@ def toggle_dark_mode(request):
 
         return JsonResponse({"success": True})
     return JsonResponse({"error": "Invalid request"}, status=400)
+
+def _get_student_credits(student):
+    return(
+        Enrolment.objects.filter(
+            student=student, completed=True, lesson__status="PUBLISHED"
+        ).aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+    )
+
+@role_required("STUDENT")
+def graduate(request):
+    student = request.user
+    profile = student.studentprofile
+    total_cp = _get_student_credits(student)
+
+    if request.method == "POST":
+        if profile.graduated:
+            messages.info(request, "You have already graduated.")
+            return redirect("student_profile")
+        
+        if total_cp < 120:
+            messages.error(request, "You have not yet completed 120 credit points.")
+            return redirect("student_profile")
+        
+        profile.graduated = True
+        profile.graduation_date = timezone.now()
+        profile.save()
+
+        messages.success(
+            request, 
+            "Congratulations! It's been a wonderful journey to have you with us."
+            " We will soon send you a notification of what to do afterwards."
+        )
+        return redirect("student_profile")
+    
+    messages.error(request, "Invalid request.")
+    return redirect("student_profile")
