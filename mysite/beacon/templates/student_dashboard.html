@@ -165,7 +165,7 @@
         </div>
     {% endif %}
 
-    <!-- Graduate Button-->>
+    <!-- Graduate Button-->
     {% if eligible_to_graduate %}
       <div class="mt-4 text-center">
         <form method="post" action="{% url 'graduate' %}">
@@ -175,6 +175,7 @@
           </button>
         </form>
       </div>
+    {% endif %}
 
       <div class="modal fade" id="graduateModal" tabindex="-1" aria-labelledby="graduateModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
