@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student, StudentProfile, InstructorProfile
+from .models import Classroom, Course, Lesson, LessonClassroomAllocation, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student, StudentProfile, InstructorProfile
 from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
@@ -7,9 +7,10 @@ from django.db import transaction
 from django.http import JsonResponse
 from.authz import role_required
 from django.db.models import Sum, Prefetch
-from datetime import datetime
+from datetime import datetime, timezone
 from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 import json
 
 def home(request):
@@ -82,21 +83,38 @@ def student_dashboard(request):
     enrolled = student.courses_enroling.all()
     available_courses = Course.objects.filter(status="active").exclude(students=student)
     
+    total_cp = _get_student_credits(student)
+    eligible_to_graduate = (total_cp >= 120) and not student.studentprofile.graduated
+
     return render(request, "student_dashboard.html", {
         "courses": enrolled,
         "available_courses": available_courses,
-        "student": student
+        "student": student,
+        "total_credit": total_cp,
+        "eligible_to_graduate": eligible_to_graduate,
     })
     
 @role_required("STUDENT")
 def enrolment_page(request):
     student = request.user
     available_courses = Course.objects.filter(status="active").exclude(students=student)
-    return render(request, "enrolment.html", {"available_courses": available_courses, "student": student})
+
+    total_cp = _get_student_credits(student)
+    enrolment_blocked = (total_cp >= 120) or (getattr(student, "studentprofile", None) and student.studentprofile.graduated)
+    return render(request, "enrolment.html", {"available_courses": available_courses, "student": student, "total_credit": total_cp, "enrolment_blocked": enrolment_blocked,})
 
 @role_required("STUDENT")
 def enrol_course(request, course_id):
     student = request.user
+
+    total_cp = _get_student_credits(student)
+    if getattr(student, "studentprofile", None) and (student.studentprofile.graduated or total_cp >= 120):
+        messages.error(
+            request, 
+            "Enrolling in other courses is not possible anymore,"
+            "since you have already reached the 120 credit points limit."
+        )
+        return redirect("enrolment_page")
 
     # Only allow enrollment in active courses that the student isn't already enrolled in
     course = get_object_or_404(Course, id=course_id, status="active")
@@ -274,7 +292,7 @@ def student_classroom(request):
     classrooms = (
         Classroom.objects
         .select_related("course_id")          
-        .prefetch_related("lessons")
+        .prefetch_related("allocations__lesson")
         .filter(course_id__students=student)  
         .distinct()
     )
@@ -575,6 +593,28 @@ def lesson_detail_edit(request, pk):
                     deadline=deadline_val,
                     instructions=instruction,
                 )
+            # Get new classroom allocations from POST
+            new_classrooms = request.POST.getlist('new_classroom_allocation')
+            new_schedules = request.POST.getlist('new_classroom_schedule')
+            new_duration = request.POST.getlist('new_classroom_duration')
+            # Handle deletions — remove any that aren’t in POST anymore
+            existing_ids = [
+                int(k.split('_')[-1])
+                for k in request.POST.keys()
+                if k.startswith('classroom_allocation_')
+            ]
+            # Save new allocations
+            for classroom_id, schedule, duration in zip(new_classrooms, new_schedules, new_duration):
+                if classroom_id and schedule and duration: 
+                    relationship = LessonClassroomAllocation.objects.create(
+                        lesson=lesson,
+                        classroom_id=int(classroom_id),
+                        period_weeks=int(duration),
+                        schedule=schedule
+                    )
+                    existing_ids.append(relationship.id)
+            # Handle deletions — remove any that aren’t in POST anymore
+            LessonClassroomAllocation.objects.filter(lesson=lesson).exclude(id__in=existing_ids).delete()
 
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("lesson_detail_edit", pk=lesson.pk)
@@ -590,18 +630,29 @@ def lesson_detail_edit(request, pk):
     assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
     enrolled_students = Enrolment.objects.filter(lesson=lesson).select_related("student__studentprofile")
 
+    available_classrooms = Classroom.objects.values('id', 'classroom_id', 'building', 'room')
+
+    # Display page
+    allocations = LessonClassroomAllocation.objects.filter(lesson=lesson)
+    duration = [(v, l) for v, l in LessonClassroomAllocation.PERIOD_CHOICES]
+    isAllocated = len(allocations) != 0
+
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
         "lesson_form": form,
         "formset": formset,
         "empty_form": formset.empty_form,
         "course": course,
-        "available_classrooms": available_classrooms,
         "total_points": total_points,
         "remaining_points": remaining_points,
         "reading_items": reading_items,
         "assignment_items": assignment_items,
         "enrolled_students": enrolled_students,
+        'lesson': lesson,
+        'classroom_allocations': allocations,
+        'available_classrooms': list(available_classrooms),
+        "duration": duration,
+        "isAllocated": isAllocated,
     })
 
 @role_required("INSTRUCTOR")
@@ -644,6 +695,16 @@ def delete_lesson(request, pk):
 @role_required("STUDENT")
 def enrol_lesson(request, lesson_id):
     student = request.user
+
+    total_cp = _get_student_credits(student)
+    if getattr(student, "studentprofile", None) and (student.studentprofile.graduated or total_cp >= 120):
+        messages.error(
+            request, 
+            "Enrolling in other courses/lessons is not possible anymore,"
+            "since you have already reached the 120 credit points limit."
+        )
+        return redirect("student_dashboard")
+
     lesson = get_object_or_404(Lesson, id=lesson_id)
 
     missing = []
@@ -686,7 +747,7 @@ def instructor_classroom(request):
     classrooms = (
         Classroom.objects
         .select_related("course_id")
-        .prefetch_related("lessons")
+        .prefetch_related("allocations__lesson")
         .filter(course_id__instructor=instructor)  
         .distinct()
     )
@@ -854,6 +915,7 @@ def student_report_course(request):
         "remaining_include_enrolled": remaining_include_enrolled,
         "progress": progress,
         "required": required,
+        "graduated": getattr(request.user.studentprofile, "graduated", False),
     }
     return render(request, "student_report_course.html", context)
 
@@ -1205,3 +1267,58 @@ def toggle_dark_mode(request):
 
         return JsonResponse({"success": True})
     return JsonResponse({"error": "Invalid request"}, status=400)
+
+@csrf_exempt
+def toggle_font_size(request):
+    if request.method == "POST" and request.user.is_authenticated:
+        data = json.loads(request.body)
+        font_size = data.get("font_size", "m")
+        
+        if request.user.role.upper() == "STUDENT":
+            profile = StudentProfile.objects.get(user=request.user)
+        elif request.user.role.upper() == "INSTRUCTOR":
+            profile = InstructorProfile.objects.get(user=request.user)
+        else:
+            return JsonResponse({"error": "Invalid role"}, status=400)
+        
+        profile.font_size = font_size
+        profile.save()
+        return JsonResponse({"success": True, "font_size": font_size})
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+def _get_student_credits(student):
+    return(
+        Enrolment.objects.filter(
+            student=student, completed=True, lesson__status="PUBLISHED"
+        ).aggregate(total=Sum("lesson__credit_point"))["total"] or 0
+    )
+
+@role_required("STUDENT")
+def graduate(request):
+    student = request.user
+    profile = student.studentprofile
+    total_cp = _get_student_credits(student)
+
+    if request.method == "POST":
+        if profile.graduated:
+            messages.info(request, "You have already graduated.")
+            return redirect("student_profile")
+        
+        if total_cp < 120:
+            messages.error(request, "You have not yet completed 120 credit points.")
+            return redirect("student_profile")
+        
+        profile.graduated = True
+        profile.graduation_date = timezone.now()
+        profile.save()
+
+        messages.success(
+            request, 
+            "Congratulations! It's been a wonderful journey to have you with us."
+            " We will soon send you a notification of what to do afterwards."
+        )
+        return redirect("student_profile")
+    
+    messages.error(request, "Invalid request.")
+    return redirect("student_profile")

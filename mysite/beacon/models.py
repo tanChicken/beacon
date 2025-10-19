@@ -55,14 +55,8 @@ class Course(models.Model):
         super().save(*args, **kwargs)
     
 class Classroom(models.Model):
-    DURATION_CHOICES = [
-        (2, "2 weeks"),
-        (3, "3 weeks"),
-        (4, "4 weeks"),
-    ]
     classroom_id = models.CharField(max_length=20, unique=True)
     course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
-    duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
     supervisor = models.CharField(max_length=100)
     # Location attributes
     building = models.CharField(max_length=100, blank=True, null=True)
@@ -149,11 +143,6 @@ class Student(User):
 
     def welcome(self):
         return "Only for students"       
-    
-@receiver(post_save, sender=Student)
-def create_student_profile(sender, instance, created, **kwargs):
-    if created and instance.role == "STUDENT":
-        StudentProfile.objects.create(user=instance)
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -168,6 +157,27 @@ class StudentProfile(models.Model):
         null=True
     )
     dark_mode = models.BooleanField(default=False)
+    graduated = models.BooleanField(default=False)
+    graduation_date = models.DateField(blank=True, null=True)
+
+    font_size = models.CharField(
+        max_length=10,
+        choices=[
+            ("small", "Small"),
+            ("medium", "Medium"),
+            ("large", "Large"),
+        ],
+        default="medium",
+    )
+
+    def __str__(self):
+        return f"{self.title or ''} {self.first_name or ''} {self.last_name or ''}".strip()
+    
+    
+@receiver(post_save, sender=Student)
+def create_student_profile(sender, instance, created, **kwargs):
+    if created and instance.role == "STUDENT":
+        StudentProfile.objects.create(user=instance)
 
 class InstructorManager(models.Manager):
     def get_queryset(self, *args, **kwargs):
@@ -189,6 +199,15 @@ class InstructorProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="instructorprofile")
     bio = models.TextField(blank=True, null=True)
     dark_mode = models.BooleanField(default=False)
+    font_size = models.CharField(
+        max_length=10,
+        choices=[
+            ("small", "Small"),
+            ("medium", "Medium"),
+            ("large", "Large"),
+        ],
+        default="medium",
+    )
 
     def __str__(self):
         return f"Instructor Profile: {self.user.email}"
@@ -305,8 +324,15 @@ class LessonClassroomAllocation(models.Model):
     schedule = models.CharField(max_length=100, blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        if not self.expiry_date:
-            self.expiry_date = self.start_date + timedelta(weeks=self.period_weeks)
+        if self.period_weeks:
+            try:
+                self.period_weeks = int(self.period_weeks)
+            except (TypeError, ValueError):
+                pass  # leave it unchanged if it's invalid
+
+        if not self.expiry_date and self.start_date and self.period_weeks:
+            self.expiry_date = self.start_date + timedelta(weeks=int(self.period_weeks))
+
         super().save(*args, **kwargs)
 
     def is_expired(self):
