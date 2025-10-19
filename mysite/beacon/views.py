@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Classroom, Course, Lesson, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student, StudentProfile, InstructorProfile
+from .models import Classroom, Course, Lesson, LessonClassroomAllocation, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student, StudentProfile, InstructorProfile
 from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
@@ -7,7 +7,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from.authz import role_required
 from django.db.models import Sum, Prefetch
-from datetime import datetime
+from datetime import datetime, timezone
 from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -529,6 +529,28 @@ def lesson_detail_edit(request, pk):
                     item_type="ASSIGNMENT",
                     deadline=deadline_val,
                 )
+            # Get new classroom allocations from POST
+            new_classrooms = request.POST.getlist('new_classroom_allocation')
+            new_schedules = request.POST.getlist('new_classroom_schedule')
+            new_duration = request.POST.getlist('new_classroom_duration')
+            # Handle deletions — remove any that aren’t in POST anymore
+            existing_ids = [
+                int(k.split('_')[-1])
+                for k in request.POST.keys()
+                if k.startswith('classroom_allocation_')
+            ]
+            # Save new allocations
+            for classroom_id, schedule, duration in zip(new_classrooms, new_schedules, new_duration):
+                if classroom_id and schedule and duration: 
+                    relationship = LessonClassroomAllocation.objects.create(
+                        lesson=lesson,
+                        classroom_id=int(classroom_id),
+                        period_weeks=int(duration),
+                        schedule=schedule
+                    )
+                    existing_ids.append(relationship.id)
+            # Handle deletions — remove any that aren’t in POST anymore
+            LessonClassroomAllocation.objects.filter(lesson=lesson).exclude(id__in=existing_ids).delete()
 
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("lesson_detail_edit", pk=lesson.pk)
@@ -544,19 +566,63 @@ def lesson_detail_edit(request, pk):
     assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
     enrolled_students = Enrolment.objects.filter(lesson=lesson).select_related("student__studentprofile")
 
+    available_classrooms = Classroom.objects.values('id', 'classroom_id', 'building', 'room')
+
+    # Display page
+    allocations = LessonClassroomAllocation.objects.filter(lesson=lesson)
+    duration = [(v, l) for v, l in LessonClassroomAllocation.PERIOD_CHOICES]
+    print(duration)
+
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
         "lesson_form": form,
         "formset": formset,
         "empty_form": formset.empty_form,
         "course": course,
-        "available_classrooms": available_classrooms,
         "total_points": total_points,
         "remaining_points": remaining_points,
         "reading_items": reading_items,
         "assignment_items": assignment_items,
         "enrolled_students": enrolled_students,
+        'lesson': lesson,
+        'classroom_allocations': allocations,
+        'available_classrooms': list(available_classrooms),
+        "duration": duration,
     })
+
+def lesson_allocations_view(request, lesson_id):
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    available_classrooms = Classroom.objects.all()
+
+    if request.method == "POST":
+        classroom_id = request.POST.get("classroom")
+        period_weeks = int(request.POST.get("period_weeks", 2))
+        start_date = timezone.now().date()
+
+        if classroom_id:
+            classroom = get_object_or_404(Classroom, id=classroom_id)
+            LessonClassroomAllocation.objects.create(
+                lesson=lesson,
+                classroom=classroom,
+                period_weeks=period_weeks,
+                start_date=start_date,
+            )
+
+        messages.success(request, "Classroom allocation added successfully.")
+        return redirect("lesson_detail_edit.html", lesson_id=lesson.id)
+
+    allocations = lesson.allocations.select_related("classroom")
+    return render(request, "lesson_detail_edit.html", {
+        "lesson": lesson,
+        "available_classrooms": available_classrooms,
+        "allocations": allocations,
+    })
+def delete_allocation(request, allocation_id):
+    allocation = get_object_or_404(LessonClassroomAllocation, id=allocation_id)
+    lesson_id = allocation.lesson.id
+    allocation.delete()
+    messages.success(request, "Allocation removed successfully.")
+    return redirect("lesson_detail_edit", lesson_id=lesson_id)
 
 @role_required("INSTRUCTOR")
 def create_lesson(request, course_pk):

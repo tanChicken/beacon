@@ -86,6 +86,14 @@ body.dark-mode .task-table td {
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
   outline: none;
 }
+/* Make the overall container stack allocations vertically */
+#classroom-allocations {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  gap: 10px; /* space between each allocation row */
+}
+
 </style>
 
 <div class="container mt-4">
@@ -202,29 +210,7 @@ body.dark-mode .task-table td {
     <!-- Classroom Allocation -->
     <div class="mb-4 p-3 border rounded bg-light">
         <h5 class="fw-semibold">Classroom Allocation</h5>
-        <p class="text-muted small">Assign this lesson to a classroom</p>
-        
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Classroom</label>
-                <select name="classroom" class="form-control">
-                    <option value="">-- No classroom assigned --</option>
-                    {% for classroom in available_classrooms %}
-                        <option value="{{ classroom.id }}" 
-                                {% if lesson.classroom and lesson.classroom.id == classroom.id %}selected{% endif %}>
-                            {{ classroom.classroom_id }} - {{ classroom.building }} Room {{ classroom.room }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Schedule/Time</label>
-                <input type="text" name="lesson_schedule" class="form-control" 
-                       placeholder="e.g., Monday 10:00-12:00">
-            </div>
-        </div>
-        
+        <p class="text-muted small">Assign one or more classrooms and schedules for this lesson</p>
         {% if lesson.classroom %}
             <div class="alert alert-info mb-0">
                 <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
@@ -234,6 +220,45 @@ body.dark-mode .task-table td {
                 <strong>Note:</strong> This lesson is not allocated to a classroom.
             </div>
         {% endif %}
+        <br>
+        <div id="classroom-allocations">
+            {% for allocation in classroom_allocations %}
+                <div class="d-flex gap-2 mb-2 classroom-row align-items-center">
+                    <div class="col-md-5">
+                        <select name="classroom_allocation_{{ allocation.id }}" class="form-control">
+                            <option value="">-- Select Classroom --</option>
+                            {% for classroom in available_classrooms %}
+                            <option value="{{ classroom.id }}"
+                                    {% if allocation.classroom.id == classroom.id %}selected{% endif %}>
+                                {{ classroom.classroom_id }} - {{ classroom.building }} Room {{ classroom.room }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="classroom_duration_{{ allocation.id }}" class="form-control">
+                            <option value="">-- Select Duration --</option>
+                            {% for value, label in duration %}
+                            <option value="{{ value }}" {% if allocation.period_weeks == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control"
+                                name="classroom_schedule_{{ allocation.id }}"
+                                value="{{ allocation.schedule }}"
+                                placeholder="e.g., Monday 10:00-12:00">
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="button" class="btn btn-danger remove-classroom-item">&times;</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add-classroom-item">
+            + Add Classroom Allocation
+        </button>
     </div>
     <!-- Classrooms Section -->
     <div class="mb-3">
@@ -323,6 +348,10 @@ body.dark-mode .task-table td {
         <a href="{% url 'course_detail' lesson.course.pk %}" class="btn btn-secondary">Cancel</a>
     </div>
 </form>
+
+<!-- store data safely -->
+{{ available_classrooms|json_script:"classrooms-data" }}
+{{ duration|json_script:"durations-data" }}
 </div>
 
 <script>
@@ -480,6 +509,93 @@ document.addEventListener("click", function(e) {
             }
         }
     }
+});
+
+const classrooms = JSON.parse(document.getElementById("classrooms-data").textContent);
+const durations = JSON.parse(document.getElementById("durations-data").textContent);
+
+// Add Classroom Allocation
+document.getElementById("add-classroom-item").addEventListener("click", function() {
+  const container = document.getElementById("classroom-allocations");
+
+  const row = document.createElement("div");
+  row.className = "row mb-2 classroom-row";
+
+  // Classroom select
+  const colClassroom = document.createElement("div");
+  colClassroom.className = "col-md-4";
+  const select = document.createElement("select");
+  select.className = "form-control";
+  select.name = "new_classroom_allocation";
+
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "-- Select Classroom --";
+  select.appendChild(defaultOption);
+
+  classrooms.forEach(c => {
+    const option = document.createElement("option");
+    option.value = c.id;
+    option.textContent = `${c.classroom_id} - ${c.building} Room ${c.room}`;
+    select.appendChild(option);
+  });
+
+  colClassroom.appendChild(select);
+
+  // Classroom select
+  const colDuration = document.createElement("div");
+  colDuration.className = "col-md-3";
+  const selectD = document.createElement("select");
+  selectD.className = "form-control";
+  selectD.name = "new_classroom_duration";
+
+  const defaultOptionD = document.createElement("option");
+  defaultOptionD.value = "";
+  defaultOptionD.textContent = "-- Select Duration --";
+  selectD.appendChild(defaultOptionD);
+
+durations.forEach((v,l) => {
+  const option = document.createElement("option");
+  option.value = v;            // numeric value (2, 3, 4)
+  option.textContent = l;      // display text ("2 Weeks", etc.)
+  selectD.appendChild(option);
+});
+
+  colDuration.appendChild(selectD);
+
+  const colSchedule = document.createElement("div");
+  colSchedule.className = "col-md-4";
+  const inputSchedule = document.createElement("input");
+  inputSchedule.type = "text";
+  inputSchedule.className = "form-control";
+  inputSchedule.name = "new_classroom_schedule";
+  inputSchedule.placeholder = "e.g., Monday 10:00-12:00";
+  colSchedule.appendChild(inputSchedule);
+
+  const colRemove = document.createElement("div");
+  colRemove.className = "col-md-1 d-grid";
+  const btnRemove = document.createElement("button");
+  btnRemove.type = "button";
+  btnRemove.className = "btn btn-danger remove-classroom-item";
+  btnRemove.innerHTML = "&times;";
+  colRemove.appendChild(btnRemove);
+
+  row.appendChild(colClassroom);
+    row.appendChild(colDuration)
+  row.appendChild(colSchedule);
+  row.appendChild(colRemove);
+
+  container.appendChild(row);
+});
+
+// Remove Classroom Allocation
+document.addEventListener("click", function(e) {
+  if (e.target.classList.contains("remove-classroom-item")) {
+    const row = e.target.closest(".classroom-row");
+    if (row) {
+      row.remove();
+    }
+  }
 });
 
 </script>
