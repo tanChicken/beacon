@@ -296,8 +296,15 @@ class LessonClassroomAllocation(models.Model):
     schedule = models.CharField(max_length=100, blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        if not self.expiry_date:
-            self.expiry_date = self.start_date + timedelta(weeks=self.period_weeks)
+        if self.period_weeks:
+            try:
+                self.period_weeks = int(self.period_weeks)
+            except (TypeError, ValueError):
+                pass  # leave it unchanged if it's invalid
+
+        if not self.expiry_date and self.start_date and self.period_weeks:
+            self.expiry_date = self.start_date + timedelta(weeks=int(self.period_weeks))
+
         super().save(*args, **kwargs)
 
     def is_expired(self):
