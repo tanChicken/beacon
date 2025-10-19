@@ -1281,7 +1281,7 @@ def graduate(request):
         messages.success(
             request, 
             "Congratulations! It's been a wonderful journey to have you with us."
-            "We will soon send you a notification of what to do afterwards."
+            " We will soon send you a notification of what to do afterwards."
         )
         return redirect("student_profile")
     
