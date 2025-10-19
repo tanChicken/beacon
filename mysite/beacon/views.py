@@ -649,15 +649,26 @@ def delete_lesson(request, pk):
     return redirect("course_detail", pk=course_pk)
 
 @role_required("INSTRUCTOR")
+def publish_lesson(request, pk):
+    lesson = get_object_or_404(Lesson, pk=pk)
+    if lesson.status != "DRAFT":
+        messages.error(request, "Only draft lessons can be published.")
+        return redirect("lesson_detail_edit", pk=pk)
+    lesson.status = "PUBLISHED"
+    lesson.save()
+    messages.success(request, f"Lesson '{lesson.title}' has been published!")
+    return redirect("lesson_detail_edit", pk=pk)
+
+@role_required("INSTRUCTOR")
 def archive_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
-    if lesson.status == "PUBLISHED":
-        lesson.status = "ARCHIVED"
-        lesson.save()
-        messages.success(request, f"Lesson '{lesson.title}' has been archived.")
-    else:
-        messages.warning(request, "Only published lessons can be archived.")
-    return redirect("course_detail", pk=lesson.course.pk)
+    if lesson.status != "PUBLISHED":
+        messages.error(request, "Only published lessons can be archived.")
+        return redirect("lesson_detail_edit", pk=pk)
+    lesson.status = "ARCHIVED"
+    lesson.save()
+    messages.success(request, f"Lesson '{lesson.title}' has been archived.")
+    return redirect("lesson_detail_edit", pk=pk)
 
 @role_required("STUDENT")
 def enrol_lesson(request, lesson_id):
