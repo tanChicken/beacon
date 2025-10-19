@@ -211,13 +211,9 @@ body.dark-mode .task-table td {
     <div class="mb-4 p-3 border rounded bg-light">
         <h5 class="fw-semibold">Classroom Allocation</h5>
         <p class="text-muted small">Assign one or more classrooms and schedules for this lesson</p>
-        {% if lesson.classroom %}
-            <div class="alert alert-info mb-0">
-                <strong>Currently assigned to:</strong> {{ lesson.classroom.classroom_id }} - {{ lesson.classroom.location_display }}
-            </div>
-        {% else %}
+        {% if not isAllocated %}
             <div class="alert alert-danger mb-0">
-                <strong>Note:</strong> This lesson is not allocated to a classroom.
+                <strong>Note:</strong> This lesson is not allocated to any classroom.
             </div>
         {% endif %}
         <br>
@@ -554,7 +550,7 @@ document.getElementById("add-classroom-item").addEventListener("click", function
   defaultOptionD.textContent = "-- Select Duration --";
   selectD.appendChild(defaultOptionD);
 
-durations.forEach((v,l) => {
+durations.forEach(([v, l]) => {
   const option = document.createElement("option");
   option.value = v;            // numeric value (2, 3, 4)
   option.textContent = l;      // display text ("2 Weeks", etc.)
