@@ -571,7 +571,7 @@ def lesson_detail_edit(request, pk):
     # Display page
     allocations = LessonClassroomAllocation.objects.filter(lesson=lesson)
     duration = [(v, l) for v, l in LessonClassroomAllocation.PERIOD_CHOICES]
-    print(duration)
+    isAllocated = len(allocations) != 0
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
@@ -588,6 +588,7 @@ def lesson_detail_edit(request, pk):
         'classroom_allocations': allocations,
         'available_classrooms': list(available_classrooms),
         "duration": duration,
+        "isAllocated": isAllocated,
     })
 
 @role_required("INSTRUCTOR")
