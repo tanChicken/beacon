@@ -631,7 +631,7 @@ body.dark-mode .summary-card {
     </style>
   </head>
 
-  <body class="{% if dark_mode %}dark-mode{% endif %}">
+  <body class="{% if dark_mode %}dark-mode{% endif %} {% if user.is_authenticated %}{{ user.studentprofile.font_size }}-font{% endif %}">
     <!-- Sidebar with 3-section structure -->
     <div class="sidebar
       {% if user.is_authenticated and user.role|upper == 'INSTRUCTOR' %}instructor-sidebar{% endif %}
@@ -745,36 +745,45 @@ body.dark-mode .summary-card {
     });
     </script>
 
-    <!-- Zoom/Resize Script -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const htmlEl = document.documentElement;
-      const resizeButtons = document.querySelectorAll('.resize-btn');
+    <!-- Font Size Toggle Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const htmlEl = document.documentElement;
+  const resizeButtons = document.querySelectorAll('.resize-btn');
 
-      // Load saved preference
-      const savedSize = localStorage.getItem('uiTextSize') || 'm';
-      applySize(savedSize);
+  function applySize(size) {
+    htmlEl.classList.remove('size-s', 'size-l');
+    if (size === 's') htmlEl.classList.add('size-s');
+    if (size === 'l') htmlEl.classList.add('size-l');
 
-      resizeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-          const size = this.getAttribute('data-size');
-          applySize(size);
-          localStorage.setItem('uiTextSize', size);
-        });
-      });
-
-      function applySize(size) {
-        // Remove classes; for 'm' we add NO class to keep original layout
-        htmlEl.classList.remove('size-s', 'size-l');
-        if (size === 's') htmlEl.classList.add('size-s');
-        if (size === 'l') htmlEl.classList.add('size-l');
-
-        // Update active state
-        resizeButtons.forEach(btn => {
-          btn.classList.toggle('active', btn.getAttribute('data-size') === size);
-        });
-      }
+    resizeButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-size') === size);
     });
-    </script>
+  }
+
+  // Apply backend-provided initial size from template
+  const initialSize = "{{ request.user.studentprofile.font_size|default:'m' }}";
+  applySize(initialSize);
+
+  // Listen for user changes
+  resizeButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const size = this.getAttribute('data-size');
+      applySize(size);
+
+      // Persist change to backend (not localStorage)
+      fetch("{% url 'toggle_font_size' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ font_size: size })
+      });
+    });
+  });
+});
+</script>
+
   </body>
 </html>

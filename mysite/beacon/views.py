@@ -1219,6 +1219,25 @@ def toggle_dark_mode(request):
         return JsonResponse({"success": True})
     return JsonResponse({"error": "Invalid request"}, status=400)
 
+@csrf_exempt
+def toggle_font_size(request):
+    if request.method == "POST" and request.user.is_authenticated:
+        data = json.loads(request.body)
+        font_size = data.get("font_size", "m")
+        
+        if request.user.role.upper() == "STUDENT":
+            profile = StudentProfile.objects.get(user=request.user)
+        elif request.user.role.upper() == "INSTRUCTOR":
+            profile = InstructorProfile.objects.get(user=request.user)
+        else:
+            return JsonResponse({"error": "Invalid role"}, status=400)
+        
+        profile.font_size = font_size
+        profile.save()
+        return JsonResponse({"success": True, "font_size": font_size})
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
 def _get_student_credits(student):
     return(
         Enrolment.objects.filter(
