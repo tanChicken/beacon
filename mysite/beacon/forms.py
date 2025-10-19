@@ -254,7 +254,6 @@ class EditClassroomForm(forms.ModelForm):
         choices += list(instructors.values_list("email", "email"))
         self.fields["supervisor"].choices = choices
         self.fields["course_id"].disabled = True
-        self.fields["duration_weeks"].disabled = True
 
 class StudentPasswordChangeForm(forms.Form):
     old_password = forms.CharField(
