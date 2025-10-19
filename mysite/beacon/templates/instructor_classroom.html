@@ -278,8 +278,8 @@ body.dark-mode #cardView .card:hover .text-muted {
         <div class="col-12 mb-3">
             <a href="{% url 'edit_classroom' classroom.pk %}" class="card text-decoration-none text-dark">
                 <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">{{ classroom.course.course_id }} - {{ classroom.classroom_id }}</h5>
-                    <p class="card-text mb-1"><strong>Duration:</strong> {{ classroom.get_duration_weeks_display }}</p>
+                    <h5 class="card-title">{{ classroom.classroom_id }}</h5>
+                    <p class="card-text mb-1"><strong>Location:</strong> Building {{ classroom.building }} Room {{ classroom.room }}</p>
                     <p class="card-text"><strong>Supervisor:</strong> {{ classroom.supervisor }}</p>
                 </div>
             </a>
