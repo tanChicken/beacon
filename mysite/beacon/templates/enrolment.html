@@ -16,11 +16,23 @@
           <strong>{{ course.course_id }} - {{ course.title }}</strong> ({{ course.status }})
           <div class="small text-muted">Instructor: {{ course.instructor.email }}</div>
         </div>
-        <a href="{% url 'enrol_course' course.id %}" class="btn btn-sm btn-primary">Enrol</a>
+        <a href="{% url 'enrol_course' course.id %}"
+          class="btn btn-sm btn-primary {% if enrolment_blocked %}disabled{% endif %}"
+          {% if enrolment_blocked %}tabindex="-1" aria-disabled="true"{% endif %}>
+          Enrol
+        </a>
       </li>
     {% empty %}
       <li class="list-group-item text-muted">No available courses to enrol.</li>
     {% endfor %}
   </ul>
+
+  {% if enrolment_blocked %}
+    <div class="alert alert-warning text-center">
+      Enrolling in other courses is not possible anymore,
+      since you have already reached the 120 credit point limit.
+    </div>
+  {% endif %}
+
 </div>
 {% endblock %}

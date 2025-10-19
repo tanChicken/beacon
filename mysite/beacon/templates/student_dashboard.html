@@ -164,6 +164,39 @@
           <a href="{% url 'enrolment_page' %}" class="btn btn-primary">📚 Enrol in New Courses</a>
         </div>
     {% endif %}
+
+    <!-- Graduate Button-->>
+    {% if eligible_to_graduate %}
+      <div class="mt-4 text-center">
+        <form method="post" action="{% url 'graduate' %}">
+          {% csrf_token %}
+          <button class="btn btn-danger btn-lg">
+            Graduate
+          </button>
+        </form>
+      </div>
+
+      <div class="modal fade" id="graduateModal" tabindex="-1" aria-labelledby="graduateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title" id="graduateModalLabel">Confirm Graduation</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              You have already completed 120 credit points.<br>
+              Do you want to graduate now?
+            </div>
+            <div class="modal-footer">
+              <form method="post" action="{% url 'graduate' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Yes, Graduate</button>
+              </form>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
   </div>
 {% endif %}
 

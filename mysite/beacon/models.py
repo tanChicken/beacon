@@ -164,6 +164,9 @@ class StudentProfile(models.Model):
     )
     dark_mode = models.BooleanField(default=False)
 
+    graduated = models.BooleanField(default=False)
+    graduation_date = models.BooleanField(blank=True, null=True)
+
 class InstructorManager(models.Manager):
     def get_queryset(self, *args, **kwargs):
         results = super().get_queryset(*args, **kwargs)
