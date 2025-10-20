@@ -7,7 +7,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from.authz import role_required
 from django.db.models import Sum, Prefetch
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -289,14 +289,33 @@ def toggle_checklist_item(request, item_id):
 @role_required("STUDENT")
 def student_classroom(request):
     student = request.user
+    today = date.today()
+
+    # Get all lessons the student is enrolled in
+    enrolled_lessons = Enrolment.objects.filter(student=student).values_list("lesson_id", flat=True)
+
+    # Fetch classrooms connected to those lessons via active (non-expired) allocations
     classrooms = (
         Classroom.objects
-        .select_related("course_id")          
-        .prefetch_related("allocations__lesson")
-        .filter(course_id__students=student)  
+        .prefetch_related(
+            Prefetch(
+                "allocations",
+                queryset=LessonClassroomAllocation.objects.filter(
+                    lesson_id__in=enrolled_lessons,
+                    expiry_date__gte=today  # only show active allocations
+                ).select_related("lesson"),
+                to_attr="active_allocations"  # rename prefetch result
+            )
+        )
+        .filter(allocations__lesson_id__in=enrolled_lessons)
         .distinct()
     )
-    return render(request, "student_classroom.html", {"classrooms": classrooms})
+
+    return render(
+        request,
+        "student_classroom.html",
+        {"classrooms": classrooms}
+    )
 
 @role_required("STUDENT")
 def student_classroom_details(request, pk):
@@ -589,7 +608,12 @@ def lesson_detail_edit(request, pk):
     assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
     enrolled_students = Enrolment.objects.filter(lesson=lesson).select_related("student__studentprofile")
 
-    available_classrooms = Classroom.objects.values('id', 'classroom_id', 'building', 'room')
+    available_classrooms = (
+        Classroom.objects
+        .filter(course_id=course)
+        .values('id', 'classroom_id', 'building', 'room')
+        .order_by('classroom_id')
+    )
 
     # Display page
     allocations = LessonClassroomAllocation.objects.filter(lesson=lesson)
@@ -738,6 +762,11 @@ def instructor_classroom(request):
 def edit_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
     course = classroom.course_id
+    # Remove expired allocations before displaying
+    LessonClassroomAllocation.objects.filter(
+        classroom=classroom,
+        expiry_date__lt=timezone.now().date()
+    ).delete()
     if request.method == "POST":
         form = EditClassroomForm(request.POST, instance=classroom, request=request)
         allocation_formset = LessonAllocationFormSet(request.POST, instance=classroom, form_kwargs={'course': course})
@@ -754,6 +783,8 @@ def edit_classroom(request, pk):
             messages.success(request, "Classroom updated successfully.")
         else:
             messages.error(request, "Please fix the errors below.")
+            for err in allocation_formset.non_form_errors():
+                messages.error(request, err)
     else:
         form = EditClassroomForm(instance=classroom, request=request)
         allocation_formset = LessonAllocationFormSet(instance=classroom, form_kwargs={'course': course}, queryset=LessonClassroomAllocation.objects.filter(classroom=classroom))
