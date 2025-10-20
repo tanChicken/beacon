@@ -289,19 +289,38 @@ def toggle_checklist_item(request, item_id):
 @role_required("STUDENT")
 def student_classroom(request):
     student = request.user
-    classrooms = (
-        Classroom.objects
-        .select_related("course_id")          
-        .prefetch_related("allocations__lesson")
-        .filter(course_id__students=student)  
-        .distinct()
+
+    # Get only enrolments with a classroom assigned
+    enrolments = (
+        Enrolment.objects
+        .filter(student=student, classroom__isnull=False)
+        .select_related('classroom', 'lesson', 'classroom__course_id')  # ✅ fixed
     )
+
+    # Extract classrooms from enrolments
+    classrooms = [e.classroom for e in enrolments]
+
     return render(request, "student_classroom.html", {"classrooms": classrooms})
 
 @role_required("STUDENT")
 def student_classroom_details(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
-    return render(request, 'student_classroom_details.html', {'classroom': classroom})
+    # Try to fetch allocation for this classroom
+    allocation = (
+        LessonClassroomAllocation.objects
+        .filter(classroom=classroom)
+        .select_related("lesson", "classroom")
+        .first()
+    )
+
+    return render(
+        request,
+        "student_classroom_details.html",
+        {
+            "classroom": classroom,
+            "allocation": allocation,
+        }
+    )
 
 def instructor_login(request):
     if request.method == "POST":
@@ -696,35 +715,83 @@ def delete_lesson(request, pk):
 @role_required("STUDENT")
 def enrol_lesson(request, lesson_id):
     student = request.user
+    lesson = get_object_or_404(Lesson, id=lesson_id)
 
+    # --- Graduation / Credit Limit Check ---
     total_cp = _get_student_credits(student)
     if getattr(student, "studentprofile", None) and (student.studentprofile.graduated or total_cp >= 120):
         messages.error(
-            request, 
-            "Enrolling in other courses/lessons is not possible anymore,"
+            request,
+            "Enrolling in other courses/lessons is not possible anymore, "
             "since you have already reached the 120 credit points limit."
         )
         return redirect("student_dashboard")
 
-    lesson = get_object_or_404(Lesson, id=lesson_id)
-
+    # --- Prerequisite Check ---
     missing = []
     for prereq in lesson.prerequisites.all():
         if not Enrolment.objects.filter(student=student, lesson=prereq).exists():
             missing.append(prereq)
 
     if missing:
-        missing_ids = ", ".join(str(p.id) for p in missing)
         missing_titles = ", ".join(p.title for p in missing)
-
         messages.error(
             request,
-            f"You must complete prerequisite lessons first. "
-            f"Missing: {missing_titles} (IDs: {missing_ids})"
+            f"You must complete prerequisite lessons first. Missing: {missing_titles}"
         )
         return redirect("student_course_details", course_id=lesson.course.id)
 
-    Enrolment.objects.get_or_create(student=student, lesson=lesson)
+    # --- AJAX GET: return all classrooms for this lesson ---
+    if request.method == "GET" and request.headers.get("x-requested-with") == "XMLHttpRequest":
+        allocations = (
+            LessonClassroomAllocation.objects
+            .filter(lesson=lesson)
+            .select_related("classroom")
+        )
+
+        data = []
+        for alloc in allocations:
+            c = alloc.classroom
+            data.append({
+                "id": c.id,
+                "classroom_id": c.classroom_id,
+                "building": c.building or "N/A",
+                "room": c.room or "N/A",
+                "supervisor": c.supervisor or "N/A",
+                "schedule": alloc.schedule or "TBA",
+                "period_weeks": alloc.period_weeks,
+                "start_date": alloc.start_date.strftime("%Y-%m-%d") if alloc.start_date else "N/A",
+                "expiry_date": alloc.expiry_date.strftime("%Y-%m-%d") if alloc.expiry_date else "N/A",
+                "online_link": c.online_link or "",
+            })
+
+        return JsonResponse({"classrooms": data})
+
+    # --- POST: student selects a classroom to enrol ---
+    if request.method == "POST":
+        classroom_id = request.POST.get("classroom_id")
+
+        enrolment, created = Enrolment.objects.get_or_create(student=student, lesson=lesson)
+
+        if classroom_id:
+            classroom = get_object_or_404(Classroom, id=classroom_id)
+
+            # Optional: also find allocation record (lesson + classroom)
+            allocation = LessonClassroomAllocation.objects.filter(lesson=lesson, classroom=classroom).first()
+            enrolment.classroom = classroom
+            enrolment.allocation = allocation
+            enrolment.save()
+
+            messages.success(request, f"You are now enrolled in {lesson.title} (Classroom {classroom.classroom_id})!")
+        else:
+            enrolment.classroom = None
+            enrolment.allocation = None
+            enrolment.save()
+            messages.success(request, f"You are now enrolled in {lesson.title}, but no classroom has been assigned yet.")
+
+        return redirect("student_lesson_details", pk=lesson.id)
+
+    # --- Default redirect if accessed normally ---
     messages.success(request, f"You are now enrolled in {lesson.title}.")
     return redirect("student_lesson_details", pk=lesson.id)
 
@@ -749,7 +816,7 @@ def instructor_classroom(request):
         Classroom.objects
         .select_related("course_id")
         .prefetch_related("allocations__lesson")
-        .filter(course_id__instructor=instructor)  
+        .filter(course_id__instructor=instructor)
         .distinct()
     )
 
@@ -760,19 +827,25 @@ def instructor_classroom(request):
 @role_required("INSTRUCTOR")
 def edit_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
+    allocations = classroom.allocations.select_related("lesson").order_by("-start_date")
+
     if request.method == "POST":
         form = EditClassroomForm(request.POST, instance=classroom, request=request)
         if form.is_valid():
             form.save()
             messages.success(request, "Classroom updated successfully.")
             return redirect("instructor_classroom")
-
         else:
             messages.error(request, "Please fix the errors below.")
     else:
         form = EditClassroomForm(instance=classroom, request=request)
 
-    return render(request, "edit_classroom.html", {"classroom": classroom, "form": form})
+    return render(request, "edit_classroom.html", {
+        "classroom": classroom,
+        "form": form,
+        "allocations": allocations,
+    })
+
 
 @role_required("INSTRUCTOR")
 def create_classroom(request, pk=None):

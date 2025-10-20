@@ -12,29 +12,31 @@
       <dd class="col-sm-9">{{ classroom.course_id.course_id }}</dd>
 
       <dt class="col-sm-3">Duration</dt>
-      <dd class="col-sm-9">{{ classroom.get_duration_weeks_display }}</dd>
+      <dd class="col-sm-9">
+        {% if allocation %}
+          {{ allocation.get_period_weeks_display }}
+        {% else %}
+          <span class="text-muted">Not specified</span>
+        {% endif %}
+      </dd>
 
       <dt class="col-sm-3">Supervisor</dt>
       <dd class="col-sm-9">{{ classroom.supervisor }}</dd>
 
       <dt class="col-sm-3">Schedule / Time</dt>
       <dd class="col-sm-9">
-        {% if classroom.schedule %}
-          {{ classroom.schedule }}
+        {% if allocation and allocation.schedule %}
+          {{ allocation.schedule }}
         {% else %}
           <span class="text-muted">Not scheduled yet</span>
         {% endif %}
       </dd>
       
       <dt class="col-sm-3">Building</dt>
-      <dd class="col-sm-9">
-        {% if classroom.building %}{{ classroom.building }}{% else %}<span class="text-muted">N/A</span>{% endif %}
-      </dd>
+      <dd class="col-sm-9">{{ classroom.building|default:"N/A" }}</dd>
 
       <dt class="col-sm-3">Room</dt>
-      <dd class="col-sm-9">
-        {% if classroom.room %}{{ classroom.room }}{% else %}<span class="text-muted">N/A</span>{% endif %}
-      </dd>
+      <dd class="col-sm-9">{{ classroom.room|default:"N/A" }}</dd>
 
       <dt class="col-sm-3">Online Link</dt>
       <dd class="col-sm-9">

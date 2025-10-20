@@ -89,6 +89,14 @@ class Classroom(models.Model):
             self.classroom_id = f"{self.course_id.course_id}-CL{n:02d}"
         super().save(*args, **kwargs)
 
+    @property
+    def duration_weeks(self):
+        # Try to get first allocation for this classroom
+        alloc = self.allocations.first()
+        if alloc:
+            return alloc.period_weeks
+        return None
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, role, **extra_fields):
         if not email:

@@ -1,8 +1,9 @@
 from django import forms
-from .models import Course, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
+from .models import Course, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask, LessonClassroomAllocation
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.db import models
+from django.utils import timezone
 
 class StudentSignupForm(forms.ModelForm):
     title_choices = [
@@ -240,10 +241,15 @@ class ClassroomForm(forms.ModelForm):
 
 class EditClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
+    period_weeks = forms.ChoiceField(choices=LessonClassroomAllocation.PERIOD_CHOICES, required=False)
+    schedule = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Monday 10AM - 12PM"}))
+
     class Meta:
         model = Classroom
-        fields = ["classroom_id", "course_id", "supervisor",
-                  "building", "room", "online_link"]
+        fields = [
+            "classroom_id", "course_id", "supervisor",
+            "building", "room", "online_link",
+        ]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
@@ -252,17 +258,52 @@ class EditClassroomForm(forms.ModelForm):
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
         }
-        
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
+        # Populate supervisor choices
         instructors = User.objects.filter(role="INSTRUCTOR").order_by("email")
-        choices = [("", "Select Supervisor")]
-        choices += list(instructors.values_list("email", "email"))
+        choices = [("", "Select Supervisor")] + list(instructors.values_list("email", "email"))
         self.fields["supervisor"].choices = choices
         self.fields["course_id"].disabled = True
+
+        # Load existing allocation (if any)
+        allocations = getattr(self.instance, "allocations", None)
+        if allocations and allocations.exists():
+            alloc = allocations.first()
+            self.fields["period_weeks"].initial = alloc.period_weeks
+            self.fields["schedule"].initial = alloc.schedule
+        else:
+            self.fields["period_weeks"].initial = ""
+            self.fields["schedule"].initial = ""
+
+    def save(self, commit=True):
+        classroom = super().save(commit=commit)
+
+        # Handle LessonClassroomAllocation updates
+        allocations = classroom.allocations.all()
+        if allocations.exists():
+            alloc = allocations.first()
+        else:
+            alloc = LessonClassroomAllocation.objects.create(
+                classroom=classroom,
+                lesson=None,  # you can later associate a lesson if needed
+                period_weeks=2,
+                start_date=timezone.now(),
+            )
+
+        # Update fields from form
+        period_weeks = self.cleaned_data.get("period_weeks")
+        schedule = self.cleaned_data.get("schedule")
+
+        if period_weeks:
+            alloc.period_weeks = int(period_weeks)
+        alloc.schedule = schedule
+        alloc.save()
+
+        return classroom
 
 class StudentPasswordChangeForm(forms.Form):
     old_password = forms.CharField(

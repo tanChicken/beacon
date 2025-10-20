@@ -456,9 +456,10 @@ document.getElementById("add-assignment-item").addEventListener("click", functio
     inputDate.type = 'date';
     inputDate.className = 'form-control';
     inputDate.name = 'new_assignment_deadline';
+    inputDate.min = new Date().toISOString().split("T")[0];
     colDate.appendChild(inputDate);
 
-    //Remove Button
+    // Remove Button
     const colRemove = document.createElement('div');
     colRemove.className = 'col-1 d-grid';
     const btnRemove = document.createElement('button');
@@ -487,15 +488,27 @@ document.getElementById("add-assignment-item").addEventListener("click", functio
     document.getElementById('assignment-items').appendChild(block);
 });
 
+document.addEventListener("click", function (e) {
+    if (e.target && e.target.id === "add-assignment-item") {
+        setTimeout(() => {
+            const allNewDates = document.querySelectorAll('input[name="new_assignment_deadline"]');
+            const todayStr = new Date().toISOString().split("T")[0];
+            allNewDates.forEach(input => {
+                if (!input.hasAttribute("min")) {
+                    input.min = todayStr;
+                }
+            });
+        }, 100);
+    }
+});
+
 // Remove Assignment Item
 document.addEventListener("click", function(e) {
     if (e.target.classList.contains("remove-assignment-item")) {
         const block = e.target.closest(".assignment-block");
         if (block) {
-            // For new assignments (block wrapper)
             block.remove();
         } else {
-            // For existing assignments (separate row + instruction divs)
             const row = e.target.closest(".assignment-row");
             if (row) {
                 const next = row.nextElementSibling;
@@ -539,7 +552,7 @@ document.getElementById("add-classroom-item").addEventListener("click", function
 
   colClassroom.appendChild(select);
 
-  // Classroom select
+  // Duration select
   const colDuration = document.createElement("div");
   colDuration.className = "col-md-3";
   const selectD = document.createElement("select");
@@ -551,15 +564,16 @@ document.getElementById("add-classroom-item").addEventListener("click", function
   defaultOptionD.textContent = "-- Select Duration --";
   selectD.appendChild(defaultOptionD);
 
-durations.forEach(([v, l]) => {
-  const option = document.createElement("option");
-  option.value = v;            // numeric value (2, 3, 4)
-  option.textContent = l;      // display text ("2 Weeks", etc.)
-  selectD.appendChild(option);
-});
+  durations.forEach(([v, l]) => {
+    const option = document.createElement("option");
+    option.value = v;
+    option.textContent = l;
+    selectD.appendChild(option);
+  });
 
   colDuration.appendChild(selectD);
 
+  // Schedule input
   const colSchedule = document.createElement("div");
   colSchedule.className = "col-md-4";
   const inputSchedule = document.createElement("input");
@@ -569,6 +583,7 @@ durations.forEach(([v, l]) => {
   inputSchedule.placeholder = "e.g., Monday 10:00-12:00";
   colSchedule.appendChild(inputSchedule);
 
+  // Remove Button
   const colRemove = document.createElement("div");
   colRemove.className = "col-md-1 d-grid";
   const btnRemove = document.createElement("button");
@@ -578,7 +593,7 @@ durations.forEach(([v, l]) => {
   colRemove.appendChild(btnRemove);
 
   row.appendChild(colClassroom);
-    row.appendChild(colDuration)
+  row.appendChild(colDuration);
   row.appendChild(colSchedule);
   row.appendChild(colRemove);
 
@@ -589,12 +604,9 @@ durations.forEach(([v, l]) => {
 document.addEventListener("click", function(e) {
   if (e.target.classList.contains("remove-classroom-item")) {
     const row = e.target.closest(".classroom-row");
-    if (row) {
-      row.remove();
-    }
+    if (row) row.remove();
   }
 });
-
 </script>
 
 {% endblock %}
