@@ -88,4 +88,35 @@
     </button>
   </form>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll("tr").forEach(row => {
+    const durationField = row.querySelector('[name$="period_weeks"]');
+    const startDateField = row.querySelector('[name$="start_date"]');
+    const expiryField = row.querySelector('[name$="expiry_date"]');
+
+    if (!durationField || !startDateField || !expiryField) return;
+
+    function updateExpiry() {
+      const startVal = startDateField.value;
+      const durationVal = parseInt(durationField.value);
+
+      if (!startVal || isNaN(durationVal)) return;
+
+      const startDate = new Date(startVal);
+      const expiryDate = new Date(startDate);
+      expiryDate.setDate(startDate.getDate() + durationVal * 7);
+
+      const yyyy = expiryDate.getFullYear();
+      const mm = String(expiryDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(expiryDate.getDate()).padStart(2, '0');
+
+      expiryField.value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    durationField.addEventListener("change", updateExpiry);
+    startDateField.addEventListener("change", updateExpiry);
+  });
+});
+</script>
 {% endblock %}

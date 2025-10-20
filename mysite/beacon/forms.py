@@ -1,7 +1,8 @@
+from django.utils import timezone
 from django import forms
 from .models import Course, LessonClassroomAllocation, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
 from django.core.exceptions import ValidationError
-from django.forms import inlineformset_factory
+from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.db import models
 
 class StudentSignupForm(forms.ModelForm):
@@ -234,6 +235,24 @@ class ClassroomForm(forms.ModelForm):
         if preselected_course:
             self.fields["course_id"].initial = preselected_course.pk
 
+class BaseLessonAllocationFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        today = timezone.now().date()
+
+        for form in self.forms:
+            if not hasattr(form, 'cleaned_data'):
+                continue
+            # Skip deleted or empty forms
+            if not form.cleaned_data or form.cleaned_data.get('DELETE'):
+                continue
+
+            expiry = form.cleaned_data.get('expiry_date')
+            if expiry and expiry < today:
+                form.add_error('expiry_date', '❌ Expiry date cannot be before today.')
+                # You can raise a general formset-level error too:
+                raise ValidationError("❌ Cannot save classroom — expiry date is before today.")
+
 class EditClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
     class Meta:
@@ -285,10 +304,12 @@ class LessonAllocationForm(forms.ModelForm):
             # fallback (should rarely happen)
             self.fields["lesson"].queryset = Lesson.objects.none()
 
+
 LessonAllocationFormSet = inlineformset_factory(
     Classroom,
     LessonClassroomAllocation,
     form=LessonAllocationForm,
+    formset=BaseLessonAllocationFormSet,
     extra=0,
     can_delete=False,
 )
