@@ -275,20 +275,41 @@ body.dark-mode #cardView .card:hover .text-muted {
   <div id="listView">
     <div class="row">
         {% for classroom in classrooms %}
-        <div class="col-12 mb-3">
-            <a href="{% url 'edit_classroom' classroom.pk %}" class="card text-decoration-none text-dark">
-                <div class="card-body d-flex flex-column">
+          {% if classroom.allocations.all %}
+            {% for alloc in classroom.allocations.all %}
+              <div class="col-12 mb-3">
+                <a href="{% url 'edit_classroom' classroom.pk %}" class="card text-decoration-none text-dark">
+                  <div class="card-body d-flex flex-column">
                     <h5 class="card-title">{{ classroom.classroom_id }}</h5>
                     <p class="card-text mb-1"><strong>Location:</strong> Building {{ classroom.building }} Room {{ classroom.room }}</p>
                     <p class="card-text"><strong>Supervisor:</strong> {{ classroom.supervisor }}</p>
+
+                    <p class="card-text mb-1"><strong>Lesson:</strong> {{ alloc.lesson.title }}</p>
+                    <p class="card-text mb-1"><strong>Duration:</strong> {{ alloc.get_period_weeks_display }}</p>
+                    <p class="card-text mb-1"><strong>Schedule:</strong>
+                      {% if alloc.schedule %}
+                        {{ alloc.schedule }}
+                      {% else %}
+                        <span class="text-muted">Not scheduled yet</span>
+                      {% endif %}
+                    </p>
+                  </div>
+                </a>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="col-12 mb-3">
+              <a href="{% url 'edit_classroom' classroom.pk %}" class="card text-decoration-none text-dark">
+                <div class="card-body d-flex flex-column">
+                  <h5 class="card-title">{{ classroom.course.course_id }} - {{ classroom.classroom_id }}</h5>
+                  <p class="card-text"><strong>Supervisor:</strong> {{ classroom.supervisor }}</p>
+                  <p class="text-muted mb-0">No lessons allocated yet.</p>
                 </div>
-            </a>
-        </div>
-        {% empty %}
-        <div class="col-12">
-            <p class="text-muted">No classrooms created yet.</p>
-        </div>
+              </a>
+            </div>
+          {% endif %}
         {% endfor %}
+
     </div>
   </div>
 
@@ -302,10 +323,16 @@ body.dark-mode #cardView .card:hover .text-muted {
                     <h6 class="card-subtitle text-muted">{{ classroom.course.course_id }}</h6>
                     <h5 class="card-title mt-2">{{ classroom.classroom_id }}</h5>
                 </div>
-                <div>
-                    <p class="card-text mb-1"><strong>Supervisor:</strong> {{ classroom.supervisor }}</p>
-                    <p class="card-text"><strong>Location:</strong> Building {{ classroom.building }} Room {{ classroom.room }}</p>
-                </div>
+                <p class="card-text mb-1"><strong>Supervisor:</strong> {{ classroom.supervisor }}</p>
+                {% with alloc=classroom.allocations.first %}
+                  {% if alloc %}
+                    <p class="card-text mb-1"><strong>Lesson:</strong> {{ alloc.lesson.title }}</p>
+                    <p class="card-text mb-1"><strong>Duration:</strong> {{ alloc.get_period_weeks_display }}</p>
+                    <p class="card-text mb-1"><strong>Schedule:</strong> {{ alloc.schedule|default:"Not scheduled yet" }}</p>
+                  {% else %}
+                    <p class="text-muted mb-0">No allocation yet.</p>
+                  {% endif %}
+                {% endwith %}
             </div>
         </a>
     </div>

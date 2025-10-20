@@ -11,7 +11,7 @@
   <h1 class="mb-3">Classroom</h1>
 
   <!-- Update classroom form -->
-  <form method="post" novalidate class="mb-3">
+  <form method="post" novalidate class="mb-4">
     {% csrf_token %}
     {{ form.non_field_errors }}
 
@@ -28,6 +28,16 @@
     <div class="mb-3">
       <label class="form-label">Supervisor</label>
       {{ form.supervisor }} {{ form.supervisor.errors }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Duration (weeks)</label>
+      {{ form.period_weeks }} {{ form.period_weeks.errors }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Schedule / Time</label>
+      {{ form.schedule }} {{ form.schedule.errors }}
     </div>
 
     <!-- NEW FIELDS -->

@@ -7,7 +7,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from.authz import role_required
 from django.db.models import Sum, Prefetch
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone, date
 from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -291,25 +291,23 @@ def student_classroom(request):
     student = request.user
     today = date.today()
 
-    # Get all lessons the student is enrolled in
-    enrolled_lessons = Enrolment.objects.filter(student=student).values_list("lesson_id", flat=True)
-
-    # Fetch classrooms connected to those lessons via active (non-expired) allocations
-    classrooms = (
-        Classroom.objects
-        .prefetch_related(
-            Prefetch(
-                "allocations",
-                queryset=LessonClassroomAllocation.objects.filter(
-                    lesson_id__in=enrolled_lessons,
-                    expiry_date__gte=today  # only show active allocations
-                ).select_related("lesson"),
-                to_attr="active_allocations"  # rename prefetch result
-            )
-        )
-        .filter(allocations__lesson_id__in=enrolled_lessons)
-        .distinct()
+    # Get only enrolments with a classroom assigned
+    enrolments_with_classroom = (
+        Enrolment.objects
+        .filter(student=student, classroom__isnull=False)
+        .select_related('classroom', 'lesson', 'classroom__course_id')
     )
+
+    # Extract classrooms from enrolments
+    classrooms = []
+    for enrol in enrolments_with_classroom:
+        classroom = enrol.classroom
+        active_allocs = classroom.allocations.filter(
+            lesson=enrol.lesson,
+            expiry_date__gte=today
+        )
+        if active_allocs.exists():
+            classrooms.append(classroom)
 
     return render(
         request,
@@ -320,7 +318,22 @@ def student_classroom(request):
 @role_required("STUDENT")
 def student_classroom_details(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
-    return render(request, 'student_classroom_details.html', {'classroom': classroom})
+    # Try to fetch allocation for this classroom
+    allocation = (
+        LessonClassroomAllocation.objects
+        .filter(classroom=classroom)
+        .select_related("lesson", "classroom")
+        .first()
+    )
+
+    return render(
+        request,
+        "student_classroom_details.html",
+        {
+            "classroom": classroom,
+            "allocation": allocation,
+        }
+    )
 
 def instructor_login(request):
     if request.method == "POST":
@@ -342,8 +355,8 @@ def instructor_login(request):
 @role_required("INSTRUCTOR")
 def instructor_dashboard(request):
     courses = (
-        Course.objects.filter(instructor=request.user)
-        .order_by("status", "title") 
+        Course.objects.filter(
+    Q(instructor=request.user) | Q(lessons__designer=request.user)).distinct().order_by("status","course_id") 
     )
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
@@ -359,7 +372,14 @@ def create_course(request):
 
                 for title in lesson_titles:
                     if title.strip():
-                        Lesson.objects.create(course=course, designer=request.user, title=title, objective='', assignment='')
+                        Lesson.objects.create(
+                        course=course,
+                        designer=course.instructor,
+                        title=title,
+                        objective='',
+                        assignment='',
+                        credit_point=1,  
+                    )
 
             messages.success(request, "Course created successfully!")
             return redirect("course_detail", pk=course.pk)
@@ -396,18 +416,26 @@ def delete_course(request, pk):
 @role_required("INSTRUCTOR")
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
-    lessons = course.lessons.all()
+    lessons = course.lessons.all().order_by("lesson_id")
     classrooms = Classroom.objects.filter(course_id=course)
     total_credit_points = lessons.aggregate(total=Sum("credit_point"))["total"] or 0
     remaining_credit_points = 30 - total_credit_points
+    is_director = (course.instructor == request.user)
 
     if request.method == "POST":
         form = CourseForm(request.POST, instance=course)
 
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Course updated successfully!")
+        # Only course director can edit course details
+        if is_director:
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Course details updated successfully!")
+            else:
+                messages.error(request, "Please fix the course form errors.")
+        else:
+            form = CourseForm(instance=course)
 
+        # Any instructor can add lessons
         new_titles = request.POST.getlist("new_lesson_title")
         added_count = 0
 
@@ -418,24 +446,26 @@ def course_detail(request, pk):
             )
         else:
             for title in new_titles:
-                if title.strip():
-                    # Each new lesson consumes 1 credit point
-                    if remaining_credit_points <= 0:
-                        messages.warning(
-                            request,
-                            "Only some lessons were added before reaching the 30-point limit."
-                        )
-                        break
+                title = title.strip()
+                if not title:
+                    continue
 
-                    Lesson.objects.create(
-                        course=course,
-                        title=title.strip(),
-                        designer=request.user,
-                        credit_point=1,
-                        status="DRAFT"
+                if remaining_credit_points <= 0:
+                    messages.warning(
+                        request,
+                        "Only some lessons were added before reaching the 30-point limit."
                     )
-                    remaining_credit_points -= 1
-                    added_count += 1
+                    break
+
+                Lesson.objects.create(
+                    course=course,
+                    title=title,
+                    designer=request.user,
+                    credit_point=1,
+                    status="DRAFT"
+                )
+                remaining_credit_points -= 1
+                added_count += 1
 
             if added_count > 0:
                 messages.success(request, f"{added_count} lesson(s) added successfully!")
@@ -444,6 +474,9 @@ def course_detail(request, pk):
 
     else:
         form = CourseForm(instance=course)
+        if not is_director:
+            for field in form.fields.values():
+                field.disabled = True
 
     enrolled_students = course.students.all()
 
@@ -453,12 +486,18 @@ def course_detail(request, pk):
         "lessons": lessons,
         "classrooms": classrooms,
         "enrolled_students": enrolled_students,
-        "remaining_points": remaining_credit_points,  
+        "remaining_points": remaining_credit_points,
+        "is_director": is_director,
     })
 
 @role_required("INSTRUCTOR")
 def lesson_detail_edit(request, pk):
-    lesson = get_object_or_404(Lesson, pk=pk)
+    lesson = get_object_or_404(
+    Lesson.objects.filter(
+        Q(designer=request.user) | Q(course__instructor=request.user)
+    ),
+    pk=pk
+)
     course = lesson.course
     available_classrooms = Classroom.objects.filter(course_id_id=course.pk).order_by("classroom_id")
 
@@ -480,6 +519,19 @@ def lesson_detail_edit(request, pk):
         if form.is_valid() and formset.is_valid():
             # Save lesson
             lesson = form.save()
+
+            # Handle classroom & schedule manually
+            classroom_id = request.POST.get("classroom")
+            schedule_val = request.POST.get("classroom_schedule", "").strip()
+
+            if classroom_id:
+                classroom = Classroom.objects.get(pk=classroom_id)
+                classroom.schedule = schedule_val
+                classroom.save()
+                lesson.classroom = classroom
+            else:
+                lesson.classroom = None
+
 
             # Save tasks
             formset.instance = lesson
@@ -519,10 +571,14 @@ def lesson_detail_edit(request, pk):
 
             for item in lesson.checklist_items.filter(item_type="ASSIGNMENT"):
                 title_key = f"assignment_item_{item.id}"
-                date_key  = f"assignment_deadline_{item.id}"
+                date_key = f"assignment_deadline_{item.id}"
+                instruction_key = f"assignment_instruction_{item.id}"
 
                 if title_key in request.POST:
                     item.title = request.POST[title_key].strip()
+
+                if instruction_key in request.POST:
+                    item.instructions = request.POST[instruction_key].strip()
 
                 raw_date = request.POST.get(date_key, "").strip()
                 if raw_date:
@@ -534,7 +590,8 @@ def lesson_detail_edit(request, pk):
                     item.deadline = None
 
                 item.save()
-            
+
+            # Delete removed assignments
             existing_assignment_ids = set(
                 lesson.checklist_items.filter(item_type="ASSIGNMENT").values_list("id", flat=True)
             )
@@ -552,11 +609,12 @@ def lesson_detail_edit(request, pk):
             ).delete()
             
             new_titles = [t.strip() for t in request.POST.getlist("new_assignment_item")]
-            new_dates  = [d.strip() for d in request.POST.getlist("new_assignment_deadline")]
+            new_dates = [d.strip() for d in request.POST.getlist("new_assignment_deadline")]
+            new_instructions = [i.strip() for i in request.POST.getlist("new_assignment_instruction")]
 
             # zip_longest to be defensive if counts mismatch
             from itertools import zip_longest
-            for title, raw_date in zip_longest(new_titles, new_dates, fillvalue=""):
+            for title, raw_date, instruction in zip_longest(new_titles, new_dates, new_instructions, fillvalue=""):
                 if not title:
                     continue
                 deadline_val = None
@@ -570,6 +628,7 @@ def lesson_detail_edit(request, pk):
                     title=title,
                     item_type="ASSIGNMENT",
                     deadline=deadline_val,
+                    instructions=instruction,
                 )
             # Get new classroom allocations from POST
             new_classrooms = request.POST.getlist('new_classroom_allocation')
@@ -636,6 +695,7 @@ def lesson_detail_edit(request, pk):
         'available_classrooms': list(available_classrooms),
         "duration": duration,
         "isAllocated": isAllocated,
+        "today": date.today(),
     })
 
 @role_required("INSTRUCTOR")
@@ -647,7 +707,7 @@ def create_lesson(request, course_pk):
         if form.is_valid():
             lesson = form.save(commit=False)
             lesson.course = course
-            lesson.designer = request.user
+            # lesson.designer = request.user
             lesson.save()
             form.save_m2m()
             messages.success(request, f"Lesson '{lesson.title}' created successfully!")
@@ -666,7 +726,10 @@ def create_lesson(request, course_pk):
 
 @role_required("INSTRUCTOR")
 def delete_lesson(request, pk):
-    lesson = get_object_or_404(Lesson, pk=pk, designer=request.user)
+    lesson = get_object_or_404(
+        Lesson,
+        Q(pk=pk) & (Q(designer=request.user) | Q(course__instructor=request.user))
+    )
     course_pk = lesson.course.pk
     lesson.delete()
     messages.success(request, "Lesson deleted successfully!")
@@ -697,35 +760,83 @@ def archive_lesson(request, pk):
 @role_required("STUDENT")
 def enrol_lesson(request, lesson_id):
     student = request.user
+    lesson = get_object_or_404(Lesson, id=lesson_id)
 
+    # --- Graduation / Credit Limit Check ---
     total_cp = _get_student_credits(student)
     if getattr(student, "studentprofile", None) and (student.studentprofile.graduated or total_cp >= 120):
         messages.error(
-            request, 
-            "Enrolling in other courses/lessons is not possible anymore,"
+            request,
+            "Enrolling in other courses/lessons is not possible anymore, "
             "since you have already reached the 120 credit points limit."
         )
         return redirect("student_dashboard")
 
-    lesson = get_object_or_404(Lesson, id=lesson_id)
-
+    # --- Prerequisite Check ---
     missing = []
     for prereq in lesson.prerequisites.all():
         if not Enrolment.objects.filter(student=student, lesson=prereq).exists():
             missing.append(prereq)
 
     if missing:
-        missing_ids = ", ".join(str(p.id) for p in missing)
         missing_titles = ", ".join(p.title for p in missing)
-
         messages.error(
             request,
-            f"You must complete prerequisite lessons first. "
-            f"Missing: {missing_titles} (IDs: {missing_ids})"
+            f"You must complete prerequisite lessons first. Missing: {missing_titles}"
         )
         return redirect("student_course_details", course_id=lesson.course.id)
 
-    Enrolment.objects.get_or_create(student=student, lesson=lesson)
+    # --- AJAX GET: return all classrooms for this lesson ---
+    if request.method == "GET" and request.headers.get("x-requested-with") == "XMLHttpRequest":
+        allocations = (
+            LessonClassroomAllocation.objects
+            .filter(lesson=lesson)
+            .select_related("classroom")
+        )
+
+        data = []
+        for alloc in allocations:
+            c = alloc.classroom
+            data.append({
+                "id": c.id,
+                "classroom_id": c.classroom_id,
+                "building": c.building or "N/A",
+                "room": c.room or "N/A",
+                "supervisor": c.supervisor or "N/A",
+                "schedule": alloc.schedule or "TBA",
+                "period_weeks": alloc.period_weeks,
+                "start_date": alloc.start_date.strftime("%Y-%m-%d") if alloc.start_date else "N/A",
+                "expiry_date": alloc.expiry_date.strftime("%Y-%m-%d") if alloc.expiry_date else "N/A",
+                "online_link": c.online_link or "",
+            })
+
+        return JsonResponse({"classrooms": data})
+
+    # --- POST: student selects a classroom to enrol ---
+    if request.method == "POST":
+        classroom_id = request.POST.get("classroom_id")
+
+        enrolment, created = Enrolment.objects.get_or_create(student=student, lesson=lesson)
+
+        if classroom_id:
+            classroom = get_object_or_404(Classroom, id=classroom_id)
+
+            # Optional: also find allocation record (lesson + classroom)
+            allocation = LessonClassroomAllocation.objects.filter(lesson=lesson, classroom=classroom).first()
+            enrolment.classroom = classroom
+            enrolment.allocation = allocation
+            enrolment.save()
+
+            messages.success(request, f"You are now enrolled in {lesson.title} (Classroom {classroom.classroom_id})!")
+        else:
+            enrolment.classroom = None
+            enrolment.allocation = None
+            enrolment.save()
+            messages.success(request, f"You are now enrolled in {lesson.title}, but no classroom has been assigned yet.")
+
+        return redirect("student_lesson_details", pk=lesson.id)
+
+    # --- Default redirect if accessed normally ---
     messages.success(request, f"You are now enrolled in {lesson.title}.")
     return redirect("student_lesson_details", pk=lesson.id)
 
@@ -750,7 +861,7 @@ def instructor_classroom(request):
         Classroom.objects
         .select_related("course_id")
         .prefetch_related("allocations__lesson")
-        .filter(course_id__instructor=instructor)  
+        .filter(course_id__instructor=instructor)
         .distinct()
     )
 
@@ -767,6 +878,8 @@ def edit_classroom(request, pk):
         classroom=classroom,
         expiry_date__lt=timezone.now().date()
     ).delete()
+    allocations = classroom.allocations.select_related("lesson").order_by("-start_date")
+
     if request.method == "POST":
         form = EditClassroomForm(request.POST, instance=classroom, request=request)
         allocation_formset = LessonAllocationFormSet(request.POST, instance=classroom, form_kwargs={'course': course})
@@ -781,6 +894,7 @@ def edit_classroom(request, pk):
             form.save()
             allocation_formset.save()
             messages.success(request, "Classroom updated successfully.")
+            return redirect("instructor_classroom")
         else:
             messages.error(request, "Please fix the errors below.")
             for err in allocation_formset.non_form_errors():
@@ -789,7 +903,12 @@ def edit_classroom(request, pk):
         form = EditClassroomForm(instance=classroom, request=request)
         allocation_formset = LessonAllocationFormSet(instance=classroom, form_kwargs={'course': course}, queryset=LessonClassroomAllocation.objects.filter(classroom=classroom))
 
-    return render(request, "edit_classroom.html", {"classroom": classroom, "form": form, "allocation_formset": allocation_formset})
+    return render(request, "edit_classroom.html", {
+        "classroom": classroom,
+        "form": form, "allocation_formset": allocation_formset,
+        "allocations": allocations,
+    })
+
 
 @role_required("INSTRUCTOR")
 def create_classroom(request, pk=None):

@@ -1,9 +1,11 @@
 from django.utils import timezone
 from django import forms
+from .models import Course, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask, LessonClassroomAllocation
 from .models import Course, LessonClassroomAllocation, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.db import models
+from django.utils import timezone
 
 class StudentSignupForm(forms.ModelForm):
     title_choices = [
@@ -95,9 +97,16 @@ LessonFormSet = inlineformset_factory(
 )
 
 class LessonDetailForm(forms.ModelForm):
+    designer = forms.ModelChoiceField(
+        queryset=Instructor.instructor.all(),
+        required=True,
+        label="Lesson Designer",
+        widget=forms.Select(attrs={"class": "form-select"})
+    )
+
     class Meta:
         model = Lesson
-        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week']
+        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week', 'designer']
         widgets = {
             "lesson_id": forms.TextInput(attrs={"class": "form-control", "readonly":"readonly"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
@@ -212,6 +221,7 @@ class ClassroomForm(forms.ModelForm):
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
+            "schedule": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Monday 9:00 am - 11:00 am"}),
             "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
@@ -255,10 +265,15 @@ class BaseLessonAllocationFormSet(BaseInlineFormSet):
 
 class EditClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
+    period_weeks = forms.ChoiceField(choices=LessonClassroomAllocation.PERIOD_CHOICES, required=False)
+    schedule = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Monday 10AM - 12PM"}))
+
     class Meta:
         model = Classroom
-        fields = ["classroom_id", "course_id", "supervisor",
-                  "building", "room", "online_link"]
+        fields = [
+            "classroom_id", "course_id", "supervisor",
+            "building", "room", "online_link",
+        ]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
@@ -267,15 +282,14 @@ class EditClassroomForm(forms.ModelForm):
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
         }
-        
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
+        # Populate supervisor choices
         instructors = User.objects.filter(role="INSTRUCTOR").order_by("email")
-        choices = [("", "Select Supervisor")]
-        choices += list(instructors.values_list("email", "email"))
+        choices = [("", "Select Supervisor")] + list(instructors.values_list("email", "email"))
         self.fields["supervisor"].choices = choices
         self.fields["course_id"].disabled = True
         self.fields['course_id'].queryset = Course.objects.all()
@@ -286,7 +300,7 @@ class LessonAllocationForm(forms.ModelForm):
         model = LessonClassroomAllocation
         fields = ["lesson", "period_weeks", "start_date", "expiry_date", "schedule"]
         widgets = {
-            "lesson": forms.HiddenInput(),  # keep it hidden
+            "lesson": forms.HiddenInput(),
             "period_weeks": forms.Select(attrs={"class": "form-select"}),
             "start_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
             "expiry_date": forms.DateInput(attrs={"class": "form-control", "type": "date", "readonly": "readonly"}),
@@ -298,11 +312,30 @@ class LessonAllocationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if course:
-            # Filter lessons to only those under this course
             self.fields["lesson"].queryset = Lesson.objects.filter(course=course, status="PUBLISHED").order_by("title")
         else:
-            # fallback (should rarely happen)
             self.fields["lesson"].queryset = Lesson.objects.none()
+
+        # Load existing allocation if instance exists
+        if self.instance and self.instance.pk:
+            self.fields["period_weeks"].initial = self.instance.period_weeks
+            self.fields["schedule"].initial = self.instance.schedule
+
+    def save(self, commit=True):
+        allocation = super().save(commit=False)
+
+        # Ensure expiry_date is calculated if not provided
+        if not allocation.expiry_date and allocation.start_date and allocation.period_weeks:
+            allocation.expiry_date = allocation.start_date + timezone.timedelta(weeks=allocation.period_weeks)
+
+        if commit:
+            allocation.save()
+        return allocation
+
+class BaseLessonAllocationFormSet(BaseInlineFormSet):
+    def save(self, commit=True):
+        # Optionally override save logic for the formset
+        return super().save(commit=commit)
 
 
 LessonAllocationFormSet = inlineformset_factory(

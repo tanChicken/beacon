@@ -33,7 +33,13 @@ class Course(models.Model):
     instructor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="courses_teaching")
     students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="courses_enroling", blank=True)
     #lessons = 
-    #classroom_count = 
+    #classroom_count =
+    def is_visible_to(self, user):
+        """Check if this course should be visible to a given user."""
+        if user == self.instructor:
+            return True  # course director
+        # visible if the user is a lesson designer of any lesson in this course
+        return self.lessons.filter(designer=user).exists()
 
     def __str__(self):
         return f"{self.course_id} - {self.title}"
@@ -53,7 +59,6 @@ class Classroom(models.Model):
     classroom_id = models.CharField(max_length=20, unique=True)
     course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
     supervisor = models.CharField(max_length=100)
-
     # Location attributes
     building = models.CharField(max_length=100, blank=True, null=True)
     room = models.CharField(max_length=50, blank=True, null=True)
@@ -84,6 +89,14 @@ class Classroom(models.Model):
                 n += 1
             self.classroom_id = f"{self.course_id.course_id}-CL{n:02d}"
         super().save(*args, **kwargs)
+
+    @property
+    def duration_weeks(self):
+        # Try to get first allocation for this classroom
+        alloc = self.allocations.first()
+        if alloc:
+            return alloc.period_weeks
+        return None
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, role, **extra_fields):
@@ -243,6 +256,10 @@ class Lesson(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,default="DRAFT")
     prerequisites = models.ManyToManyField("self", symmetrical=False, blank=True, related_name="unlocking_lessons")
 
+    @property
+    def designer_name(self):
+        return self.designer.get_full_name() if self.designer else "Unassigned"
+        
     def __str__(self):
         return f"{self.lesson_id} - {self.title}"
     
@@ -307,7 +324,8 @@ class StudentChecklistItem(models.Model):
     title = models.CharField(max_length=255)
     item_type = models.CharField(max_length=20, choices=CHECKLIST_TYPE_CHOICES, default="OTHER")
     deadline = models.DateField(null=True, blank=True)
-
+    instructions = models.TextField(blank=True, null=True)
+    
     def __str__(self):
         return f"{self.title} ({self.item_type})"
 

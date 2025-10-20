@@ -202,7 +202,7 @@ body.dark-mode .main-content .classroom-oval:hover * {
               <div class="list-course"> {{ classroom.course_id }}</div>
               <div class="list-classroom">{{ classroom.classroom_id }}</div>
               <div class="list-footer">
-                <div class="list-duration">Duration: {{ classroom.get_duration_weeks_display }}</div>
+                <div class="list-duration">Duration: {{ classroom.duration_weeks|default:"TBA" }} weeks</div>
                 <div class="list-supervisor">Supervisor: {{ classroom.supervisor }}</div>
               </div>
             </a>
@@ -225,7 +225,7 @@ body.dark-mode .main-content .classroom-oval:hover * {
                   <div class="classroom-id">{{ classroom.classroom_id }}</div>
                   <div class="classroom-meta">
                     <span class="label">Supervisor: {{ classroom.supervisor }}</span>
-                    <span>Duration: {{ classroom.get_duration_weeks_display }}</span>
+                    <span>Duration: {{ classroom.duration_weeks|default:"TBA" }} weeks</span>
                   </div>
               </div>
               </a>
