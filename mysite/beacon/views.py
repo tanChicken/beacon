@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
+
+from .utils import expire_old_allocations, get_completed_courses
 from .models import Classroom, Course, Lesson, LessonClassroomAllocation, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student, StudentProfile, InstructorProfile
 from .forms import CourseForm, LessonAllocationFormSet, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
@@ -80,24 +82,37 @@ def student_signup(request):
 @role_required("STUDENT")
 def student_dashboard(request):
     student = request.user
-    enrolled = student.courses_enroling.all()
-    available_courses = Course.objects.filter(status="active").exclude(students=student)
-    
+    enrolled_courses = student.courses_enroling.all()
+    completed_courses = get_completed_courses(student)
+    # Only show available (active) courses that are not enrolled or completed
+    available_courses = (
+        Course.objects.filter(status="active")
+        .exclude(students=student)
+        .exclude(pk__in=completed_courses.values_list("pk", flat=True))
+    )
     total_cp = _get_student_credits(student)
     eligible_to_graduate = (total_cp >= 120) and not student.studentprofile.graduated
 
     return render(request, "student_dashboard.html", {
-        "courses": enrolled,
+        "courses": enrolled_courses,
         "available_courses": available_courses,
         "student": student,
         "total_credit": total_cp,
         "eligible_to_graduate": eligible_to_graduate,
+        "completed_courses": completed_courses,
+        "enrolled_courses": enrolled_courses,
     })
     
 @role_required("STUDENT")
 def enrolment_page(request):
     student = request.user
-    available_courses = Course.objects.filter(status="active").exclude(students=student)
+    completed_courses = get_completed_courses(student)
+    # Only show available (active) courses that are not enrolled or completed
+    available_courses = (
+        Course.objects.filter(status="active")
+        .exclude(students=student)
+        .exclude(pk__in=completed_courses.values_list("pk", flat=True))
+    )
 
     total_cp = _get_student_credits(student)
     enrolment_blocked = (total_cp >= 120) or (getattr(student, "studentprofile", None) and student.studentprofile.graduated)
@@ -289,8 +304,14 @@ def toggle_checklist_item(request, item_id):
 @role_required("STUDENT")
 def student_classroom(request):
     student = request.user
+    expired_lessons = expire_old_allocations()
+    if expired_lessons:
+        messages.warning(
+            request,
+            "⚠️ The following lessons have expired and were reset: " +
+            ", ".join(expired_lessons)
+        )
     today = date.today()
-
     # Get only enrolments with a classroom assigned
     enrolments_with_classroom = (
         Enrolment.objects
@@ -318,6 +339,13 @@ def student_classroom(request):
 @role_required("STUDENT")
 def student_classroom_details(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
+    expired_lessons = expire_old_allocations()
+    if expired_lessons:
+        messages.warning(
+            request,
+            "⚠️ The following lessons have expired and were reset: " +
+            ", ".join(expired_lessons)
+        )
     # Try to fetch allocation for this classroom
     allocation = (
         LessonClassroomAllocation.objects
@@ -762,6 +790,14 @@ def enrol_lesson(request, lesson_id):
     student = request.user
     lesson = get_object_or_404(Lesson, id=lesson_id)
 
+    expired_lessons = expire_old_allocations()
+    if expired_lessons:
+        messages.warning(
+            request,
+            "⚠️ The following lessons have expired and were reset: " +
+            ", ".join(expired_lessons)
+        )
+
     # --- Graduation / Credit Limit Check ---
     total_cp = _get_student_credits(student)
     if getattr(student, "studentprofile", None) and (student.studentprofile.graduated or total_cp >= 120):
@@ -857,6 +893,13 @@ def unenrol_lesson(request, pk):
 @role_required("INSTRUCTOR")
 def instructor_classroom(request):
     instructor = request.user
+    expired_lessons = expire_old_allocations()
+    if expired_lessons:
+        messages.warning(
+            request,
+            "⚠️ The following lessons have expired and were reset: " +
+            ", ".join(expired_lessons)
+        )
     classrooms = (
         Classroom.objects
         .select_related("course_id")
@@ -873,23 +916,21 @@ def instructor_classroom(request):
 def edit_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
     course = classroom.course_id
-    # Remove expired allocations before displaying
-    LessonClassroomAllocation.objects.filter(
-        classroom=classroom,
-        expiry_date__lt=timezone.now().date()
-    ).delete()
+
+    expired_lessons = expire_old_allocations()
+    if expired_lessons:
+        messages.warning(
+            request,
+            "⚠️ The following lessons have expired and were reset: " +
+            ", ".join(expired_lessons)
+        )
+
     allocations = classroom.allocations.select_related("lesson").order_by("-start_date")
 
     if request.method == "POST":
         form = EditClassroomForm(request.POST, instance=classroom, request=request)
         allocation_formset = LessonAllocationFormSet(request.POST, instance=classroom, form_kwargs={'course': course})
-        print("== DEBUG: allocation_formset data ==")
-        print(request.POST)
-        print(allocation_formset.errors)
-        print(allocation_formset.non_form_errors())
-        print(allocation_formset.total_form_count())
-        print(allocation_formset.management_form)
-        print(LessonClassroomAllocation.objects.filter(classroom=classroom))
+
         if form.is_valid() and allocation_formset.is_valid():
             form.save()
             allocation_formset.save()
@@ -1365,9 +1406,17 @@ def student_toggle_status(request):
         user = request.user  
 
         if user.is_semester_active:
+            # Only remove in-progress courses
+            in_progress_enrolments = Enrolment.objects.filter(student=user, completed=False)
+            in_progress_enrolments.delete()
             user.courses_enroling.clear()
-            Enrolment.objects.filter(student=user).delete()
-            StudentChecklistProgress.objects.filter(student=user).delete()
+            incomplete_courses = Course.objects.exclude(
+                pk__in=get_completed_courses(request.user)
+            )
+            StudentChecklistProgress.objects.filter(
+                student=request.user,
+                item__lesson__course__in=incomplete_courses
+            ).delete()
             user.is_semester_active = False
             messages.success(
                 request,
