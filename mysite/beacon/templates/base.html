@@ -755,23 +755,32 @@ document.addEventListener('DOMContentLoaded', function () {
     htmlEl.classList.remove('size-s', 'size-l');
     if (size === 's') htmlEl.classList.add('size-s');
     if (size === 'l') htmlEl.classList.add('size-l');
-
     resizeButtons.forEach(btn => {
       btn.classList.toggle('active', btn.getAttribute('data-size') === size);
     });
   }
 
-  // Apply backend-provided initial size from template
-  const initialSize = "{{ request.user.studentprofile.font_size|default:'m' }}";
+  // Get backend-provided font size or fallback
+  let initialSize = "m";
+  {% if user.is_authenticated %}
+    {% if user.role|upper == "STUDENT" %}
+      initialSize = "{{ user.studentprofile.font_size|default:'m' }}";
+    {% elif user.role|upper == "INSTRUCTOR" %}
+      initialSize = "{{ user.instructorprofile.font_size|default:'m' }}";
+    {% endif %}
+  {% else %}
+    initialSize = localStorage.getItem('uiTextSize') || 'm';
+  {% endif %}
+
+  console.log("Initial size applied:", initialSize);
   applySize(initialSize);
 
-  // Listen for user changes
+  // Add event listeners
   resizeButtons.forEach(button => {
     button.addEventListener('click', function() {
       const size = this.getAttribute('data-size');
       applySize(size);
-
-      // Persist change to backend (not localStorage)
+      {% if user.is_authenticated %}
       fetch("{% url 'toggle_font_size' %}", {
         method: "POST",
         headers: {
@@ -780,10 +789,14 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         body: JSON.stringify({ font_size: size })
       });
+      {% else %}
+      localStorage.setItem('uiTextSize', size);
+      {% endif %}
     });
   });
 });
 </script>
+
 
   </body>
 </html>
