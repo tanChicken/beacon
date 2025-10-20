@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Classroom, Course, Lesson, LessonClassroomAllocation, StudentChecklistProgress, StudentChecklistItem, Enrolment, Student, StudentProfile, InstructorProfile
-from .forms import CourseForm, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
+from .forms import CourseForm, LessonAllocationFormSet, LessonDetailForm, ClassroomForm, EditClassroomForm, LessonTaskFormSet, StudentProfile, StudentPasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model, update_session_auth_hash
 from django.db import transaction
@@ -289,18 +289,31 @@ def toggle_checklist_item(request, item_id):
 @role_required("STUDENT")
 def student_classroom(request):
     student = request.user
+    today = date.today()
 
     # Get only enrolments with a classroom assigned
-    enrolments = (
+    enrolments_with_classroom = (
         Enrolment.objects
         .filter(student=student, classroom__isnull=False)
-        .select_related('classroom', 'lesson', 'classroom__course_id')  # ✅ fixed
+        .select_related('classroom', 'lesson', 'classroom__course_id')
     )
 
     # Extract classrooms from enrolments
-    classrooms = [e.classroom for e in enrolments]
+    classrooms = []
+    for enrol in enrolments_with_classroom:
+        classroom = enrol.classroom
+        active_allocs = classroom.allocations.filter(
+            lesson=enrol.lesson,
+            expiry_date__gte=today
+        )
+        if active_allocs.exists():
+            classrooms.append(classroom)
 
-    return render(request, "student_classroom.html", {"classrooms": classrooms})
+    return render(
+        request,
+        "student_classroom.html",
+        {"classrooms": classrooms}
+    )
 
 @role_required("STUDENT")
 def student_classroom_details(request, pk):
@@ -490,8 +503,13 @@ def lesson_detail_edit(request, pk):
 
     total_points = course.lessons.aggregate(total=Sum("credit_point"))["total"] or 0
     remaining_points = 30 - total_points
+    
+    can_edit = lesson.status == "DRAFT"
 
     if request.method == "POST":
+        if not can_edit:
+            messages.error(request, "This lesson cannot be modified after publication.")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
         # Main lesson form
         form = LessonDetailForm(request.POST, instance=lesson, course=course, request=request)
 
@@ -649,7 +667,12 @@ def lesson_detail_edit(request, pk):
     assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
     enrolled_students = Enrolment.objects.filter(lesson=lesson).select_related("student__studentprofile")
 
-    available_classrooms = Classroom.objects.values('id', 'classroom_id', 'building', 'room')
+    available_classrooms = (
+        Classroom.objects
+        .filter(course_id=course)
+        .values('id', 'classroom_id', 'building', 'room')
+        .order_by('classroom_id')
+    )
 
     # Display page
     allocations = LessonClassroomAllocation.objects.filter(lesson=lesson)
@@ -711,6 +734,28 @@ def delete_lesson(request, pk):
     lesson.delete()
     messages.success(request, "Lesson deleted successfully!")
     return redirect("course_detail", pk=course_pk)
+
+@role_required("INSTRUCTOR")
+def publish_lesson(request, pk):
+    lesson = get_object_or_404(Lesson, pk=pk)
+    if lesson.status != "DRAFT":
+        messages.error(request, "Only draft lessons can be published.")
+        return redirect("lesson_detail_edit", pk=pk)
+    lesson.status = "PUBLISHED"
+    lesson.save()
+    messages.success(request, f"Lesson '{lesson.title}' has been published!")
+    return redirect("lesson_detail_edit", pk=pk)
+
+@role_required("INSTRUCTOR")
+def archive_lesson(request, pk):
+    lesson = get_object_or_404(Lesson, pk=pk)
+    if lesson.status != "PUBLISHED":
+        messages.error(request, "Only published lessons can be archived.")
+        return redirect("lesson_detail_edit", pk=pk)
+    lesson.status = "ARCHIVED"
+    lesson.save()
+    messages.success(request, f"Lesson '{lesson.title}' has been archived.")
+    return redirect("lesson_detail_edit", pk=pk)
 
 @role_required("STUDENT")
 def enrol_lesson(request, lesson_id):
@@ -827,22 +872,40 @@ def instructor_classroom(request):
 @role_required("INSTRUCTOR")
 def edit_classroom(request, pk):
     classroom = get_object_or_404(Classroom, pk=pk)
+    course = classroom.course_id
+    # Remove expired allocations before displaying
+    LessonClassroomAllocation.objects.filter(
+        classroom=classroom,
+        expiry_date__lt=timezone.now().date()
+    ).delete()
     allocations = classroom.allocations.select_related("lesson").order_by("-start_date")
 
     if request.method == "POST":
         form = EditClassroomForm(request.POST, instance=classroom, request=request)
-        if form.is_valid():
+        allocation_formset = LessonAllocationFormSet(request.POST, instance=classroom, form_kwargs={'course': course})
+        print("== DEBUG: allocation_formset data ==")
+        print(request.POST)
+        print(allocation_formset.errors)
+        print(allocation_formset.non_form_errors())
+        print(allocation_formset.total_form_count())
+        print(allocation_formset.management_form)
+        print(LessonClassroomAllocation.objects.filter(classroom=classroom))
+        if form.is_valid() and allocation_formset.is_valid():
             form.save()
+            allocation_formset.save()
             messages.success(request, "Classroom updated successfully.")
             return redirect("instructor_classroom")
         else:
             messages.error(request, "Please fix the errors below.")
+            for err in allocation_formset.non_form_errors():
+                messages.error(request, err)
     else:
         form = EditClassroomForm(instance=classroom, request=request)
+        allocation_formset = LessonAllocationFormSet(instance=classroom, form_kwargs={'course': course}, queryset=LessonClassroomAllocation.objects.filter(classroom=classroom))
 
     return render(request, "edit_classroom.html", {
         "classroom": classroom,
-        "form": form,
+        "form": form, "allocation_formset": allocation_formset,
         "allocations": allocations,
     })
 

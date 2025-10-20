@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.db.models import Max
+from django.core.exceptions import ValidationError
 
 # Demo
 class TodoItem(models.Model):
@@ -64,7 +65,7 @@ class Classroom(models.Model):
     online_link = models.URLField(blank=True, null=True)
 
     def __str__(self):
-        return f"Classroom {self.classroom_id} for {self.course_id.course_id} ({self.duration_weeks} weeks)"
+        return f"Classroom {self.classroom_id} for {self.course_id.course_id}"
 
     def location_display(self):
         if self.online_link:
@@ -237,7 +238,7 @@ class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
     lesson_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(blank=True, null=True)
     objective = models.TextField(blank=True, null=True)
     designer = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="lessons"
@@ -262,7 +263,28 @@ class Lesson(models.Model):
     def __str__(self):
         return f"{self.lesson_id} - {self.title}"
     
+    def clean(self):
+        if not self.pk:
+            return
+        
+        previous = Lesson.objects.filter(pk=self.pk).values_list("status", flat=True).first()
+        if not previous:
+            return
+        
+        allowed_transitions = {
+            "DRAFT": ["PUBLISHED"],
+            "PUBLISHED": ["ARCHIVED"],
+            "ARCHIVED": [],
+        }
+
+        if self.status != previous and self.status not in allowed_transitions.get(previous, []):
+            raise ValidationError(
+                f"Invalid status change: {previous} -> {self.status} is not allowed."
+            )
+    
     def save(self, *args, **kwargs):
+        self.full_clean()
+        
         if not self.lesson_id and self.course:
             existing_ids = Lesson.objects.filter(course=self.course).values_list("lesson_id", flat=True)
             used_numbers = [
@@ -339,7 +361,7 @@ class LessonClassroomAllocation(models.Model):
             except (TypeError, ValueError):
                 pass  # leave it unchanged if it's invalid
 
-        if not self.expiry_date and self.start_date and self.period_weeks:
+        if self.start_date and self.period_weeks:
             self.expiry_date = self.start_date + timedelta(weeks=int(self.period_weeks))
 
         super().save(*args, **kwargs)

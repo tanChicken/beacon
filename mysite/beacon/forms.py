@@ -1,7 +1,9 @@
+from django.utils import timezone
 from django import forms
 from .models import Course, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask, LessonClassroomAllocation
+from .models import Course, LessonClassroomAllocation, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
 from django.core.exceptions import ValidationError
-from django.forms import inlineformset_factory
+from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.db import models
 from django.utils import timezone
 
@@ -121,7 +123,9 @@ class LessonDetailForm(forms.ModelForm):
         self.instance = kwargs.get("instance", None)
         request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
-        self.fields["designer"].queryset = Instructor.instructor.all()
+
+        if self.instance and self.instance.pk:
+            self.fields['description'].required = True
 
         if self.course:
             self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
@@ -151,6 +155,10 @@ class LessonDetailForm(forms.ModelForm):
 
 
             fld.queryset = qs.order_by("classroom_id")
+
+            if self.instance and self.instance.status in ["PUBLISHED", "ARCHIVED"]:
+                for field in self.fields.values():
+                    field.disabled = True
 
     def clean_lesson_id(self):
         lesson_id = self.cleaned_data.get("lesson_id")
@@ -202,8 +210,6 @@ class ChecklistItemForm(forms.ModelForm):
         model = StudentChecklistItem
         fields = ["title"]
 
-DURATION_CHOICES = [(2, "2 weeks"), (3, "3 weeks"), (4, "4 weeks")]
-
 class ClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
 
@@ -239,6 +245,24 @@ class ClassroomForm(forms.ModelForm):
         if preselected_course:
             self.fields["course_id"].initial = preselected_course.pk
 
+class BaseLessonAllocationFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        today = timezone.now().date()
+
+        for form in self.forms:
+            if not hasattr(form, 'cleaned_data'):
+                continue
+            # Skip deleted or empty forms
+            if not form.cleaned_data or form.cleaned_data.get('DELETE'):
+                continue
+
+            expiry = form.cleaned_data.get('expiry_date')
+            if expiry and expiry < today:
+                form.add_error('expiry_date', '❌ Expiry date cannot be before today.')
+                # You can raise a general formset-level error too:
+                raise ValidationError("❌ Cannot save classroom — expiry date is before today.")
+
 class EditClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
     period_weeks = forms.ChoiceField(choices=LessonClassroomAllocation.PERIOD_CHOICES, required=False)
@@ -268,42 +292,60 @@ class EditClassroomForm(forms.ModelForm):
         choices = [("", "Select Supervisor")] + list(instructors.values_list("email", "email"))
         self.fields["supervisor"].choices = choices
         self.fields["course_id"].disabled = True
+        self.fields['course_id'].queryset = Course.objects.all()
+        self.fields['course_id'].label_from_instance = lambda obj: obj.course_id
 
-        # Load existing allocation (if any)
-        allocations = getattr(self.instance, "allocations", None)
-        if allocations and allocations.exists():
-            alloc = allocations.first()
-            self.fields["period_weeks"].initial = alloc.period_weeks
-            self.fields["schedule"].initial = alloc.schedule
+class LessonAllocationForm(forms.ModelForm):
+    class Meta:
+        model = LessonClassroomAllocation
+        fields = ["lesson", "period_weeks", "start_date", "expiry_date", "schedule"]
+        widgets = {
+            "lesson": forms.HiddenInput(),
+            "period_weeks": forms.Select(attrs={"class": "form-select"}),
+            "start_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "expiry_date": forms.DateInput(attrs={"class": "form-control", "type": "date", "readonly": "readonly"}),
+            "schedule": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Monday 10:00-12:00"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        course = kwargs.pop("course", None)
+        super().__init__(*args, **kwargs)
+
+        if course:
+            self.fields["lesson"].queryset = Lesson.objects.filter(course=course, status="PUBLISHED").order_by("title")
         else:
-            self.fields["period_weeks"].initial = ""
-            self.fields["schedule"].initial = ""
+            self.fields["lesson"].queryset = Lesson.objects.none()
+
+        # Load existing allocation if instance exists
+        if self.instance and self.instance.pk:
+            self.fields["period_weeks"].initial = self.instance.period_weeks
+            self.fields["schedule"].initial = self.instance.schedule
 
     def save(self, commit=True):
-        classroom = super().save(commit=commit)
+        allocation = super().save(commit=False)
 
-        # Handle LessonClassroomAllocation updates
-        allocations = classroom.allocations.all()
-        if allocations.exists():
-            alloc = allocations.first()
-        else:
-            alloc = LessonClassroomAllocation.objects.create(
-                classroom=classroom,
-                lesson=None,  # you can later associate a lesson if needed
-                period_weeks=2,
-                start_date=timezone.now(),
-            )
+        # Ensure expiry_date is calculated if not provided
+        if not allocation.expiry_date and allocation.start_date and allocation.period_weeks:
+            allocation.expiry_date = allocation.start_date + timezone.timedelta(weeks=allocation.period_weeks)
 
-        # Update fields from form
-        period_weeks = self.cleaned_data.get("period_weeks")
-        schedule = self.cleaned_data.get("schedule")
+        if commit:
+            allocation.save()
+        return allocation
 
-        if period_weeks:
-            alloc.period_weeks = int(period_weeks)
-        alloc.schedule = schedule
-        alloc.save()
+class BaseLessonAllocationFormSet(BaseInlineFormSet):
+    def save(self, commit=True):
+        # Optionally override save logic for the formset
+        return super().save(commit=commit)
 
-        return classroom
+
+LessonAllocationFormSet = inlineformset_factory(
+    Classroom,
+    LessonClassroomAllocation,
+    form=LessonAllocationForm,
+    formset=BaseLessonAllocationFormSet,
+    extra=0,
+    can_delete=False,
+)
 
 class StudentPasswordChangeForm(forms.Form):
     old_password = forms.CharField(
