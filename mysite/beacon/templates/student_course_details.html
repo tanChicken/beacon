@@ -100,11 +100,15 @@
   </div>
 
   <div class="d-flex justify-content-center mt-4">
-    <a href="{% url 'unenrol_course' course.id %}" 
-       class="btn btn-danger btn-lg"
-       onclick="return confirm('Are you sure you want to unenroll from this course? All lesson progress will be lost.');">
-       Unenrol from Course
-    </a>
+    {% if progress < 100 %}
+      <a href="{% url 'unenrol_course' course.id %}" 
+         class="btn btn-danger btn-lg"
+         onclick="return confirm('Are you sure you want to unenroll from this course? All lesson progress will be lost.');">
+         Unenrol from Course
+      </a>
+    {% else %}
+      <button class="btn btn-success btn-lg" disabled>Course Completed 🎉</button>
+    {% endif %}
   </div>
 </div>
 

@@ -493,12 +493,26 @@ document.addEventListener('DOMContentLoaded', function () {
         showCenteredPopup(body.error);
         if ('checked' in el) el.checked = !el.checked; // revert UI
       } else if (body.success) {
-        // optional: show feedback
+        // optional: success feedback
       }
     })
     .catch(console.error);
   });
 });
 </script>
+{% if is_completed %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.check-toggle').forEach(cb => {
+    cb.disabled = true;
+    cb.title = "Lesson completed — you cannot modify checklist items.";
+    cb.addEventListener('click', (e) => {
+      e.preventDefault();
+      alert("You cannot modify completed lesson items.");
+    });
+  });
+});
+</script>
+{% endif %}
 
 {% endblock %}

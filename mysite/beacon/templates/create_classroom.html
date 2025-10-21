@@ -1,48 +1,64 @@
-{# templates/classroom_form.html #}
 {% extends "base.html" %}
 {% block title %}Create Classroom{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
-  <h2 class="mb-3">Create Classroom{% if course %} for {{ course }}{% endif %}</h2>
+  <h2 class="mb-3">
+    Create Classroom{% if course %} for {{ course }}{% endif %}
+  </h2>
 
   <form method="post" class="mt-3" novalidate>
     {% csrf_token %}
-<!-- 
-    <div class="mb-3">
-      <label class="form-label">Classroom ID</label>
-      {{ form.classroom_id }}
-      {% if form.classroom_id.errors %}<div class="text-danger small">{{ form.classroom_id.errors }}</div>{% endif %}
-    </div> -->
+    
+    {# preserve next URL for redirection #}
+    {% if next %}
+      <input type="hidden" name="next" value="{{ next }}">
+    {% endif %}
 
     <div class="mb-3">
       <label class="form-label">Course</label>
       {{ form.course_id }}
-      {% if form.course_id.errors %}<div class="text-danger small">{{ form.course_id.errors }}</div>{% endif %}
+      {% if form.course_id.errors %}
+        <div class="text-danger small">{{ form.course_id.errors }}</div>
+      {% endif %}
     </div>
 
     <div class="mb-3">
       <label class="form-label">Classroom Supervisor</label>
       {{ form.supervisor }}
-      {% if form.supervisor.errors %}<div class="text-danger small">{{ form.supervisor.errors }}</div>{% endif %}
+      {% if form.supervisor.errors %}
+        <div class="text-danger small">{{ form.supervisor.errors }}</div>
+      {% endif %}
     </div>
 
     <div class="mb-3">
       <label class="form-label">Building</label>
-      {{ form.building }} {{ form.building.errors }}
+      {{ form.building }}
+      {% if form.building.errors %}
+        <div class="text-danger small">{{ form.building.errors }}</div>
+      {% endif %}
     </div>
 
     <div class="mb-3">
       <label class="form-label">Room</label>
-      {{ form.room }} {{ form.room.errors }}
+      {{ form.room }}
+      {% if form.room.errors %}
+        <div class="text-danger small">{{ form.room.errors }}</div>
+      {% endif %}
     </div>
 
     <div class="mb-3">
       <label class="form-label">Online Link</label>
-      {{ form.online_link }} {{ form.online_link.errors }}
+      {{ form.online_link }}
+      {% if form.online_link.errors %}
+        <div class="text-danger small">{{ form.online_link.errors }}</div>
+      {% endif %}
     </div>
 
-    <button type="submit" class="btn btn-primary">Create Classroom</button>
-    <a href="{% if course %}{% url 'course_detail' course.pk %}{% else %}{% url 'instructor_classroom' %}{% endif %}" class="btn btn-secondary ms-2">Cancel</a>
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-primary"> Create Classroom</button>
+      <a href="{{ next|default:request.META.HTTP_REFERER }}" class="btn btn-secondary">Cancel</a>
+    </div>
   </form>
 </div>
 {% endblock %}
