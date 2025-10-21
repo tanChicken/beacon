@@ -954,6 +954,7 @@ def edit_classroom(request, pk):
 @role_required("INSTRUCTOR")
 def create_classroom(request, pk=None):
     preselected_course = get_object_or_404(Course, pk=pk) if pk else None
+    next_url = request.GET.get("next") or request.POST.get("next")  # ✅ remember where to return
 
     if request.method == "POST":
         form = ClassroomForm(request.POST, request=request, preselected_course=preselected_course)
@@ -963,7 +964,12 @@ def create_classroom(request, pk=None):
                 classroom.course_id = preselected_course
             classroom.save()
             messages.success(request, "Classroom created successfully.")
-            # after global creation, return to instructor_classroom
+
+            # Redirect back to the 'next' URL if provided
+            if next_url:
+                return redirect(next_url)
+
+            # fallback (global creation)
             return redirect("instructor_classroom")
     else:
         form = ClassroomForm(request=request, preselected_course=preselected_course)
@@ -971,6 +977,7 @@ def create_classroom(request, pk=None):
     return render(request, "create_classroom.html", {
         "form": form,
         "course": preselected_course,
+        "next": next_url,  
     })
 
 @role_required("INSTRUCTOR")

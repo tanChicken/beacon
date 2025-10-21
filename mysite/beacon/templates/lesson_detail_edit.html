@@ -284,8 +284,9 @@ body.dark-mode .task-table td {
         <!-- Classrooms Section -->
         {% if lesson.status == "DRAFT" %}
             <div class="mb-3">
-                <a href="{% url 'create_classroom' course.pk %}" class="btn btn-sm btn-outline-primary">
-                    + Add Classroom
+                <a href="{% url 'create_classroom' course.pk %}?next={% url 'lesson_detail_edit' lesson.pk %}"
+                class="btn btn-sm btn-outline-primary">
+                + Add Classroom
                 </a>
             </div>
         {% endif %}
@@ -389,7 +390,7 @@ body.dark-mode .task-table td {
 
         <a href="{% url 'course_detail' lesson.course.pk %}" class="btn btn-outline-secondary">Back</a>
     </div>
-    </form> <!-- ✅ this closes the main save lesson form completely -->
+    </form> 
 
     {% if lesson.status == "DRAFT" %}
         <form method="post" action="{% url 'publish_lesson' lesson.pk %}"
@@ -668,6 +669,21 @@ document.addEventListener("click", function(e) {
     const row = e.target.closest(".classroom-row");
     if (row) row.remove();
   }
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+  const mainLessonForm = document.querySelector('form[onsubmit*="save the lesson details"]');
+  if (!mainLessonForm) return;
+
+  mainLessonForm.addEventListener('submit', function(e) {
+    const classrooms = mainLessonForm.querySelectorAll('#classroom-allocations select');
+    const hasClassroom = Array.from(classrooms).some(sel => sel.value && sel.value.trim() !== "");
+
+    if (!hasClassroom) {
+      e.preventDefault();
+      alert("⚠️ Please assign at least one classroom before saving this lesson.");
+    }
+  });
 });
 </script>
 

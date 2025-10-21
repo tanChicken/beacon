@@ -345,7 +345,8 @@ body.dark-mode #cardView .card:hover .text-muted {
 </div>
 
 <div class="fixed-bottom mb-3 d-flex justify-content-center">
-  <a href="{% url 'create_classroom' %}" class="btn btn-primary btn-lg">
+  <a href="{% url 'create_classroom' %}?next={% url 'instructor_classroom' %}" 
+    class="btn btn-primary">
     + Add Classroom
   </a>
 </div>
