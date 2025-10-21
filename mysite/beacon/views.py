@@ -84,6 +84,7 @@ def student_dashboard(request):
     student = request.user
     enrolled_courses = student.courses_enroling.all()
     completed_courses = get_completed_courses(student)
+    num_courses = enrolled_courses.count() + completed_courses.count()
     # Only show available (active) courses that are not enrolled or completed
     available_courses = (
         Course.objects.filter(status="active")
@@ -101,6 +102,7 @@ def student_dashboard(request):
         "eligible_to_graduate": eligible_to_graduate,
         "completed_courses": completed_courses,
         "enrolled_courses": enrolled_courses,
+        "num_courses": num_courses,
     })
     
 @role_required("STUDENT")
@@ -193,25 +195,18 @@ def student_course_details(request, pk):
     )
 
     # Progress bar calculation 
-    active_lessons = course.lessons.filter(status="PUBLISHED")
-    reading_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="READING")
-    assignment_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="ASSIGNMENT")
-
-    reading_done = StudentChecklistProgress.objects.filter(
-        student=student, item__in=reading_items, completed=True
-    ).count()
-    assignment_done = StudentChecklistProgress.objects.filter(
-        student=student, item__in=assignment_items, completed=True
-    ).count()
-
-    total_items = reading_items.count() + assignment_items.count()
-    total_done = reading_done + assignment_done
-    progress = (total_done / total_items * 100) if total_items else 0
+    earned_cp = sum(
+        lesson.credit_point
+        for lesson in lessons
+        if Enrolment.objects.filter(student=student, lesson=lesson, completed=True).exists()
+    )
+    progress = (earned_cp / 30) * 100
 
     return render(request, "student_course_details.html", {
         "course": course,
         "lesson_status": lesson_status_sorted,
-        "progress": round(progress, 1),   
+        "earned_cp": earned_cp,
+        "progress": progress,   
     })
 
 @role_required("STUDENT")
@@ -319,8 +314,7 @@ def student_classroom(request):
         .select_related('classroom', 'lesson', 'classroom__course_id')
     )
 
-    # Extract classrooms from enrolments
-    classrooms = []
+    active_enrolments = []
     for enrol in enrolments_with_classroom:
         classroom = enrol.classroom
         active_allocs = classroom.allocations.filter(
@@ -328,12 +322,15 @@ def student_classroom(request):
             expiry_date__gte=today
         )
         if active_allocs.exists():
-            classrooms.append(classroom)
+            active_enrolments.append({
+                "enrolment": enrol,
+                "classroom": classroom
+            })
 
     return render(
         request,
         "student_classroom.html",
-        {"classrooms": classrooms}
+        {"active_enrolments": active_enrolments}
     )
 
 @role_required("STUDENT")
@@ -993,10 +990,13 @@ def delete_classroom(request, pk):
 @role_required("STUDENT")
 def student_profile(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
-    courses = Course.objects.filter(students=request.user)
+    student = profile.user
+    enrolled_courses = student.courses_enroling.all()
+    completed_courses = get_completed_courses(student)
+    all_courses = (enrolled_courses | completed_courses).distinct()
 
     # Prefetch only published lessons for each course
-    courses = courses.prefetch_related(
+    courses = all_courses.prefetch_related(
         Prefetch("lessons", queryset=Lesson.objects.filter(status="PUBLISHED"))
     )
 
@@ -1048,6 +1048,8 @@ def student_report_course(request):
         })
 
     enrolled_courses = student.courses_enroling.all()
+    completed_courses = get_completed_courses(student)
+    all_courses = (enrolled_courses | completed_courses).distinct()
     required = 120
 
     current_credit = (
@@ -1071,7 +1073,7 @@ def student_report_course(request):
     progress = (current_credit / required) * 100 if required > 0 else 0
 
     courses = (
-        enrolled_courses.annotate(
+        all_courses.annotate(
             completed_credits=Sum(
                 "lessons__credit_point",
                 filter=Q(
@@ -1186,10 +1188,13 @@ def instructor_student_detail(request, student_id):
     profile = get_object_or_404(StudentProfile, user_id=student_id)
 
     # Fetch courses where this student is enrolled
-    courses = Course.objects.filter(students=profile.user)
+    student = profile.user
+    enrolled_courses = student.courses_enroling.all()
+    completed_courses = get_completed_courses(student)
+    all_courses = (enrolled_courses | completed_courses).distinct()
 
     # Prefetch published lessons
-    courses = courses.prefetch_related(
+    courses = all_courses.prefetch_related(
         Prefetch("lessons", queryset=Lesson.objects.filter(status="PUBLISHED"))
     )
 
@@ -1345,6 +1350,8 @@ def instructor_report_course_student_progress(request, course_id, student_id):
 def instructor_student_overall_progress(request, student_id):
     student = get_object_or_404(Student, id=student_id)
     enrolled_courses = student.courses_enroling.all()
+    completed_courses = get_completed_courses(student)
+    all_courses = (enrolled_courses | completed_courses).distinct()
 
     required = 120  # total credits required
 
@@ -1373,7 +1380,7 @@ def instructor_student_overall_progress(request, student_id):
 
     # --- Per course breakdown ---
     courses = (
-        enrolled_courses
+        all_courses
         .annotate(
             completed_credits=Sum(
                 "lessons__credit_point",
