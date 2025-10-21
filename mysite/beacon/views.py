@@ -681,7 +681,7 @@ def lesson_detail_edit(request, pk):
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("lesson_detail_edit", pk=lesson.pk)
         else:
-            messages.error(request, f"Please fix the errors below.")
+            messages.warning(request, f"Total credit points for this course exceed 30. Please adjust your input.")
             print("Form errors:", form.errors)
             print("Formset errors:", formset.errors)
     else:

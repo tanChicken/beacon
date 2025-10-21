@@ -184,7 +184,7 @@ class LessonDetailForm(forms.ModelForm):
         total_after = total_existing + credit_point
         if total_after > 30:
             raise forms.ValidationError(
-                f"Total credit points for this course cannot exceed 30 (currently {total_existing})."
+                f"Credit points cannot exceed 30 for all lessons in this course."
             )
         return credit_point
 
