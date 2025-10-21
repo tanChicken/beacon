@@ -145,13 +145,6 @@
         <h2>{{ lesson.lesson_id }}</h2>
         <h2 class="mb-5">{{ lesson.title }}</h2>
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
         <!-- Student Enrollment Status and Actions -->
         {% if user.role == "STUDENT" %}
         <div class="enrollment-status mb-3">
