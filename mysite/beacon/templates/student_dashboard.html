@@ -102,8 +102,47 @@
 
 <div class="container mt-4">
   <h1>YOUR COURSES</h1>
-
+  <div class="d-flex justify-content-end mb-3">
+      <button id="listViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
+      <button id="cardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
+    </div>
   {% if not user.is_semester_active %}
+    <!-- List View -->
+    <div id="listView">
+      <ul class="list-group mt-3">
+        {% for course in completed_courses %}
+          <li class="list-group-item" data-course-id="{{ course.pk }}">
+            <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+              <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
+              <div class="small">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
+            </a>
+            <span class="badge bg-success">Completed</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Card View -->
+    <div id="cardView" class="row d-none">
+      {% for course in completed_courses %}
+        <div class="col-md-4 mb-4">
+          <div class="card custom-course-card">
+            <div class="card-body">
+              <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+                <div class="course-meta">{{ course.course_id }}</div>
+                <h5 class="card-title">{{ course.title }}</h5>
+                <p class="course-meta">Status: {{ course.status }}</p>
+                <hr>
+                <p class="course-meta">Instructor: {{ course.instructor.email }}</p>
+                <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
+                <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+              </a>
+              <span class="badge bg-success">Completed</span>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
     <div class="container text-center mt-5">
       <div class="alert alert-warning p-5 shadow-sm rounded-4">
         <h2 class="fw-bold mb-3">Your account is currently inactive ⚠️</h2>
@@ -114,15 +153,10 @@
     </div>
 
   {% else %}
-  <div class="d-flex justify-content-end mb-3">
-    <button id="listViewBtn" class="btn btn-outline-primary btn-sm mr-2">List View</button>
-    <button id="cardViewBtn" class="btn btn-outline-primary btn-sm">Card View</button>
-  </div>
-
     <!-- List View -->
     <div id="listView">
       <ul class="list-group mt-3">
-        {% for course in courses %}
+        {% for course in enrolled_courses %}
           <li class="list-group-item" data-course-id="{{ course.pk }}">
             <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
               <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
@@ -132,12 +166,21 @@
         {% empty %}
           <li class="list-group-item text-muted">No courses enrolled.</li>
         {% endfor %}
+        {% for course in completed_courses %}
+          <li class="list-group-item" data-course-id="{{ course.pk }}">
+            <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+              <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
+              <div class="small">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
+            </a>
+            <span class="badge bg-success">Completed</span>
+          </li>
+        {% endfor %}
       </ul>
     </div>
 
     <!-- Card View -->
     <div id="cardView" class="row d-none">
-      {% for course in courses %}
+      {% for course in enrolled_courses %}
         <div class="col-md-4 mb-4">
           <div class="card custom-course-card">
             <div class="card-body">
@@ -156,14 +199,66 @@
       {% empty %}
         <p class="text-muted">No courses enrolled yet.</p>
       {% endfor %}
+      {% for course in completed_courses %}
+        <div class="col-md-4 mb-4">
+          <div class="card custom-course-card">
+            <div class="card-body">
+              <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+                <div class="course-meta">{{ course.course_id }}</div>
+                <h5 class="card-title">{{ course.title }}</h5>
+                <p class="course-meta">Status: {{ course.status }}</p>
+                <hr>
+                <p class="course-meta">Instructor: {{ course.instructor.email }}</p>
+                <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
+                <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+              </a>
+              <span class="badge bg-success">Completed</span>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
     </div>
 
     <!-- Enrolment Button -->
-    {% if user.is_semester_active and courses|length < 4 %}
+    {% if user.is_semester_active and num_courses < 4 %}
         <div class="mt-4 text-right">
           <a href="{% url 'enrolment_page' %}" class="btn btn-primary">📚 Enrol in New Courses</a>
         </div>
     {% endif %}
+
+    <!-- Graduate Button-->
+    {% if eligible_to_graduate %}
+      <div class="mt-4 text-center">
+        <form method="post" action="{% url 'graduate' %}">
+          {% csrf_token %}
+          <button class="btn btn-danger btn-lg">
+            Graduate
+          </button>
+        </form>
+      </div>
+    {% endif %}
+
+      <div class="modal fade" id="graduateModal" tabindex="-1" aria-labelledby="graduateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title" id="graduateModalLabel">Confirm Graduation</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              You have already completed 120 credit points.<br>
+              Do you want to graduate now?
+            </div>
+            <div class="modal-footer">
+              <form method="post" action="{% url 'graduate' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Yes, Graduate</button>
+              </form>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
   </div>
 {% endif %}
 

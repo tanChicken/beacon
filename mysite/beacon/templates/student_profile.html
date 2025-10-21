@@ -56,6 +56,18 @@
     <div class="card-body">
       <h4 class="mb-3">Academic Information</h4>
       <p class="mb-4"><strong>Total Credit Accumulated:</strong> {{ total_credit }}</p>
+      {% if profile.graduated %}
+        <div class="alert alert-success mt-3">
+          🎉 You have graduated on {{ profile.graduation_date|date:"F j, Y" }}!<br>
+          Congratulations! It's been a wonderful journey to have you with us.
+        </div>
+      {% elif total_credit >= 120 %}
+        <div class="alert alert-info mt-3">
+          You have completed 120 credit points and are now eligible to graduate.<br>
+          Please go to your <a href="{% url 'student_dashboard' %}">Dashboard</a> to graduate.
+        </div>
+      {% endif %}
+
       <h5>Enrolled Courses & Lessons</h5>
       {% if courses %}
         {% for course in courses %}

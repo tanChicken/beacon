@@ -3,105 +3,219 @@
 
 {% block content %}
 <style>
-  .progress-bar {
-  --progress: 0%;         
-  width: var(--progress); 
-  transition: width 0.6s ease; 
-}
-.progress-bar-green {
-  background-color: #28a745 !important; 
-  color: white !important;
-  font-weight: bold;
-  text-align: center;
-}
+  .progress {
+    width: 100%;
+    height: 25px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+  }
 
+  .progress-bar {
+    background-color: #28a745;
+    height: 100%;
+    transition: width 0.4s ease;
+  }
 </style>
 
 <div class="container mt-4">
-    <div class="mb-3">
-      <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
+  <div class="mb-3">
+    <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">&larr; Back</a>
+  </div>
+
+  <div class="text-center mb-4">
+    <h2>{{ course.course_id }}</h2>
+    <h2 class="mb-5">{{ course.title }}</h2>
+  </div>
+
+  <div class="d-flex justify-content-between">
+    <div>
+      <p>Course director: {{ course.instructor }}</p>
+      <p>Created by: {{ course.instructor }} on {{ course.created_at|date:"j/n/Y" }}</p>
     </div>
-
-    <div class="text-center mb-4">
-        <h2>{{ course.course_id }}</h2>
-        <h2 class="mb-5">{{ course.title }}</h2>
+    <div>
+      <p>Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
     </div>
+  </div>
 
-    <div class="d-flex justify-content-between">
-        <div>
-        <p>Course director: {{ course.instructor }}</p>
-        <p>Created by: {{ course.instructor }} on {{ course.created_at|date:"j/n/Y" }}</p>
-        </div>
-        <div>
-        <p>Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
-        </div>
+  <hr class="my-2">
+
+  <!-- Progress bar -->
+  <div class="mb-2 d-flex justify-content-between align-items-center">
+    <small class="text-muted">0</small>
+    <small class="text-muted">Course Credit Point: {{ course.credit_points }}</small>
+  </div>
+
+  <div class="progress" style="height: 25px;">
+    <div class="progress-bar"
+        role="progressbar"
+        style="width: {{ progress }}%;"
+        aria-valuenow="{{ earned_cp }}"
+        aria-valuemin="0"
+        aria-valuemax="{{ course.credit_points }}">
+      {{ earned_cp }} credit earned
     </div>
+  </div>
+  <p class="text-center">Your Progress In This Course</p>
 
-    <hr class="my-2">
+  <hr class="mb-3">
 
-    <div class="d-flex justify-content-end">
-        <p>Course Credit Point: {{ course.credit_points }}</p>
-    </div>
-
-    <!-- Progress bar -->
-    <div class="progress my-3" style="height: 25px;">
-        <div class="progress-bar progress-bar-green"
-            role="progressbar"
-            style="--progress: {{ progress }}%;"
-            aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
-            {{ progress }}%
-        </div>
-    </div>
-    <p class="text-center">Your Progress In This Course</p>
-
-    <hr class="mb-3">
-    
-    <!-- Lessons -->
-    <h4>Lessons</h4>
-    <div class="list-group">
-        {% for status in lesson_status %}
-            <div class="list-group-item">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <a href="{% url 'student_lesson_details' pk=status.lesson.pk %}">
-                            {{ status.lesson }}
-                        </a>
-                        <div class="small text-muted">
-                            Credit Point: {{ status.lesson.credit_point }}
-                        </div>
-                    </div>
-                    <div>
-                        {% if status.completed %}
-                            <span class="badge bg-info">Completed</span>
-                        {% elif status.enrolled %}
-                            <span class="badge bg-success">Enrolled</span>
-                            <a href="{% url 'unenrol_lesson' status.lesson.id %}" 
-                           class="btn btn-sm btn-danger ms-2"
-                           onclick="return confirm('Are you sure you want to unenroll from this lesson?');">
-                           Unenroll
-                        </a>
-                        {% elif status.can_enroll %}
-                            <a href="{% url 'enrol_lesson' status.lesson.id %}" 
-                               class="btn btn-sm btn-primary">Enroll</a>
-                        {% else %}
-                            <button class="btn btn-sm btn-secondary" disabled>
-                                Locked
-                            </button>
-                        {% endif %}
-                    </div>
-                </div>
+  <!-- Lessons -->
+  <h4>Lessons</h4>
+  <div class="list-group">
+    {% for status in lesson_status %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <a href="{% url 'student_lesson_details' pk=status.lesson.pk %}">
+              {{ status.lesson }}
+            </a>
+            <div class="small text-muted">
+              Credit Point: {{ status.lesson.credit_point }}
             </div>
-        {% empty %}
-            <p class="text-muted">No lessons added yet.</p>
-        {% endfor %}
-    </div>
+          </div>
+          <div>
+            {% if status.completed %}
+              <span class="badge bg-info">Completed</span>
 
-    <div class="d-flex justify-content-center mt-4">
-        <a href="{% url 'unenrol_course' course.id %}" 
-        class="btn btn-danger btn-lg"
-        onclick="return confirm('Are you sure you want to unenroll from this course? All lesson progress will be lost.');">
-        Unenrol from Course
-        </a>
-    </div>
+            {% elif status.enrolled %}
+              <span class="badge bg-success">Enrolled</span>
+              <a href="{% url 'unenrol_lesson' status.lesson.id %}" 
+                 class="btn btn-sm btn-danger ms-2"
+                 onclick="return confirm('Are you sure you want to unenroll from this lesson?');">
+                 Unenroll
+              </a>
+
+            {% elif status.can_enroll %}
+              <!-- Enroll button triggers JS popup -->
+              <button class="btn btn-sm btn-primary enrol-btn"
+                      data-lesson-id="{{ status.lesson.id }}"
+                      data-enrol-url="{% url 'enrol_lesson' status.lesson.id %}">
+                Enroll
+              </button>
+
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>Locked</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No lessons added yet.</p>
+    {% endfor %}
+  </div>
+
+  <div class="d-flex justify-content-center mt-4">
+    {% if progress < 100 %}
+      <a href="{% url 'unenrol_course' course.id %}" 
+         class="btn btn-danger btn-lg"
+         onclick="return confirm('Are you sure you want to unenroll from this course? All lesson progress will be lost.');">
+         Unenrol from Course
+      </a>
+    {% else %}
+      <button class="btn btn-success btn-lg" disabled>Course Completed 🎉</button>
+    {% endif %}
+  </div>
 </div>
+
+<!-- =================== POPUP SCRIPT =================== -->
+<script>
+function showClassroomPopup(data, enrolUrl) {
+  const popup = document.createElement('div');
+  popup.id = 'classroomPopup';
+  popup.innerHTML = `
+    <div style="
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: white; border-radius: 10px;
+      padding: 20px; width: 650px;
+      max-height: 80vh; overflow-y: auto;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+      z-index: 9999;">
+      <h4>Select a Classroom</h4>
+      <table class="table table-bordered mt-3">
+        <thead>
+          <tr>
+            <th>ID</th><th>Schedule</th>
+            <th>Building/Room</th><th>Online Link</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${
+            data.classrooms.length > 0 
+            ? data.classrooms.map(c => `
+              <tr>
+                <td>${c.classroom_id || c.id}</td>
+                <td>${c.schedule || 'TBA'}</td>
+                <td>${(c.building || '') + ' ' + (c.room || '')}</td>
+                <td>${c.online_link ? `<a href="${c.online_link}" target="_blank">Link</a>` : '-'}</td>
+                <td><button class="btn btn-sm btn-success select-classroom" data-id="${c.id}">Select</button></td>
+              </tr>`).join('')
+            : `<tr><td colspan="6" class="text-center text-muted">No classrooms available.</td></tr>`
+          }
+        </tbody>
+      </table>
+      <div class="text-center mt-3">
+        ${data.classrooms.length === 0 ? `
+          <button id="enrolAnyway" class="btn btn-primary">Enroll Anyway</button>` : ''}
+        <button id="closePopup" class="btn btn-secondary ms-2">Cancel</button>
+      </div>
+    </div>
+    <div id="overlay" style="
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); z-index: 9998;">
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  // close popup
+  document.getElementById('closePopup').onclick = () => popup.remove();
+  document.getElementById('overlay').onclick = () => popup.remove();
+
+  // handle classroom selection
+  document.querySelectorAll('.select-classroom').forEach(btn => {
+    btn.onclick = function() {
+      const classroomId = this.dataset.id;
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = enrolUrl;
+      form.innerHTML = `
+        {% csrf_token %}
+        <input type="hidden" name="classroom_id" value="${classroomId}">
+      `;
+      document.body.appendChild(form);
+      form.submit();
+    };
+  });
+
+  // handle "enrol anyway" (no classroom available)
+  const enrolAnyway = document.getElementById('enrolAnyway');
+  if (enrolAnyway) {
+    enrolAnyway.onclick = function() {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = enrolUrl;
+      form.innerHTML = `{% csrf_token %}`;
+      document.body.appendChild(form);
+      form.submit();
+    };
+  }
+}
+
+// Attach event listeners to all enrol buttons
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.enrol-btn').forEach(button => {
+    button.addEventListener('click', e => {
+      e.preventDefault();
+      const enrolUrl = button.dataset.enrolUrl;
+      const lessonId = button.dataset.lessonId;
+
+      fetch(enrolUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(res => res.json())
+        .then(data => showClassroomPopup(data, enrolUrl))
+        .catch(() => alert('Failed to load available classrooms.'));
+    });
+  });
+});
+</script>
 {% endblock %}

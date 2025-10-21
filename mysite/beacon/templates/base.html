@@ -608,6 +608,26 @@ body.dark-mode .summary-card {
       border-color: #34a464 !important;
     }
 
+    /* Dark mode: prevent logo highlighting for BOTH roles */
+    body.dark-mode .student-sidebar .sidebar-header a:hover,
+    body.dark-mode .student-sidebar .sidebar-header a:hover .logo-img,
+    body.dark-mode .student-sidebar .logo-img:hover,
+    body.dark-mode .instructor-sidebar .sidebar-header a:hover,
+    body.dark-mode .instructor-sidebar .sidebar-header a:hover .logo-img,
+    body.dark-mode .instructor-sidebar .logo-img:hover {
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+
+    /* Specifically target the logo image in dark mode for both roles */
+    body.dark-mode .logo-img:hover,
+    body.dark-mode .sidebar-header:hover .logo-img,
+    body.dark-mode .sidebar-header a:hover .logo-img {
+      background: none !important;
+      filter: none !important;
+      opacity: 1 !important;
+    }
+
 /* Ensure all text + links inside also turn white */
 .student-sidebar ~ .main-content .course-list-item:hover *,
 .student-sidebar ~ .main-content .course-card:hover * {
@@ -628,29 +648,78 @@ body.dark-mode .summary-card {
       color: #fff !important;
       text-decoration: none !important;
     }
+    .logo-img {
+      width: 170px;
+      height: 170px;
+      object-fit: contain;
+      margin-right: 8px;
+      pointer-events: auto;
+      transition: all 0.2s ease;
+    }
+    /* Small size */
+    html.size-s .logo-img {
+      width: 120px;
+      height: 120px;
+    }
+    /* Large size */  
+    html.size-l .logo-img {
+      width: 300px;
+      height: 300px;
+    }
+    .logo-img:hover,
+    .sidebar-header:hover .logo-img {
+      background: none !important;
+      box-shadow: none !important;
+      filter: none !important;
+      opacity: 1 !important;
+    }
+    /* Reduce spacing between logo and menu */
+    .sidebar-header {
+      padding-bottom: 0;      /* remove bottom padding completely */
+      margin-bottom: 0;       /* no margin under the logo */
+    }
+    .sidebar-header a:hover {
+      background: none !important;
+      box-shadow: none !important;
+    }
+    .sidebar-nav {
+      padding-top: 0rem;   /* pull the nav links closer to the logo */
+    }
+    /* Give breathing room at bottom of sidebar */
+    .sidebar-bottom {
+      padding: 1.5rem 1.25rem;  /* extra space inside */
+      margin-bottom: 0.75rem;   /* adds gap from screen edge */
+    }
     </style>
   </head>
 
-  <body class="{% if dark_mode %}dark-mode{% endif %}">
+  <body class="{% if dark_mode %}dark-mode{% endif %} {% if user.is_authenticated %}{{ user.studentprofile.font_size }}-font{% endif %}">
     <!-- Sidebar with 3-section structure -->
     <div class="sidebar
       {% if user.is_authenticated and user.role|upper == 'INSTRUCTOR' %}instructor-sidebar{% endif %}
       {% if user.is_authenticated and user.role|upper == 'STUDENT' %}student-sidebar{% endif %}">
-      
-      <!-- TOP: Logo (never scrolls) -->
-      <div class="sidebar-header">
-        <h2 class="logo"><a href="{% url 'home' %}">Beacon</a></h2>
-      </div>
 
       <!-- MIDDLE: Navigation (scrolls when zoomed) -->
       <div class="sidebar-nav">
         {% if user.is_authenticated %}
           {% if user.role|upper == "STUDENT" %}
+            <!-- TOP: Logo (never scrolls) -->
+            <div class="sidebar-header text-center">
+              <a href="{% url 'home' %}" class="d-flex align-items-center justify-content-center">
+                <img src="{% static 'images/student_logo.png' %}" alt="Beacon Logo" class="logo-img" />
+              </a>
+            </div>
             <a href="{% url 'student_dashboard' %}">Courses</a>
             <a href="{% url 'student_classroom' %}">Classroom</a>
             <a href="{% url 'student_profile' %}">Student</a>
             <a href="{% url 'student_report_course' %}">Report</a>
           {% elif user.role|upper == "INSTRUCTOR" %}
+            <!-- TOP: Logo (never scrolls) -->
+            <div class="sidebar-header text-center">
+              <a href="{% url 'home' %}" class="d-flex align-items-center justify-content-center">
+                <img src="{% static 'images/instructor_logo.png' %}" alt="Beacon Logo" class="logo-img mr-2" />
+              </a>
+            </div>
             <a href="{% url 'instructor_dashboard' %}">Courses</a>
             <a href="{% url 'instructor_classroom' %}">Classroom</a>
             <a href="{% url 'instructor_student_list' %}">Student</a>
@@ -745,36 +814,58 @@ body.dark-mode .summary-card {
     });
     </script>
 
-    <!-- Zoom/Resize Script -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const htmlEl = document.documentElement;
-      const resizeButtons = document.querySelectorAll('.resize-btn');
+    <!-- Font Size Toggle Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const htmlEl = document.documentElement;
+  const resizeButtons = document.querySelectorAll('.resize-btn');
 
-      // Load saved preference
-      const savedSize = localStorage.getItem('uiTextSize') || 'm';
-      applySize(savedSize);
-
-      resizeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-          const size = this.getAttribute('data-size');
-          applySize(size);
-          localStorage.setItem('uiTextSize', size);
-        });
-      });
-
-      function applySize(size) {
-        // Remove classes; for 'm' we add NO class to keep original layout
-        htmlEl.classList.remove('size-s', 'size-l');
-        if (size === 's') htmlEl.classList.add('size-s');
-        if (size === 'l') htmlEl.classList.add('size-l');
-
-        // Update active state
-        resizeButtons.forEach(btn => {
-          btn.classList.toggle('active', btn.getAttribute('data-size') === size);
-        });
-      }
+  function applySize(size) {
+    htmlEl.classList.remove('size-s', 'size-l');
+    if (size === 's') htmlEl.classList.add('size-s');
+    if (size === 'l') htmlEl.classList.add('size-l');
+    resizeButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-size') === size);
     });
-    </script>
+  }
+
+  // Get backend-provided font size or fallback
+  let initialSize = "m";
+  {% if user.is_authenticated %}
+    {% if user.role|upper == "STUDENT" %}
+      initialSize = "{{ user.studentprofile.font_size|default:'m' }}";
+    {% elif user.role|upper == "INSTRUCTOR" %}
+      initialSize = "{{ user.instructorprofile.font_size|default:'m' }}";
+    {% endif %}
+  {% else %}
+    initialSize = localStorage.getItem('uiTextSize') || 'm';
+  {% endif %}
+
+  console.log("Initial size applied:", initialSize);
+  applySize(initialSize);
+
+  // Add event listeners
+  resizeButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const size = this.getAttribute('data-size');
+      applySize(size);
+      {% if user.is_authenticated %}
+      fetch("{% url 'toggle_font_size' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ font_size: size })
+      });
+      {% else %}
+      localStorage.setItem('uiTextSize', size);
+      {% endif %}
+    });
+  });
+});
+</script>
+
+
   </body>
 </html>

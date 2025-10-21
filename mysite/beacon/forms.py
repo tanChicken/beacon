@@ -1,8 +1,11 @@
+from django.utils import timezone
 from django import forms
-from .models import Course, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
+from .models import Course, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask, LessonClassroomAllocation
+from .models import Course, LessonClassroomAllocation, StudentChecklistItem, User, StudentProfile, Instructor, Lesson, Classroom, LessonTask
 from django.core.exceptions import ValidationError
-from django.forms import inlineformset_factory
+from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.db import models
+from django.utils import timezone
 
 class StudentSignupForm(forms.ModelForm):
     title_choices = [
@@ -94,9 +97,16 @@ LessonFormSet = inlineformset_factory(
 )
 
 class LessonDetailForm(forms.ModelForm):
+    designer = forms.ModelChoiceField(
+        queryset=Instructor.instructor.all(),
+        required=True,
+        label="Lesson Designer",
+        widget=forms.Select(attrs={"class": "form-select"})
+    )
+
     class Meta:
         model = Lesson
-        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week','classroom']
+        fields = ['status', 'lesson_id', 'title', 'credit_point', 'description', 'objective', 'prerequisites', 'effort_per_week', 'designer']
         widgets = {
             "lesson_id": forms.TextInput(attrs={"class": "form-control", "readonly":"readonly"}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lesson Title"}),
@@ -106,7 +116,6 @@ class LessonDetailForm(forms.ModelForm):
             "status": forms.Select(attrs={"class": "form-select"}),
             "credit_point": forms.NumberInput(attrs={"class": "form-control", "min": 1, "max": 30}),
             "prerequisites": forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
-            "classroom": forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
@@ -114,6 +123,10 @@ class LessonDetailForm(forms.ModelForm):
         self.instance = kwargs.get("instance", None)
         request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.pk:
+            self.fields['description'].required = True
+            self.fields['objective'].required = True
 
         if self.course:
             self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
@@ -143,6 +156,10 @@ class LessonDetailForm(forms.ModelForm):
 
 
             fld.queryset = qs.order_by("classroom_id")
+
+            if self.instance and self.instance.status in ["PUBLISHED", "ARCHIVED"]:
+                for field in self.fields.values():
+                    field.disabled = True
 
     def clean_lesson_id(self):
         lesson_id = self.cleaned_data.get("lesson_id")
@@ -194,21 +211,18 @@ class ChecklistItemForm(forms.ModelForm):
         model = StudentChecklistItem
         fields = ["title"]
 
-DURATION_CHOICES = [(2, "2 weeks"), (3, "3 weeks"), (4, "4 weeks")]
-
 class ClassroomForm(forms.ModelForm):
-    duration_weeks = forms.TypedChoiceField(choices=DURATION_CHOICES, coerce=int)
     supervisor = forms.ChoiceField(choices=[])
 
     class Meta:
         model = Classroom
-        fields = ["course_id", "duration_weeks", "supervisor",
+        fields = ["course_id", "supervisor",
                   "building", "room", "online_link"]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
-            "duration_weeks": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
+            "schedule": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Monday 9:00 am - 11:00 am"}),
             "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
@@ -232,33 +246,107 @@ class ClassroomForm(forms.ModelForm):
         if preselected_course:
             self.fields["course_id"].initial = preselected_course.pk
 
+class BaseLessonAllocationFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        today = timezone.now().date()
+
+        for form in self.forms:
+            if not hasattr(form, 'cleaned_data'):
+                continue
+            # Skip deleted or empty forms
+            if not form.cleaned_data or form.cleaned_data.get('DELETE'):
+                continue
+
+            expiry = form.cleaned_data.get('expiry_date')
+            if expiry and expiry < today:
+                form.add_error('expiry_date', '❌ Expiry date cannot be before today.')
+                # You can raise a general formset-level error too:
+                raise ValidationError("❌ Cannot save classroom — expiry date is before today.")
+
 class EditClassroomForm(forms.ModelForm):
     supervisor = forms.ChoiceField(choices=[])
+    period_weeks = forms.ChoiceField(choices=LessonClassroomAllocation.PERIOD_CHOICES, required=False)
+    schedule = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Monday 10AM - 12PM"}))
+
     class Meta:
         model = Classroom
-        fields = ["classroom_id", "course_id", "duration_weeks", "supervisor",
-                  "building", "room", "online_link"]
+        fields = [
+            "classroom_id", "course_id", "supervisor",
+            "building", "room", "online_link",
+        ]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
-            "duration_weeks": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
             "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
             "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
         }
-        
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
+        # Populate supervisor choices
         instructors = User.objects.filter(role="INSTRUCTOR").order_by("email")
-        choices = [("", "Select Supervisor")]
-        choices += list(instructors.values_list("email", "email"))
+        choices = [("", "Select Supervisor")] + list(instructors.values_list("email", "email"))
         self.fields["supervisor"].choices = choices
         self.fields["course_id"].disabled = True
-        self.fields["duration_weeks"].disabled = True
+        self.fields['course_id'].queryset = Course.objects.all()
+        self.fields['course_id'].label_from_instance = lambda obj: obj.course_id
+
+class LessonAllocationForm(forms.ModelForm):
+    class Meta:
+        model = LessonClassroomAllocation
+        fields = ["lesson", "period_weeks", "start_date", "expiry_date", "schedule"]
+        widgets = {
+            "lesson": forms.HiddenInput(),
+            "period_weeks": forms.Select(attrs={"class": "form-select"}),
+            "start_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "expiry_date": forms.DateInput(attrs={"class": "form-control", "type": "date", "readonly": "readonly"}),
+            "schedule": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Monday 10:00-12:00"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        course = kwargs.pop("course", None)
+        super().__init__(*args, **kwargs)
+
+        if course:
+            self.fields["lesson"].queryset = Lesson.objects.filter(course=course, status="PUBLISHED").order_by("title")
+        else:
+            self.fields["lesson"].queryset = Lesson.objects.none()
+
+        # Load existing allocation if instance exists
+        if self.instance and self.instance.pk:
+            self.fields["period_weeks"].initial = self.instance.period_weeks
+            self.fields["schedule"].initial = self.instance.schedule
+
+    def save(self, commit=True):
+        allocation = super().save(commit=False)
+
+        # Ensure expiry_date is calculated if not provided
+        if not allocation.expiry_date and allocation.start_date and allocation.period_weeks:
+            allocation.expiry_date = allocation.start_date + timezone.timedelta(weeks=allocation.period_weeks)
+
+        if commit:
+            allocation.save()
+        return allocation
+
+class BaseLessonAllocationFormSet(BaseInlineFormSet):
+    def save(self, commit=True):
+        # Optionally override save logic for the formset
+        return super().save(commit=commit)
+
+
+LessonAllocationFormSet = inlineformset_factory(
+    Classroom,
+    LessonClassroomAllocation,
+    form=LessonAllocationForm,
+    formset=BaseLessonAllocationFormSet,
+    extra=0,
+    can_delete=False,
+)
 
 class StudentPasswordChangeForm(forms.Form):
     old_password = forms.CharField(

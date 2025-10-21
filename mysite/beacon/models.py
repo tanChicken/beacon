@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.db import models, transaction
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -5,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.db.models import Max
+from django.core.exceptions import ValidationError
 
 # Demo
 class TodoItem(models.Model):
@@ -31,7 +33,13 @@ class Course(models.Model):
     instructor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="courses_teaching")
     students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="courses_enroling", blank=True)
     #lessons = 
-    #classroom_count = 
+    #classroom_count =
+    def is_visible_to(self, user):
+        """Check if this course should be visible to a given user."""
+        if user == self.instructor:
+            return True  # course director
+        # visible if the user is a lesson designer of any lesson in this course
+        return self.lessons.filter(designer=user).exists()
 
     def __str__(self):
         return f"{self.course_id} - {self.title}"
@@ -48,23 +56,16 @@ class Course(models.Model):
         super().save(*args, **kwargs)
     
 class Classroom(models.Model):
-    DURATION_CHOICES = [
-        (2, "2 weeks"),
-        (3, "3 weeks"),
-        (4, "4 weeks"),
-    ]
     classroom_id = models.CharField(max_length=20, unique=True)
     course_id = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="classrooms")
-    duration_weeks = models.PositiveIntegerField(choices=DURATION_CHOICES)
     supervisor = models.CharField(max_length=100)
-
     # Location attributes
     building = models.CharField(max_length=100, blank=True, null=True)
     room = models.CharField(max_length=50, blank=True, null=True)
     online_link = models.URLField(blank=True, null=True)
 
     def __str__(self):
-        return f"Classroom {self.classroom_id} for {self.course_id.course_id} ({self.duration_weeks} weeks)"
+        return f"Classroom {self.classroom_id} for {self.course_id.course_id}"
 
     def location_display(self):
         if self.online_link:
@@ -88,6 +89,14 @@ class Classroom(models.Model):
                 n += 1
             self.classroom_id = f"{self.course_id.course_id}-CL{n:02d}"
         super().save(*args, **kwargs)
+
+    @property
+    def duration_weeks(self):
+        # Try to get first allocation for this classroom
+        alloc = self.allocations.first()
+        if alloc:
+            return alloc.period_weeks
+        return None
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, role, **extra_fields):
@@ -143,11 +152,6 @@ class Student(User):
 
     def welcome(self):
         return "Only for students"       
-    
-@receiver(post_save, sender=Student)
-def create_student_profile(sender, instance, created, **kwargs):
-    if created and instance.role == "STUDENT":
-        StudentProfile.objects.create(user=instance)
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -162,6 +166,27 @@ class StudentProfile(models.Model):
         null=True
     )
     dark_mode = models.BooleanField(default=False)
+    graduated = models.BooleanField(default=False)
+    graduation_date = models.DateField(blank=True, null=True)
+
+    font_size = models.CharField(
+        max_length=10,
+        choices=[
+            ("small", "Small"),
+            ("medium", "Medium"),
+            ("large", "Large"),
+        ],
+        default="medium",
+    )
+
+    def __str__(self):
+        return f"{self.title or ''} {self.first_name or ''} {self.last_name or ''}".strip()
+    
+    
+@receiver(post_save, sender=Student)
+def create_student_profile(sender, instance, created, **kwargs):
+    if created and instance.role == "STUDENT":
+        StudentProfile.objects.create(user=instance)
 
 class InstructorManager(models.Manager):
     def get_queryset(self, *args, **kwargs):
@@ -183,6 +208,15 @@ class InstructorProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="instructorprofile")
     bio = models.TextField(blank=True, null=True)
     dark_mode = models.BooleanField(default=False)
+    font_size = models.CharField(
+        max_length=10,
+        choices=[
+            ("small", "Small"),
+            ("medium", "Medium"),
+            ("large", "Large"),
+        ],
+        default="medium",
+    )
 
     def __str__(self):
         return f"Instructor Profile: {self.user.email}"
@@ -202,10 +236,9 @@ def ensure_profiles(sender, instance, created, **kwargs):
 
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons", null=True, blank=True)
-    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name="lessons")
     lesson_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(blank=True, null=True)
     objective = models.TextField(blank=True, null=True)
     designer = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="lessons"
@@ -223,10 +256,35 @@ class Lesson(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,default="DRAFT")
     prerequisites = models.ManyToManyField("self", symmetrical=False, blank=True, related_name="unlocking_lessons")
 
+    @property
+    def designer_name(self):
+        return self.designer.get_full_name() if self.designer else "Unassigned"
+        
     def __str__(self):
         return f"{self.lesson_id} - {self.title}"
     
+    def clean(self):
+        if not self.pk:
+            return
+        
+        previous = Lesson.objects.filter(pk=self.pk).values_list("status", flat=True).first()
+        if not previous:
+            return
+        
+        allowed_transitions = {
+            "DRAFT": ["PUBLISHED"],
+            "PUBLISHED": ["ARCHIVED"],
+            "ARCHIVED": [],
+        }
+
+        if self.status != previous and self.status not in allowed_transitions.get(previous, []):
+            raise ValidationError(
+                f"Invalid status change: {previous} -> {self.status} is not allowed."
+            )
+    
     def save(self, *args, **kwargs):
+        self.full_clean()
+        
         if not self.lesson_id and self.course:
             existing_ids = Lesson.objects.filter(course=self.course).values_list("lesson_id", flat=True)
             used_numbers = [
@@ -266,7 +324,8 @@ class StudentChecklistItem(models.Model):
     title = models.CharField(max_length=255)
     item_type = models.CharField(max_length=20, choices=CHECKLIST_TYPE_CHOICES, default="OTHER")
     deadline = models.DateField(null=True, blank=True)
-
+    instructions = models.TextField(blank=True, null=True)
+    
     def __str__(self):
         return f"{self.title} ({self.item_type})"
 
@@ -281,6 +340,38 @@ class StudentChecklistProgress(models.Model):
     def __str__(self):
         return f"{self.student.email} - {self.item.title}: {'Done' if self.completed else 'Not Done'}"
     
+class LessonClassroomAllocation(models.Model):
+    PERIOD_CHOICES = [
+        (2, "2 Weeks"),
+        (3, "3 Weeks"),
+        (4, "4 Weeks"),
+    ]
+
+    lesson = models.ForeignKey("Lesson", on_delete=models.CASCADE, related_name="allocations")
+    classroom = models.ForeignKey("Classroom", on_delete=models.CASCADE, related_name="allocations")
+    period_weeks = models.IntegerField(choices=PERIOD_CHOICES)
+    start_date = models.DateField(default=timezone.now)
+    expiry_date = models.DateField(blank=True, null=True)
+    schedule = models.CharField(max_length=100, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if self.period_weeks:
+            try:
+                self.period_weeks = int(self.period_weeks)
+            except (TypeError, ValueError):
+                pass  # leave it unchanged if it's invalid
+
+        if self.start_date and self.period_weeks:
+            self.expiry_date = self.start_date + timedelta(weeks=int(self.period_weeks))
+
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        return timezone.now().date() > self.expiry_date
+
+    def __str__(self):
+        return f"{self.lesson.title} → {self.classroom.classroom_id} ({self.period_weeks} weeks)"
+
 class Enrolment(models.Model):
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -295,6 +386,8 @@ class Enrolment(models.Model):
     completed = models.BooleanField(default=False)  
     enrolled_at = models.DateTimeField(auto_now_add=True)
     credit_earned = models.IntegerField(default=0)
+    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name="enrolments", null=True, blank=True)  # NEW
+    allocation = models.ForeignKey(LessonClassroomAllocation, on_delete=models.SET_NULL, null=True, blank=True)  # NEW
 
     class Meta:
         unique_together = ("student", "lesson")
