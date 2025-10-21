@@ -196,10 +196,11 @@ body.dark-mode .main-content .classroom-oval:hover * {
     <!-- List View -->
     <div id="listView">
       <ul class="list-group mt-3">
-        {% for classroom in classrooms %}
+        {% for item in active_enrolments %}
+          {% with enrol=item.enrolment classroom=item.classroom %}
           <li class="list-group-item">
             <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark d-block">
-              <div class="list-course"> {{ classroom.course_id }}</div>
+              <div class="list-course"> {{ enrol.lesson }}</div>
               <div class="list-classroom">{{ classroom.classroom_id }}</div>
               <div class="list-footer">
                 <div class="list-duration">Duration: {{ classroom.duration_weeks|default:"TBA" }} weeks</div>
@@ -207,6 +208,7 @@ body.dark-mode .main-content .classroom-oval:hover * {
               </div>
             </a>
           </li>
+          {% endwith %}
         {% empty %}
           <li class="list-group-item text-muted">No classrooms enrolled.</li>
         {% endfor %}

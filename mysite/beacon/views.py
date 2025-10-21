@@ -314,8 +314,7 @@ def student_classroom(request):
         .select_related('classroom', 'lesson', 'classroom__course_id')
     )
 
-    # Extract classrooms from enrolments
-    classrooms = []
+    active_enrolments = []
     for enrol in enrolments_with_classroom:
         classroom = enrol.classroom
         active_allocs = classroom.allocations.filter(
@@ -323,12 +322,15 @@ def student_classroom(request):
             expiry_date__gte=today
         )
         if active_allocs.exists():
-            classrooms.append(classroom)
+            active_enrolments.append({
+                "enrolment": enrol,
+                "classroom": classroom
+            })
 
     return render(
         request,
         "student_classroom.html",
-        {"classrooms": classrooms}
+        {"active_enrolments": active_enrolments}
     )
 
 @role_required("STUDENT")
