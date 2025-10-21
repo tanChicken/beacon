@@ -608,6 +608,26 @@ body.dark-mode .summary-card {
       border-color: #34a464 !important;
     }
 
+    /* Dark mode: prevent logo highlighting for BOTH roles */
+    body.dark-mode .student-sidebar .sidebar-header a:hover,
+    body.dark-mode .student-sidebar .sidebar-header a:hover .logo-img,
+    body.dark-mode .student-sidebar .logo-img:hover,
+    body.dark-mode .instructor-sidebar .sidebar-header a:hover,
+    body.dark-mode .instructor-sidebar .sidebar-header a:hover .logo-img,
+    body.dark-mode .instructor-sidebar .logo-img:hover {
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+
+    /* Specifically target the logo image in dark mode for both roles */
+    body.dark-mode .logo-img:hover,
+    body.dark-mode .sidebar-header:hover .logo-img,
+    body.dark-mode .sidebar-header a:hover .logo-img {
+      background: none !important;
+      filter: none !important;
+      opacity: 1 !important;
+    }
+
 /* Ensure all text + links inside also turn white */
 .student-sidebar ~ .main-content .course-list-item:hover *,
 .student-sidebar ~ .main-content .course-card:hover * {
