@@ -1508,3 +1508,5 @@ def graduate(request):
     
     messages.error(request, "Invalid request.")
     return redirect("student_profile")
+def not_allowed(request):
+    return render(request, "not_allowed.html")

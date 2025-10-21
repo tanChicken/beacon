@@ -62,4 +62,6 @@ urlpatterns = [
     path("toggle-font-size/", views.toggle_font_size, name="toggle_font_size"),
 
     path("graduate/", views.graduate, name="graduate"),
+
+    path("not_allowed/", views.not_allowed, name="not_allowed")
     ]
