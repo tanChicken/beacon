@@ -636,16 +636,17 @@ body.dark-mode .summary-card {
     <div class="sidebar
       {% if user.is_authenticated and user.role|upper == 'INSTRUCTOR' %}instructor-sidebar{% endif %}
       {% if user.is_authenticated and user.role|upper == 'STUDENT' %}student-sidebar{% endif %}">
-      
-      <!-- TOP: Logo (never scrolls) -->
-      <div class="sidebar-header">
-        <h2 class="logo"><a href="{% url 'home' %}">Beacon</a></h2>
-      </div>
 
       <!-- MIDDLE: Navigation (scrolls when zoomed) -->
       <div class="sidebar-nav">
         {% if user.is_authenticated %}
           {% if user.role|upper == "STUDENT" %}
+            <!-- TOP: Logo (never scrolls) -->
+            <div class="sidebar-header text-center">
+              <a href="{% url 'home' %}" class="d-flex align-items-center justify-content-center">
+                <img src="{% static 'images/student_logo.png' %}" alt="Beacon Logo" class="logo-img" />
+              </a>
+            </div>
             <a href="{% url 'student_dashboard' %}">Courses</a>
             <a href="{% url 'student_classroom' %}">Classroom</a>
             <a href="{% url 'student_profile' %}">Student</a>
