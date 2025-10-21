@@ -66,15 +66,17 @@
       {% endfor %}
     </div>
 
-    <div id="new-lessons" class="mb-3"></div>
-    <button 
-      type="button" 
-      class="btn btn-sm btn-outline-primary mb-4"
-      id="addLessonBtn"
-      data-remaining-points="{{ remaining_points }}"
-      onclick="addLesson()">
-      + Add Lesson
-    </button>
+    {% if is_director %}
+      <div id="new-lessons" class="mb-3"></div>
+      <button 
+        type="button" 
+        class="btn btn-sm btn-outline-primary mb-4"
+        id="addLessonBtn"
+        data-remaining-points="{{ remaining_points }}"
+        onclick="addLesson()">
+        + Add Lesson
+      </button>
+    {% endif %}
 
     <h4>Enrolled Students</h4>
     {% if enrolled_students %}

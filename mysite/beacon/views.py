@@ -517,21 +517,20 @@ def course_detail(request, pk):
 
 @role_required("INSTRUCTOR")
 def lesson_detail_edit(request, pk):
-    lesson = get_object_or_404(
-    Lesson.objects.filter(
-        Q(designer=request.user) | Q(course__instructor=request.user)
-    ),
-    pk=pk
-)
+    lesson = get_object_or_404(Lesson, pk=pk)
     course = lesson.course
     available_classrooms = Classroom.objects.filter(course_id_id=course.pk).order_by("classroom_id")
 
     total_points = course.lessons.aggregate(total=Sum("credit_point"))["total"] or 0
     remaining_points = 30 - total_points
     
-    can_edit = lesson.status == "DRAFT"
+    edit_permission = lesson.designer == request.user or course.instructor == request.user
+    can_edit = lesson.status == "DRAFT" and edit_permission
 
     if request.method == "POST":
+        if not edit_permission:
+            messages.error(request, "You don't have edit permission.")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
         if not can_edit:
             messages.error(request, "This lesson cannot be modified after publication.")
             return redirect("lesson_detail_edit", pk=lesson.pk)
@@ -721,6 +720,8 @@ def lesson_detail_edit(request, pk):
         "duration": duration,
         "isAllocated": isAllocated,
         "today": date.today(),
+        "edit_permission": edit_permission,
+        "can_edit": can_edit,
     })
 
 @role_required("INSTRUCTOR")
