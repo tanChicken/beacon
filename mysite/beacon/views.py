@@ -195,25 +195,18 @@ def student_course_details(request, pk):
     )
 
     # Progress bar calculation 
-    active_lessons = course.lessons.filter(status="PUBLISHED")
-    reading_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="READING")
-    assignment_items = StudentChecklistItem.objects.filter(lesson__in=active_lessons, item_type="ASSIGNMENT")
-
-    reading_done = StudentChecklistProgress.objects.filter(
-        student=student, item__in=reading_items, completed=True
-    ).count()
-    assignment_done = StudentChecklistProgress.objects.filter(
-        student=student, item__in=assignment_items, completed=True
-    ).count()
-
-    total_items = reading_items.count() + assignment_items.count()
-    total_done = reading_done + assignment_done
-    progress = (total_done / total_items * 100) if total_items else 0
+    earned_cp = sum(
+        lesson.credit_point
+        for lesson in lessons
+        if Enrolment.objects.filter(student=student, lesson=lesson, completed=True).exists()
+    )
+    progress = (earned_cp / 30) * 100
 
     return render(request, "student_course_details.html", {
         "course": course,
         "lesson_status": lesson_status_sorted,
-        "progress": round(progress, 1),   
+        "earned_cp": earned_cp,
+        "progress": progress,   
     })
 
 @role_required("STUDENT")
