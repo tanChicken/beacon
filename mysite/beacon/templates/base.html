@@ -652,6 +652,12 @@ body.dark-mode .summary-card {
             <a href="{% url 'student_profile' %}">Student</a>
             <a href="{% url 'student_report_course' %}">Report</a>
           {% elif user.role|upper == "INSTRUCTOR" %}
+            <!-- TOP: Logo (never scrolls) -->
+            <div class="sidebar-header text-center">
+              <a href="{% url 'home' %}" class="d-flex align-items-center justify-content-center">
+                <img src="{% static 'images/instructor_logo.png' %}" alt="Beacon Logo" class="logo-img mr-2" />
+              </a>
+            </div>
             <a href="{% url 'instructor_dashboard' %}">Courses</a>
             <a href="{% url 'instructor_classroom' %}">Classroom</a>
             <a href="{% url 'instructor_student_list' %}">Student</a>
