@@ -238,6 +238,23 @@ body.dark-mode .card:hover .text-muted {
   padding-bottom: 8px;
 }
 
+/* Allow long course names to wrap and display fully */
+.card-subtitle, 
+.card-title, 
+.card-text {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+/* Optional: better handling for extremely long single words */
+.card-subtitle {
+  display: block;
+  line-height: 1.4;
+}
+
 body.dark-mode #cardView .card {
   background-color: #1e1e1e !important;
   border: 1.5px solid #f5d0a9 !important;

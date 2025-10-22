@@ -24,6 +24,7 @@
     border-color: #41ca7c;
   }
 
+  /* --- LIST VIEW STYLES --- */
   .list-group-item {
     background-color: #ffffff;
     border: 2px solid #41ca7c;
@@ -39,9 +40,9 @@
   }
 
   .list-group-item:hover { 
-      background-color: #eafaf1 !important; 
-      transform: none !important; 
-      box-shadow: none !important; 
+    background-color: #eafaf1 !important; 
+    transform: none !important; 
+    box-shadow: none !important; 
   }
 
   .list-course {
@@ -73,24 +74,10 @@
     align-self: flex-end;
   }
 
-  .card-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    margin-top: 1.25rem;
-  }
-
-  /* FIXED: Use rem instead of fixed 400px */
-  .card-col {
-    width: 25rem;
-    min-width: 13.75rem;
-  }
-
-  /* FIXED: Use min-height instead of fixed 220px */
   .classroom-oval {
     box-sizing: border-box;
     width: 100%;
-    min-height: 13.75rem;
+    min-height: 13.75rem; 
     border-radius: 2.5rem;
     border: 2px solid #41ca7c;
     display: flex;
@@ -99,6 +86,7 @@
     align-items: center;
     padding: 0.9375rem;
     text-align: center;
+    flex-grow: 1; 
   }
 
   .classroom-oval:hover {
@@ -215,25 +203,27 @@ body.dark-mode .main-content .classroom-oval:hover * {
       </ul>
     </div>
 
-    <!-- Card View -->
-    <div id="cardView" class="row d-none">
-      {% for classroom in classrooms %}
-      <div class="col-md-5 mb-5">
-        <div class="card-grid">
-            <div class="card-col">
-              <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark">
-              <div class="classroom-oval">
-                  <div class="classroom-course">{{ classroom.course_id.course_id }}1</div>
-                  <div class="classroom-id">{{ classroom.classroom_id }}</div>
-                  <div class="classroom-meta">
-                    <span class="label">Supervisor: {{ classroom.supervisor }}</span>
-                    <span>Duration: {{ classroom.duration_weeks|default:"TBA" }} weeks</span>
-                  </div>
+    <!-- Card View (Revised for 3-Up, Centered, and Equal Height) -->
+    <!-- The 'row' class now uses 'justify-content-center' to center the cards. -->
+    <div id="cardView" class="row justify-content-center d-none mt-3">
+      {% for item in active_enrolments %}
+        {% with enrol=item.enrolment classroom=item.classroom %}
+        <!-- New column classes: 3-up on large (col-lg-4), 2-up on medium (col-md-6), 1-up on small (col-12) -->
+        <div class="col-12 col-md-6 col-lg-4 mb-4 d-flex">
+          <a href="{% url 'student_classroom_details' classroom.pk %}" class="text-decoration-none text-dark d-block h-100 w-100">
+            <!-- h-100 on the link ensures it expands to the height of the column -->
+            <!-- The classroom-oval takes up all available space, ensuring equal height for all cards in a row -->
+            <div class="classroom-oval h-100">
+              <div class="classroom-course">{{ enrol.lesson }}</div>
+              <div class="classroom-id">{{ classroom.classroom_id }}</div>
+              <div class="classroom-meta">
+                <span class="label">Supervisor: {{ classroom.supervisor }}</span>
+                <span>Duration: {{ classroom.duration_weeks|default:"TBA" }} weeks</span>
               </div>
-              </a>
             </div>
+          </a>
         </div>
-      </div>
+        {% endwith %}
       {% empty %}
         <p class="text-muted">No classrooms enrolled.</p>
       {% endfor %}
