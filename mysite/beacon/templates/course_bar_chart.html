@@ -17,6 +17,13 @@
     margin: auto;           /* center if max-width is set */
 }
 
+/* Dark mode for chart container */
+body.dark-mode .chart-container {
+    background: #1e1e1e !important;
+    border-color: #444 !important;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
 canvas {
     width: 100% !important;
     height: auto !important;
@@ -45,6 +52,8 @@ const values = JSON.parse(document.getElementById('values-data').textContent);
 const canvas = document.getElementById('courseChart');
 canvas.height = Math.max(400, labels.length * 40); // each bar ~40px
 
+// Check if dark mode is active
+const isDarkMode = document.body.classList.contains('dark-mode');
 
 const ctx = canvas.getContext('2d');
 new Chart(ctx, {
@@ -65,16 +74,38 @@ new Chart(ctx, {
             x: {
                 beginAtZero: true,
                 max: 100,       // progress in percent
-                title: { display: true, text: 'Progress (%)' }
+                title: { 
+                    display: true, 
+                    text: 'Progress (%)',
+                    color: isDarkMode ? '#ffffff' : '#666'
+                },
+                ticks: {
+                    color: isDarkMode ? '#ffffff' : '#666'
+                },
+                grid: {
+                    color: isDarkMode ? '#444' : '#e0e0e0'
+                }
             },
             y: {
-                title: { display: true, text: 'Students' }
+                title: { 
+                    display: true, 
+                    text: 'Students',
+                    color: isDarkMode ? '#ffffff' : '#666'
+                },
+                ticks: {
+                    color: isDarkMode ? '#ffffff' : '#666'
+                },
+                grid: {
+                    color: isDarkMode ? '#444' : '#e0e0e0'
+                }
             }
         },
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { display: false },
+            legend: { 
+                display: false
+            },
             tooltip: {
                 callbacks: {
                     label: function(context) {

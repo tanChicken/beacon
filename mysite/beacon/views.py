@@ -745,6 +745,22 @@ def lesson_detail_edit(request, pk):
     duration = [(v, l) for v, l in LessonClassroomAllocation.PERIOD_CHOICES]
     isAllocated = len(allocations) != 0
 
+    # After saving all updates
+    if request.POST.get("action") == "publish":
+        # Optional: double-check preconditions
+        has_classroom = LessonClassroomAllocation.objects.filter(lesson=lesson).exists()
+        if not has_classroom:
+            messages.warning(request, "You must assign at least one classroom before publishing this lesson.")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
+        if lesson.status != "DRAFT":
+            messages.warning(request, "Only draft lessons can be published.")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
+
+        lesson.status = "PUBLISHED"
+        lesson.save()
+        messages.success(request, f"Lesson '{lesson.title}' has been published!")
+        return redirect("lesson_detail_edit", pk=lesson.pk)
+
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
         "lesson_form": form,

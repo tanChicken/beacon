@@ -163,67 +163,71 @@
     <!-- List View -->
     <div id="listView">
       <ul class="list-group mt-3">
-        {% for course in enrolled_courses %}
-          <li class="list-group-item" data-course-id="{{ course.pk }}">
-            <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-              <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-              <div class="small">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
-            </a>
-          </li>
-        {% empty %}
+        {% if enrolled_courses or completed_courses %}
+          {% for course in enrolled_courses %}
+            <li class="list-group-item" data-course-id="{{ course.pk }}">
+              <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+                <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
+                <div class="small">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
+              </a>
+            </li>
+          {% endfor %}
+          {% for course in completed_courses %}
+            <li class="list-group-item" data-course-id="{{ course.pk }}">
+              <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+                <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
+                <div class="small">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
+              </a>
+              <span class="badge bg-success">Completed</span>
+            </li>
+          {% endfor %}
+        {% else %}
           <li class="list-group-item text-muted">No courses enrolled.</li>
-        {% endfor %}
-        {% for course in completed_courses %}
-          <li class="list-group-item" data-course-id="{{ course.pk }}">
-            <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-              <strong>{{ course.course_id }} {{ course.title }}</strong> ({{ course.status }})
-              <div class="small">Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}</div>
-            </a>
-            <span class="badge bg-success">Completed</span>
-          </li>
-        {% endfor %}
+        {% endif %}
       </ul>
     </div>
 
     <!-- Card View -->
     <div id="cardView" class="row d-none">
-      {% for course in enrolled_courses %}
-        <div class="col-md-4 mb-4">
-          <div class="card custom-course-card">
-            <div class="card-body">
-              <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-                <div class="course-meta">{{ course.course_id }}</div>
-                <h5 class="card-title">{{ course.title }}</h5>
-                <p class="course-meta">Status: {{ course.status }}</p>
-                <hr>
-                <p class="course-meta">Instructor: {{ course.instructor.email }}</p>
-                <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
-                <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
-              </a>
+      {% if enrolled_courses or completed_courses %}
+        {% for course in enrolled_courses %}
+          <div class="col-md-4 mb-4">
+            <div class="card custom-course-card">
+              <div class="card-body">
+                <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+                  <div class="course-meta">{{ course.course_id }}</div>
+                  <h5 class="card-title">{{ course.title }}</h5>
+                  <p class="course-meta">Status: {{ course.status }}</p>
+                  <hr>
+                  <p class="course-meta">Instructor: {{ course.instructor.email }}</p>
+                  <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
+                  <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-      {% empty %}
-        <p class="text-muted">No courses enrolled yet.</p>
-      {% endfor %}
-      {% for course in completed_courses %}
-        <div class="col-md-4 mb-4">
-          <div class="card custom-course-card">
-            <div class="card-body">
-              <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
-                <div class="course-meta">{{ course.course_id }}</div>
-                <h5 class="card-title">{{ course.title }}</h5>
-                <p class="course-meta">Status: {{ course.status }}</p>
-                <hr>
-                <p class="course-meta">Instructor: {{ course.instructor.email }}</p>
-                <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
-                <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
-              </a>
-              <span class="badge bg-success">Completed</span>
+        {% endfor %}
+        {% for course in completed_courses %}
+          <div class="col-md-4 mb-4">
+            <div class="card custom-course-card">
+              <div class="card-body">
+                <a href="{% url 'student_course_details' course.pk %}" class="stretched-link text-dark" style="text-decoration:none;">
+                  <div class="course-meta">{{ course.course_id }}</div>
+                  <h5 class="card-title">{{ course.title }}</h5>
+                  <p class="course-meta">Status: {{ course.status }}</p>
+                  <hr>
+                  <p class="course-meta">Instructor: {{ course.instructor.email }}</p>
+                  <p class="course-meta">Created: {{ course.created_at|date:"j/n/Y" }}</p>
+                  <p class="course-meta">Last Updated: {{ course.updated_at|date:"j/n/Y" }}</p>
+                </a>
+                <span class="badge bg-success">Completed</span>
+              </div>
             </div>
           </div>
-        </div>
-      {% endfor %}
+        {% endfor %}
+      {% else %}
+        <li class="list-group-item text-muted">No courses enrolled.</li>
+      {% endif %}
     </div>
 
     <!-- Enrolment Button -->
