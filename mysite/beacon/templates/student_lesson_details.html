@@ -366,19 +366,27 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function showClassroomPopup(data, enrolUrl) {
+    const darkMode = document.body.classList.contains('dark-mode');
+
     const popup = document.createElement('div');
     popup.id = 'classroomPopup';
     popup.innerHTML = `
       <div style="
         position: fixed; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
-        background: white; border-radius: 10px;
+        background: ${darkMode ? '#121212' : 'white'};
+        color: ${darkMode ? '#ffffff' : '#000000'};
+        border-radius: 10px;
         padding: 20px; width: 650px;
         max-height: 80vh; overflow-y: auto;
         box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        z-index: 9999;">
-        <h4>Select a Classroom</h4>
-        <table class="table table-bordered mt-3">
+        z-index: 9999;
+      ">
+        <h4 style="color: ${darkMode ? '#ffffff' : '#000000'}">Select a Classroom</h4>
+        <table class="table table-bordered mt-3" style="
+            background: ${darkMode ? '#1e1e1e' : 'white'};
+            color: ${darkMode ? '#ffffff' : '#000000'};
+        ">
           <thead>
             <tr>
               <th>ID</th><th>Schedule</th>
@@ -389,11 +397,11 @@ document.addEventListener('DOMContentLoaded', function () {
             ${
               data.classrooms.length > 0 
               ? data.classrooms.map(c => `
-                <tr>
+                <tr style="color: ${darkMode ? '#ffffff' : '#000000'}">
                   <td>${c.classroom_id || c.id}</td>
                   <td>${c.schedule || 'TBA'}</td>
                   <td>${(c.building || '') + ' ' + (c.room || '')}</td>
-                  <td>${c.online_link ? `<a href="${c.online_link}" target="_blank">Link</a>` : '-'}</td>
+                  <td>${c.online_link ? `<a href="${c.online_link}" target="_blank" style="color: ${darkMode ? '#41ca7c' : ''}">Link</a>` : '-'}</td>
                   <td><button class="btn btn-sm btn-success select-classroom" data-id="${c.id}">Select</button></td>
                 </tr>`).join('')
               : `<tr><td colspan="6" class="text-center text-muted">No classrooms available.</td></tr>`
@@ -401,15 +409,14 @@ document.addEventListener('DOMContentLoaded', function () {
           </tbody>
         </table>
         <div class="text-center mt-3">
-          ${data.classrooms.length === 0 ? `
-            <button id="enrolAnyway" class="btn btn-primary">Enroll Anyway</button>` : ''}
+          ${data.classrooms.length === 0 ? `<button id="enrolAnyway" class="btn btn-primary">Enroll Anyway</button>` : ''}
           <button id="closePopup" class="btn btn-secondary ms-2">Cancel</button>
         </div>
       </div>
       <div id="overlay" style="
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5); z-index: 9998;">
-      </div>
+        background: rgba(0,0,0,0.7); z-index: 9998;
+      "></div>
     `;
     document.body.appendChild(popup);
 

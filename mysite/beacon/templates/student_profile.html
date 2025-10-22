@@ -68,12 +68,39 @@
         </div>
       {% endif %}
 
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h4 class="mb-3">Credit Progress</h4>
+
+          <div class="d-flex justify-content-between mb-1">
+            <span>Earned: {{ total_credit|default:0 }} CP</span>
+            <span>Goal: {{ max_credit }} CP</span>
+          </div>
+
+          <div class="progress">
+            <div class="progress-bar bg-success"
+                role="progressbar"
+                style="width: {{ total_percent }}%;"
+                aria-valuenow="{{ total_percent }}"
+                aria-valuemin="0"
+                aria-valuemax="100">
+              {{ total_percent }}%
+            </div>
+          </div>
+        </div>
+      </div>
+
       <h5>Enrolled Courses & Lessons</h5>
       {% if courses %}
         {% for course in courses %}
           <div class="card mb-3 shadow-sm">
-            <div class="card-header course-card-header">
-              <strong>{{ course.title }}</strong> ({{ course.course_id }})
+            <div class="card-header course-card-header d-flex justify-content-between align-items-center">
+              <strong>{{ course.title }} ({{ course.course_id }}) </strong>
+              {% if course.course_enrolled_at %}
+                <small class="text-light">
+                  Enrolled on: {{ course.course_enrolled_at|date:"F j, Y" }}
+                </small>
+              {% endif %}
             </div>
 
             <div class="card-body">
