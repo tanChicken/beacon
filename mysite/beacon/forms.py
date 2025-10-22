@@ -129,8 +129,12 @@ class LessonDetailForm(forms.ModelForm):
             self.fields['objective'].required = True
 
         if self.course:
-            self.fields["prerequisites"].queryset = Lesson.objects.filter(course=self.course).exclude(pk=self.instance.pk if self.instance else None)
+            self.fields["prerequisites"].queryset = Lesson.objects.filter(
+                course=self.course,
+                status="PUBLISHED"
+            ).exclude(pk=self.instance.pk if self.instance else None)
 
+            # If no published lessons exist, hide the prerequisites field
             if not self.fields["prerequisites"].queryset.exists():
                 del self.fields["prerequisites"]
 
@@ -184,7 +188,7 @@ class LessonDetailForm(forms.ModelForm):
         total_after = total_existing + credit_point
         if total_after > 30:
             raise forms.ValidationError(
-                f"Total credit points for this course cannot exceed 30 (currently {total_existing})."
+                f"Credit points cannot exceed 30 for all lessons in this course."
             )
         return credit_point
 
@@ -216,15 +220,14 @@ class ClassroomForm(forms.ModelForm):
 
     class Meta:
         model = Classroom
-        fields = ["course_id", "supervisor",
-                  "building", "room", "online_link"]
+        fields = ["course_id", "supervisor","building", "room", "online_link"]
         widgets = {
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
             "schedule": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Monday 9:00 am - 11:00 am"}),
-            "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
-            "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
+            "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., A"}),
+            "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
         }
 
@@ -279,8 +282,8 @@ class EditClassroomForm(forms.ModelForm):
             "classroom_id": forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}),
             "course_id": forms.Select(attrs={"class": "form-select"}),
             "supervisor": forms.Select(attrs={"class": "form-select"}),
-            "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Building A"}),
-            "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Room 203"}),
+            "building": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., A"}),
+            "room": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., 203"}),
             "online_link": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
         }
 
