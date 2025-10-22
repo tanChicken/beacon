@@ -379,9 +379,24 @@ def instructor_login(request):
 
 @role_required("INSTRUCTOR")
 def instructor_dashboard(request):
+    # courses = (
+    #     Course.objects.filter(
+    # Q(instructor=request.user) | Q(lessons__designer=request.user)).distinct().order_by("status","course_id") 
+    # )
+    u = request.user
     courses = (
         Course.objects.filter(
-    Q(instructor=request.user) | Q(lessons__designer=request.user)).distinct().order_by("status","course_id") 
+            Q(instructor=u) |                              # course director (your current meaning)
+            Q(lessons__designer=u) |                       # lesson designer
+            Q(classrooms__supervisor__iexact=u.email)      # classroom supervisor (email string match)
+        )
+        .select_related("instructor")                      # FK
+        .prefetch_related(                                 # reverse/M2M for performance
+            Prefetch("lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+            Prefetch("classrooms", queryset=Classroom.objects.only("id", "course_id", "supervisor")),
+        )
+        .distinct()
+        .order_by("status", "course_id")
     )
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
@@ -897,12 +912,27 @@ def instructor_classroom(request):
             "⚠️ The following lessons have expired and were reset: " +
             ", ".join(expired_lessons)
         )
+    # classrooms = (
+    #     Classroom.objects
+    #     .select_related("course_id")
+    #     .prefetch_related("allocations__lesson")
+    #     .filter(course_id__instructor=instructor)
+    #     .distinct()
+    # )
     classrooms = (
         Classroom.objects
-        .select_related("course_id")
-        .prefetch_related("allocations__lesson")
-        .filter(course_id__instructor=instructor)
+        .select_related("course_id")                      # FK: Classroom -> Course
+        .prefetch_related(
+            "allocations__lesson",
+            Prefetch("course_id__lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+        )
+        .filter(
+            Q(course_id__instructor=instructor) |               # course director
+            Q(supervisor__iexact=instructor.email) |            # classroom supervisor (CharField email)
+            Q(course_id__lessons__designer=instructor)          # any lesson designer in this course
+        )
         .distinct()
+        .order_by("course_id__status", "course_id__course_id")
     )
 
     return render(request, "instructor_classroom.html", {
