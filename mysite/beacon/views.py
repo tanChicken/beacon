@@ -14,6 +14,7 @@ from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 import json
+import re
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -54,6 +55,22 @@ def student_signup(request):
 
         if password != confirm:
             messages.error(request, "Passwords do not match.")
+            return render(request, "signup.html")
+        
+        if len(password) < 8:
+            messages.error(request, "Password must be at least 8 characters long.")
+            return render(request, "signup.html")
+
+        if not re.search(r"[A-Z]", password):
+            messages.error(request, "Password must contain at least one uppercase letter.")
+            return render(request, "signup.html")
+
+        if not re.search(r"[a-z]", password):
+            messages.error(request, "Password must contain at least one lowercase letter.")
+            return render(request, "signup.html")
+
+        if not re.search(r"\d", password):
+            messages.error(request, "Password must contain at least one number.")
             return render(request, "signup.html")
         
         UserModel = get_user_model()
@@ -384,9 +401,24 @@ def instructor_login(request):
 
 @role_required("INSTRUCTOR")
 def instructor_dashboard(request):
+    # courses = (
+    #     Course.objects.filter(
+    # Q(instructor=request.user) | Q(lessons__designer=request.user)).distinct().order_by("status","course_id") 
+    # )
+    u = request.user
     courses = (
         Course.objects.filter(
-    Q(instructor=request.user) | Q(lessons__designer=request.user)).distinct().order_by("status","course_id") 
+            Q(instructor=u) |                              # course director (your current meaning)
+            Q(lessons__designer=u) |                       # lesson designer
+            Q(classrooms__supervisor__iexact=u.email)      # classroom supervisor (email string match)
+        )
+        .select_related("instructor")                      # FK
+        .prefetch_related(                                 # reverse/M2M for performance
+            Prefetch("lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+            Prefetch("classrooms", queryset=Classroom.objects.only("id", "course_id", "supervisor")),
+        )
+        .distinct()
+        .order_by("status", "course_id")
     )
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
@@ -956,12 +988,27 @@ def instructor_classroom(request):
             "⚠️ The following lessons have expired and were reset: " +
             ", ".join(expired_lessons)
         )
+    # classrooms = (
+    #     Classroom.objects
+    #     .select_related("course_id")
+    #     .prefetch_related("allocations__lesson")
+    #     .filter(course_id__instructor=instructor)
+    #     .distinct()
+    # )
     classrooms = (
         Classroom.objects
-        .select_related("course_id")
-        .prefetch_related("allocations__lesson")
-        .filter(course_id__instructor=instructor)
+        .select_related("course_id")                      # FK: Classroom -> Course
+        .prefetch_related(
+            "allocations__lesson",
+            Prefetch("course_id__lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+        )
+        .filter(
+            Q(course_id__instructor=instructor) |               # course director
+            Q(supervisor__iexact=instructor.email) |            # classroom supervisor (CharField email)
+            Q(course_id__lessons__designer=instructor)          # any lesson designer in this course
+        )
         .distinct()
+        .order_by("course_id__status", "course_id__course_id")
     )
 
     return render(request, "instructor_classroom.html", {
@@ -1218,11 +1265,22 @@ def student_change_password(request):
         form = StudentPasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             new_password = form.cleaned_data["new_password"]
-            request.user.set_password(new_password)
-            request.user.save()
-            update_session_auth_hash(request, request.user)  
-            messages.success(request, "Your password has been changed successfully.")
-            return redirect("student_profile")  
+
+            if len(new_password) < 8:
+                messages.error(request, "Password must be at least 8 characters long.")
+            elif not re.search(r"[A-Z]", new_password):
+                messages.error(request, "Password must contain at least one uppercase letter.")
+            elif not re.search(r"[a-z]", new_password):
+                messages.error(request, "Password must contain at least one lowercase letter.")
+            elif not re.search(r"\d", new_password):
+                messages.error(request, "Password must contain at least one number.")
+            else:  
+                request.user.set_password(new_password)
+                request.user.save()
+                update_session_auth_hash(request, request.user)  
+                messages.success(request, "Your password has been changed successfully.")
+                return redirect("student_profile")  
+            return render(request, "student_change_password.html", {"form": form})
         else:
             messages.error(request, "Unable to change password. Please correct the errors below.")
     else:
