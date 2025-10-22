@@ -247,6 +247,9 @@ def student_lesson_details(request, pk):
         student=student, completed=True, item__lesson=lesson
     ).values_list("item_id", flat=True)
 
+    reading_items = lesson.checklist_items.filter(item_type="READING")
+    assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
+
     return render(request, "student_lesson_details.html", {
         "lesson": lesson,
         "is_enrolled": is_enrolled,
@@ -254,6 +257,8 @@ def student_lesson_details(request, pk):
         "missing_prereqs": missing_prereqs,  
         "is_completed": is_completed,
         "completed_item_ids": list(completed_item_ids),
+        "reading_items": reading_items,
+        "assignment_items": assignment_items,
     })
 
 @role_required("STUDENT")
@@ -554,7 +559,7 @@ def lesson_detail_edit(request, pk):
 
                 # Check missing fields in allocation form
                 if not all([classroom_id, schedule, duration]):
-                    incomplete.append("⚠️ Missing classroom, schedule, or duration for classroom allocation.")
+                    incomplete.append("⚠️ Missing classroom, schedule, or duration for classroom.")
                     continue
 
                 classroom = Classroom.objects.filter(pk=classroom_id).first()
