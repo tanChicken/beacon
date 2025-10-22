@@ -1206,11 +1206,22 @@ def student_change_password(request):
         form = StudentPasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             new_password = form.cleaned_data["new_password"]
-            request.user.set_password(new_password)
-            request.user.save()
-            update_session_auth_hash(request, request.user)  
-            messages.success(request, "Your password has been changed successfully.")
-            return redirect("student_profile")  
+
+            if len(new_password) < 8:
+                messages.error(request, "Password must be at least 8 characters long.")
+            elif not re.search(r"[A-Z]", new_password):
+                messages.error(request, "Password must contain at least one uppercase letter.")
+            elif not re.search(r"[a-z]", new_password):
+                messages.error(request, "Password must contain at least one lowercase letter.")
+            elif not re.search(r"\d", new_password):
+                messages.error(request, "Password must contain at least one number.")
+            else:  
+                request.user.set_password(new_password)
+                request.user.save()
+                update_session_auth_hash(request, request.user)  
+                messages.success(request, "Your password has been changed successfully.")
+                return redirect("student_profile")  
+            return render(request, "student_change_password.html", {"form": form})
         else:
             messages.error(request, "Unable to change password. Please correct the errors below.")
     else:
