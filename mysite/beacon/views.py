@@ -1141,19 +1141,14 @@ def student_profile(request):
     # Map lesson_id -> enrolment
     enrolments_map = {e.lesson.id: e for e in enrolments}
 
-    # For credit-based progress calculation
-    total_earned_credit = 0
-    max_credit = 120
-
     # Attach lesson status and course_enrolled_at
     for course in courses:
-        course_dates = []
         for lesson in course.lessons.all():
             lesson_enrolment = enrolments_map.get(lesson.id)
             lesson.enrolment = lesson_enrolment
 
             # Lesson checklist items
-            lesson_items = StudentChecklistItem.objects.filter(lesson=lesson)
+            lesson_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
             lesson_completed_items = StudentChecklistProgress.objects.filter(
                 student=student,
                 item__lesson=lesson,
@@ -1161,17 +1156,25 @@ def student_profile(request):
             ).count()
 
             # Determine lesson completion
-            if lesson_items.count() > 0 and lesson_completed_items == lesson_items.count():
-                lesson.status = "Completed"
-                # Add lesson credit if completed
-                total_earned_credit += lesson.credit_point
-            elif lesson_completed_items > 0:
-                lesson.status = "In Progress"
-            else:
-                if lesson.enrolment:
-                    lesson.status = "Not Started"
+            if lesson_items == 0: 
+                # If no checklist, fall back to enrolment status
+                if lesson_enrolment and lesson_enrolment.completed:
+                    lesson.status = "Completed"
+                elif lesson_enrolment:
+                    lesson.status = "In Progress"
                 else:
                     lesson.status = "Not Enrolled"
+            else:
+                # Checklist-based status
+                if lesson_completed_items == lesson_items:
+                    lesson.status = "Completed"
+                elif lesson_completed_items > 0:
+                    lesson.status = "In Progress"
+                else:
+                    if lesson_enrolment:
+                        lesson.status = "In Progress"
+                    else:
+                        lesson.status = "Not Enrolled"
 
     # Calculate total credit earned
     total_credit = completed_courses.count()*30
@@ -1373,13 +1376,26 @@ def instructor_student_detail(request, student_id):
                 completed=True
             ).count()
 
-            # Lesson status
-            if total_items > 0 and completed_items == total_items:
-                lesson.status = "Completed"
-            elif completed_items > 0:
-                lesson.status = "In Progress"
+            # Determine lesson completion
+            if total_items == 0: 
+                # If no checklist, fall back to enrolment status
+                if lesson_enrolment and lesson_enrolment.completed:
+                    lesson.status = "Completed"
+                elif lesson_enrolment:
+                    lesson.status = "In Progress"
+                else:
+                    lesson.status = "Not Enrolled"
             else:
-                lesson.status = "Not Started" if lesson_enrolment else "Not Enrolled"
+                # Checklist-based status
+                if completed_items == total_items:
+                    lesson.status = "Completed"
+                elif completed_items > 0:
+                    lesson.status = "In Progress"
+                else:
+                    if lesson_enrolment:
+                        lesson.status = "In Progress"
+                    else:
+                        lesson.status = "Not Enrolled"
 
             # Collect course enrollment dates from lesson enrolments
             if lesson_enrolment and lesson_enrolment.course_enrolled_at:

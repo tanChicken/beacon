@@ -55,7 +55,7 @@
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <h4 class="mb-3">Academic Information</h4>
-      <p class="mb-4"><strong>Total Credit Accumulated:</strong> {{ total_credit }}</p>
+      <p class="mb-4"><strong>Total Credit Accumulated (Course completed):</strong> {{ total_credit }}</p>
       <!-- Progress Bar -->
       <div class="d-flex justify-content-between mb-1">
         <span>0</span>
@@ -84,28 +84,6 @@
         </div>
       {% endif %}
 
-      <div class="card shadow-sm mb-4">
-        <div class="card-body">
-          <h4 class="mb-3">Credit Progress</h4>
-
-          <div class="d-flex justify-content-between mb-1">
-            <span>Earned: {{ total_credit|default:0 }} CP</span>
-            <span>Goal: {{ max_credit }} CP</span>
-          </div>
-
-          <div class="progress">
-            <div class="progress-bar bg-success"
-                role="progressbar"
-                style="width: {{ total_percent }}%;"
-                aria-valuenow="{{ total_percent }}"
-                aria-valuemin="0"
-                aria-valuemax="100">
-              {{ total_percent }}%
-            </div>
-          </div>
-        </div>
-      </div>
-
       <h5>Enrolled Courses & Lessons</h5>
       {% if courses %}
         {% for course in courses %}
@@ -129,8 +107,6 @@
                         <span class="badge bg-success">Completed</span>
                       {% elif lesson.status == "In Progress" %}
                         <span class="badge bg-warning text-dark">In Progress</span>
-                      {% elif lesson.status == "Not Started" %}
-                        <span class="badge bg-secondary">Not Started</span>
                       {% else %}
                         <span class="badge bg-danger">Not Enrolled</span>
                       {% endif %}
