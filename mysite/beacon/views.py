@@ -14,6 +14,7 @@ from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 import json
+import re
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -54,6 +55,22 @@ def student_signup(request):
 
         if password != confirm:
             messages.error(request, "Passwords do not match.")
+            return render(request, "signup.html")
+        
+        if len(password) < 8:
+            messages.error(request, "Password must be at least 8 characters long.")
+            return render(request, "signup.html")
+
+        if not re.search(r"[A-Z]", password):
+            messages.error(request, "Password must contain at least one uppercase letter.")
+            return render(request, "signup.html")
+
+        if not re.search(r"[a-z]", password):
+            messages.error(request, "Password must contain at least one lowercase letter.")
+            return render(request, "signup.html")
+
+        if not re.search(r"\d", password):
+            messages.error(request, "Password must contain at least one number.")
             return render(request, "signup.html")
         
         UserModel = get_user_model()
