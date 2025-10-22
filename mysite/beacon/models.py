@@ -385,6 +385,7 @@ class Enrolment(models.Model):
     )
     completed = models.BooleanField(default=False)  
     enrolled_at = models.DateTimeField(auto_now_add=True)
+    course_enrolled_at = models.DateTimeField(null=True, blank=True) 
     credit_earned = models.IntegerField(default=0)
     classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name="enrolments", null=True, blank=True)  # NEW
     allocation = models.ForeignKey(LessonClassroomAllocation, on_delete=models.SET_NULL, null=True, blank=True)  # NEW
@@ -397,6 +398,12 @@ class Enrolment(models.Model):
         self.completed_at = timezone.now()
         self.save()
 
+    def save(self, *args, **kwargs):
+        # Set course_enrolled_at only if not already set
+        if not self.course_enrolled_at:
+            self.course_enrolled_at = timezone.now()
+        super().save(*args, **kwargs)
+        
     def __str__(self):
         status = "Completed" if self.completed else "In Progress"
         return f"{self.student.email} enrolled in {self.lesson.title} ({status})"

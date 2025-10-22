@@ -127,17 +127,28 @@ def enrol_course(request, course_id):
     total_cp = _get_student_credits(student)
     if getattr(student, "studentprofile", None) and (student.studentprofile.graduated or total_cp >= 120):
         messages.error(
-            request, 
-            "Enrolling in other courses is not possible anymore,"
-            "since you have already reached the 120 credit points limit."
+            request,
+            "You cannot enroll in more courses because you have reached 120 credit points or already graduated."
         )
         return redirect("enrolment_page")
 
-    # Only allow enrollment in active courses that the student isn't already enrolled in
     course = get_object_or_404(Course, id=course_id, status="active")
+    lessons = course.lessons.filter(status="PUBLISHED")
 
-    course.students.add(student)
-    messages.success(request, f"You have enrolled in {course.title}!")
+    with transaction.atomic():
+        for lesson in lessons:
+            # Create enrolment if not exists
+            enrolment, created = Enrolment.objects.get_or_create(
+                student=student,
+                lesson=lesson
+            )
+            if created and not enrolment.course_enrolled_at:
+                enrolment.course_enrolled_at = timezone.now()
+                enrolment.save()
+
+        course.students.add(student)
+
+    messages.success(request, f"You have successfully enrolled in {course.title}!")
     return redirect("student_dashboard")
 
 @role_required("STUDENT")
@@ -1034,51 +1045,64 @@ def delete_classroom(request, pk):
 def student_profile(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
     student = profile.user
+
     enrolled_courses = student.courses_enroling.all()
     completed_courses = get_completed_courses(student)
     all_courses = (enrolled_courses | completed_courses).distinct()
 
-    # Prefetch only published lessons for each course
     courses = all_courses.prefetch_related(
         Prefetch("lessons", queryset=Lesson.objects.filter(status="PUBLISHED"))
     )
 
-    enrolments = Enrolment.objects.filter(student=request.user).select_related("lesson")
+    enrolments = Enrolment.objects.filter(student=student).select_related("lesson")
+
+    # Map lesson_id -> enrolment
     enrolments_map = {e.lesson.id: e for e in enrolments}
 
-    # Attach status to each published lesson
+    # For credit-based progress calculation
+    total_earned_credit = 0
+    max_credit = 120
+
+    # Attach lesson status and course_enrolled_at
     for course in courses:
-        for lesson in course.lessons.all():  # only published lessons
-            lesson.enrolment = enrolments_map.get(lesson.id)
+        course_dates = []
+        for lesson in course.lessons.all():
+            lesson_enrolment = enrolments_map.get(lesson.id)
+            lesson.enrolment = lesson_enrolment
 
-            # Total checklist items for this lesson
-            total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
-
-            # Completed checklist items by student
-            completed_items = StudentChecklistProgress.objects.filter(
-                student=request.user,
+            # Lesson checklist items
+            lesson_items = StudentChecklistItem.objects.filter(lesson=lesson)
+            lesson_completed_items = StudentChecklistProgress.objects.filter(
+                student=student,
                 item__lesson=lesson,
                 completed=True
             ).count()
 
-            # Decide lesson status
-            if total_items > 0 and completed_items == total_items:
+            # Determine lesson completion
+            if lesson_items.count() > 0 and lesson_completed_items == lesson_items.count():
                 lesson.status = "Completed"
-            elif completed_items > 0:
+                # Add lesson credit if completed
+                total_earned_credit += lesson.credit_point
+            elif lesson_completed_items > 0:
                 lesson.status = "In Progress"
             else:
-                if lesson.enrolment:
-                    lesson.status = "Not Started"
-                else:
-                    lesson.status = "Not Enrolled"
+                lesson.status = "Not Started" if lesson_enrolment else "Not Enrolled"
 
-    # Calculate total credit earned
-    total_credit = sum(e.credit_earned for e in enrolments)
+            # Collect course enrollment dates
+            if lesson_enrolment and lesson_enrolment.course_enrolled_at:
+                course_dates.append(lesson_enrolment.course_enrolled_at)
+
+        # Earliest course enrolled date
+        course.course_enrolled_at = min(course_dates) if course_dates else None
+
+    total_percent = (total_earned_credit / max_credit * 100) if max_credit else 0
 
     return render(request, "student_profile.html", {
         "profile": profile,
         "courses": courses,
-        "total_credit": total_credit,
+        "total_credit": total_earned_credit,
+        "total_percent": round(total_percent, 1),
+        "max_credit": max_credit,
     })
 
 @role_required("STUDENT")
