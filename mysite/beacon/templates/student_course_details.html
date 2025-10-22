@@ -121,86 +121,93 @@
 <!-- =================== POPUP SCRIPT =================== -->
 <script>
 function showClassroomPopup(data, enrolUrl) {
-  const popup = document.createElement('div');
-  popup.id = 'classroomPopup';
-  popup.innerHTML = `
-    <div style="
-      position: fixed; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: white; border-radius: 10px;
-      padding: 20px; width: 650px;
-      max-height: 80vh; overflow-y: auto;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-      z-index: 9999;">
-      <h4>Select a Classroom</h4>
-      <table class="table table-bordered mt-3">
-        <thead>
-          <tr>
-            <th>ID</th><th>Schedule</th>
-            <th>Building/Room</th><th>Online Link</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          ${
-            data.classrooms.length > 0 
-            ? data.classrooms.map(c => `
-              <tr>
-                <td>${c.classroom_id || c.id}</td>
-                <td>${c.schedule || 'TBA'}</td>
-                <td>${(c.building || '') + ' ' + (c.room || '')}</td>
-                <td>${c.online_link ? `<a href="${c.online_link}" target="_blank">Link</a>` : '-'}</td>
-                <td><button class="btn btn-sm btn-success select-classroom" data-id="${c.id}">Select</button></td>
-              </tr>`).join('')
-            : `<tr><td colspan="6" class="text-center text-muted">No classrooms available.</td></tr>`
-          }
-        </tbody>
-      </table>
-      <div class="text-center mt-3">
-        ${data.classrooms.length === 0 ? `
-          <button id="enrolAnyway" class="btn btn-primary">Enroll Anyway</button>` : ''}
-        <button id="closePopup" class="btn btn-secondary ms-2">Cancel</button>
+    const darkMode = document.body.classList.contains('dark-mode');
+
+    const popup = document.createElement('div');
+    popup.id = 'classroomPopup';
+    popup.innerHTML = `
+      <div style="
+        position: fixed; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        background: ${darkMode ? '#121212' : 'white'};
+        color: ${darkMode ? '#ffffff' : '#000000'};
+        border-radius: 10px;
+        padding: 20px; width: 650px;
+        max-height: 80vh; overflow-y: auto;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        z-index: 9999;
+      ">
+        <h4 style="color: ${darkMode ? '#ffffff' : '#000000'}">Select a Classroom</h4>
+        <table class="table table-bordered mt-3" style="
+            background: ${darkMode ? '#1e1e1e' : 'white'};
+            color: ${darkMode ? '#ffffff' : '#000000'};
+        ">
+          <thead>
+            <tr>
+              <th>ID</th><th>Schedule</th>
+              <th>Building/Room</th><th>Online Link</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              data.classrooms.length > 0 
+              ? data.classrooms.map(c => `
+                <tr style="color: ${darkMode ? '#ffffff' : '#000000'}">
+                  <td>${c.classroom_id || c.id}</td>
+                  <td>${c.schedule || 'TBA'}</td>
+                  <td>${(c.building || '') + ' ' + (c.room || '')}</td>
+                  <td>${c.online_link ? `<a href="${c.online_link}" target="_blank" style="color: ${darkMode ? '#41ca7c' : ''}">Link</a>` : '-'}</td>
+                  <td><button class="btn btn-sm btn-success select-classroom" data-id="${c.id}">Select</button></td>
+                </tr>`).join('')
+              : `<tr><td colspan="6" class="text-center text-muted">No classrooms available.</td></tr>`
+            }
+          </tbody>
+        </table>
+        <div class="text-center mt-3">
+          ${data.classrooms.length === 0 ? `<button id="enrolAnyway" class="btn btn-primary">Enroll Anyway</button>` : ''}
+          <button id="closePopup" class="btn btn-secondary ms-2">Cancel</button>
+        </div>
       </div>
-    </div>
-    <div id="overlay" style="
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); z-index: 9998;">
-    </div>
-  `;
-  document.body.appendChild(popup);
+      <div id="overlay" style="
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7); z-index: 9998;
+      "></div>
+    `;
+    document.body.appendChild(popup);
 
-  // close popup
-  document.getElementById('closePopup').onclick = () => popup.remove();
-  document.getElementById('overlay').onclick = () => popup.remove();
+    // Close popup
+    popup.querySelector('#closePopup').onclick = () => popup.remove();
+    popup.querySelector('#overlay').onclick = () => popup.remove();
 
-  // handle classroom selection
-  document.querySelectorAll('.select-classroom').forEach(btn => {
-    btn.onclick = function() {
-      const classroomId = this.dataset.id;
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = enrolUrl;
-      form.innerHTML = `
-        {% csrf_token %}
-        <input type="hidden" name="classroom_id" value="${classroomId}">
-      `;
-      document.body.appendChild(form);
-      form.submit();
-    };
-  });
+    // --- Classroom selection ---
+    popup.querySelectorAll('.select-classroom').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const classroomId = this.dataset.id;
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+        formData.append('classroom_id', classroomId);
 
-  // handle "enrol anyway" (no classroom available)
-  const enrolAnyway = document.getElementById('enrolAnyway');
-  if (enrolAnyway) {
-    enrolAnyway.onclick = function() {
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = enrolUrl;
-      form.innerHTML = `{% csrf_token %}`;
-      document.body.appendChild(form);
-      form.submit();
-    };
+        const res = await fetch(enrolUrl, { method: 'POST', body: formData });
+        if (res.redirected) {
+          window.location.href = res.url;
+        } else {
+          showCenteredPopup('Enrollment failed. Please try again.');
+        }
+      });
+    });
+
+    // --- Enroll anyway if no classrooms ---
+    popup.querySelector('#enrolAnyway')?.addEventListener('click', async function() {
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+      const res = await fetch(enrolUrl, { method: 'POST', body: formData });
+      if (res.redirected) {
+        window.location.href = res.url;
+      } else {
+        showCenteredPopup('Enrollment failed. Please try again.');
+      }
+    });
   }
-}
 
 // Attach event listeners to all enrol buttons
 document.addEventListener('DOMContentLoaded', () => {
