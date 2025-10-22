@@ -264,6 +264,9 @@ def student_lesson_details(request, pk):
         student=student, completed=True, item__lesson=lesson
     ).values_list("item_id", flat=True)
 
+    reading_items = lesson.checklist_items.filter(item_type="READING")
+    assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
+
     return render(request, "student_lesson_details.html", {
         "lesson": lesson,
         "is_enrolled": is_enrolled,
@@ -271,6 +274,8 @@ def student_lesson_details(request, pk):
         "missing_prereqs": missing_prereqs,  
         "is_completed": is_completed,
         "completed_item_ids": list(completed_item_ids),
+        "reading_items": reading_items,
+        "assignment_items": assignment_items,
     })
 
 @role_required("STUDENT")
@@ -549,21 +554,20 @@ def course_detail(request, pk):
 
 @role_required("INSTRUCTOR")
 def lesson_detail_edit(request, pk):
-    lesson = get_object_or_404(
-    Lesson.objects.filter(
-        Q(designer=request.user) | Q(course__instructor=request.user)
-    ),
-    pk=pk
-)
+    lesson = get_object_or_404(Lesson, pk=pk)
     course = lesson.course
     available_classrooms = Classroom.objects.filter(course_id_id=course.pk).order_by("classroom_id")
 
     total_points = course.lessons.aggregate(total=Sum("credit_point"))["total"] or 0
     remaining_points = 30 - total_points
     
-    can_edit = lesson.status == "DRAFT"
+    edit_permission = lesson.designer == request.user or course.instructor == request.user
+    can_edit = lesson.status == "DRAFT" and edit_permission
 
     if request.method == "POST":
+        if not edit_permission:
+            messages.error(request, "You don't have edit permission.")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
         if not can_edit:
             messages.error(request, "This lesson cannot be modified after publication.")
             return redirect("lesson_detail_edit", pk=lesson.pk)
@@ -574,6 +578,32 @@ def lesson_detail_edit(request, pk):
         formset = LessonTaskFormSet(request.POST, instance=lesson)
 
         if form.is_valid() and formset.is_valid():
+            new_classrooms = request.POST.getlist('new_classroom_allocation')
+            new_schedules = request.POST.getlist('new_classroom_schedule')
+            new_duration = request.POST.getlist('new_classroom_duration')
+
+            incomplete = []
+
+            for classroom_id, schedule, duration in zip(new_classrooms, new_schedules, new_duration):
+                # Skip empty rows (nothing selected at all)
+                if not any([classroom_id, schedule, duration]):
+                    continue
+
+                # Check missing fields in allocation form
+                if not all([classroom_id, schedule, duration]):
+                    incomplete.append("⚠️ Missing classroom, schedule, or duration for classroom.")
+                    continue
+
+                classroom = Classroom.objects.filter(pk=classroom_id).first()
+                if not classroom:
+                    incomplete.append(f"⚠️ Classroom (ID {classroom_id}) does not exist.")
+                elif not all([classroom.supervisor, classroom.building, classroom.room]):
+                    incomplete.append(f"⚠️ Classroom {classroom.classroom_id} is missing supervisor, building, or room.")
+
+            if incomplete:
+                messages.error(request, "\n".join(incomplete))
+                return redirect("lesson_detail_edit", pk=lesson.pk)
+            
             # Save lesson
             lesson = form.save()
 
@@ -713,7 +743,7 @@ def lesson_detail_edit(request, pk):
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("lesson_detail_edit", pk=lesson.pk)
         else:
-            messages.error(request, f"Please fix the errors below.")
+            messages.warning(request, f"Total credit points for this course exceed 30. Please adjust your input.")
             print("Form errors:", form.errors)
             print("Formset errors:", formset.errors)
     else:
@@ -736,6 +766,22 @@ def lesson_detail_edit(request, pk):
     duration = [(v, l) for v, l in LessonClassroomAllocation.PERIOD_CHOICES]
     isAllocated = len(allocations) != 0
 
+    # After saving all updates
+    if request.POST.get("action") == "publish":
+        # Optional: double-check preconditions
+        has_classroom = LessonClassroomAllocation.objects.filter(lesson=lesson).exists()
+        if not has_classroom:
+            messages.warning(request, "You must assign at least one classroom before publishing this lesson.")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
+        if lesson.status != "DRAFT":
+            messages.warning(request, "Only draft lessons can be published.")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
+
+        lesson.status = "PUBLISHED"
+        lesson.save()
+        messages.success(request, f"Lesson '{lesson.title}' has been published!")
+        return redirect("lesson_detail_edit", pk=lesson.pk)
+
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,
         "lesson_form": form,
@@ -753,6 +799,8 @@ def lesson_detail_edit(request, pk):
         "duration": duration,
         "isAllocated": isAllocated,
         "today": date.today(),
+        "edit_permission": edit_permission,
+        "can_edit": can_edit,
     })
 
 @role_required("INSTRUCTOR")
@@ -795,8 +843,13 @@ def delete_lesson(request, pk):
 @role_required("INSTRUCTOR")
 def publish_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
+    has_classroom = LessonClassroomAllocation.objects.filter(lesson=lesson).exists()
+    if not has_classroom:
+        messages.warning(request, "You must assign at least one classroom before publishing this lesson.")
+        return redirect("lesson_detail_edit", pk=pk)
+    
     if lesson.status != "DRAFT":
-        messages.error(request, "Only draft lessons can be published.")
+        messages.warning(request, "Only draft lessons can be published.")
         return redirect("lesson_detail_edit", pk=pk)
     lesson.status = "PUBLISHED"
     lesson.save()
@@ -806,12 +859,18 @@ def publish_lesson(request, pk):
 @role_required("INSTRUCTOR")
 def archive_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
+
+    # Only allow archiving if it's published
     if lesson.status != "PUBLISHED":
         messages.error(request, "Only published lessons can be archived.")
         return redirect("lesson_detail_edit", pk=pk)
+
+    # Set status to archived and reset credit point
     lesson.status = "ARCHIVED"
-    lesson.save()
-    messages.success(request, f"Lesson '{lesson.title}' has been archived.")
+    lesson.credit_point = 0
+    lesson.save(update_fields=["status", "credit_point"])
+
+    messages.success(request, f"Lesson '{lesson.title}' has been archived. Credit point set to 0.")
     return redirect("lesson_detail_edit", pk=pk)
 
 @role_required("STUDENT")
