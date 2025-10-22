@@ -1325,11 +1325,10 @@ def instructor_student_list(request):
 
 @role_required("INSTRUCTOR")
 def instructor_student_detail(request, student_id):
-    # Get the profile for the selected student
     profile = get_object_or_404(StudentProfile, user_id=student_id)
-
-    # Fetch courses where this student is enrolled
     student = profile.user
+
+    # Fetch courses the student is enrolled in or completed
     enrolled_courses = student.courses_enroling.all()
     completed_courses = get_completed_courses(student)
     all_courses = (enrolled_courses | completed_courses).distinct()
@@ -1340,30 +1339,37 @@ def instructor_student_detail(request, student_id):
     )
 
     # Fetch enrolments for this student
-    enrolments = Enrolment.objects.filter(student=profile.user).select_related("lesson")
+    enrolments = Enrolment.objects.filter(student=student).select_related("lesson")
+    # Map lesson_id -> enrolment
     enrolments_map = {e.lesson.id: e for e in enrolments}
 
-    # Attach lesson status
     for course in courses:
+        course_dates = []  # To track course enrollment date from lessons
         for lesson in course.lessons.all():
-            lesson.enrolment = enrolments_map.get(lesson.id)
+            lesson_enrolment = enrolments_map.get(lesson.id)
+            lesson.enrolment = lesson_enrolment
 
             total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
             completed_items = StudentChecklistProgress.objects.filter(
-                student=profile.user,
+                student=student,
                 item__lesson=lesson,
                 completed=True
             ).count()
 
+            # Lesson status
             if total_items > 0 and completed_items == total_items:
                 lesson.status = "Completed"
             elif completed_items > 0:
                 lesson.status = "In Progress"
             else:
-                if lesson.enrolment:
-                    lesson.status = "Not Started"
-                else:
-                    lesson.status = "Not Enrolled"
+                lesson.status = "Not Started" if lesson_enrolment else "Not Enrolled"
+
+            # Collect course enrollment dates from lesson enrolments
+            if lesson_enrolment and lesson_enrolment.course_enrolled_at:
+                course_dates.append(lesson_enrolment.course_enrolled_at)
+
+        # Earliest course enrolled date among all lessons
+        course.course_enrolled_at = min(course_dates) if course_dates else None
 
     # Calculate total credits earned
     total_credit = sum(e.credit_earned for e in enrolments)

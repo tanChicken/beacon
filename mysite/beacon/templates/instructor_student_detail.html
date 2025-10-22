@@ -56,8 +56,11 @@
       <h5>Enrolled Courses & Lessons</h5>
       {% for course in courses %}
         <div class="card mb-3 shadow-sm">
-          <div class="card-header course-card-header text-white">
-            <strong>{{ course.title }}</strong> ({{ course.course_id }})
+          <div class="card-header course-card-header text-white d-flex justify-content-between">
+            <strong>{{ course.title }} ({{ course.course_id }}) </strong> 
+            {% if course.course_enrolled_at %}
+              <small>Enrolled on: {{ course.course_enrolled_at|date:"F j, Y" }}</small>
+            {% endif %}
           </div>
           <div class="card-body">
             {% if course.lessons.all %}
