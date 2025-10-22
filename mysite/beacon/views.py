@@ -193,6 +193,25 @@ def student_course_details(request, pk):
     lesson_status = []
     for lesson in lessons:
         enrolment = Enrolment.objects.filter(student=student, lesson=lesson).first()
+
+        total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
+        completed_items = StudentChecklistProgress.objects.filter(
+            student=student, item__lesson=lesson, completed=True
+        ).count()
+
+        # ✅ Auto-mark as completed if lesson has no items or all done
+        if enrolment:
+            if total_items == 0 or total_items == completed_items:
+                if not enrolment.completed:
+                    enrolment.completed = True
+                    enrolment.credit_earned = lesson.credit_point
+                    enrolment.save()
+            else:
+                if enrolment.completed:
+                    enrolment.completed = False
+                    enrolment.credit_earned = 0
+                    enrolment.save()
+
         completed = enrolment.completed if enrolment else False
         enrolled = enrolment is not None and not completed
         prereqs = lesson.prerequisites.all()
@@ -313,7 +332,7 @@ def toggle_checklist_item(request, item_id):
         student=student, item__lesson=lesson, completed=True
     ).count()
 
-    if total_items > 0 and total_items == completed_items:
+    if total_items >= 0 and total_items == completed_items:
         # Student finished all checklist items → mark enrolment completed
         enrolment, _ = Enrolment.objects.get_or_create(student=student, lesson=lesson)
         enrolment.completed = True
@@ -1149,23 +1168,21 @@ def student_profile(request):
             elif lesson_completed_items > 0:
                 lesson.status = "In Progress"
             else:
-                lesson.status = "Not Started" if lesson_enrolment else "Not Enrolled"
+                if lesson.enrolment:
+                    lesson.status = "Not Started"
+                else:
+                    lesson.status = "Not Enrolled"
 
-            # Collect course enrollment dates
-            if lesson_enrolment and lesson_enrolment.course_enrolled_at:
-                course_dates.append(lesson_enrolment.course_enrolled_at)
+    # Calculate total credit earned
+    total_credit = completed_courses.count()*30
 
-        # Earliest course enrolled date
-        course.course_enrolled_at = min(course_dates) if course_dates else None
-
-    total_percent = (total_earned_credit / max_credit * 100) if max_credit else 0
+    progress = (total_credit / 120) * 100
 
     return render(request, "student_profile.html", {
         "profile": profile,
         "courses": courses,
-        "total_credit": total_earned_credit,
-        "total_percent": round(total_percent, 1),
-        "max_credit": max_credit,
+        "total_credit": total_credit,
+        "progress": progress,
     })
 
 @role_required("STUDENT")
@@ -1371,13 +1388,16 @@ def instructor_student_detail(request, student_id):
         # Earliest course enrolled date among all lessons
         course.course_enrolled_at = min(course_dates) if course_dates else None
 
-    # Calculate total credits earned
-    total_credit = sum(e.credit_earned for e in enrolments)
+    # Calculate total credit earned
+    total_credit = completed_courses.count()*30
+
+    progress = (total_credit / 120) * 100
 
     return render(request, "instructor_student_detail.html", {
         "profile": profile,
         "courses": courses,
         "total_credit": total_credit,
+        "progress": progress,
     })
 
 @role_required("INSTRUCTOR")

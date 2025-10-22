@@ -56,6 +56,22 @@
     <div class="card-body">
       <h4 class="mb-3">Academic Information</h4>
       <p class="mb-4"><strong>Total Credit Accumulated:</strong> {{ total_credit }}</p>
+      <!-- Progress Bar -->
+      <div class="d-flex justify-content-between mb-1">
+        <span>0</span>
+        <span>120</span>
+      </div>
+      <div class="progress mb-4" style="height: 25px; border-radius: 10px;">
+        <div
+          class="progress-bar bg-success"
+          role="progressbar"
+          style="width: {{ progress }}%"
+          aria-valuenow="{{ total_credit }}"
+          aria-valuemin="0"
+          aria-valuemax="120">
+          {{ total_credit }}
+        </div>
+      </div>
       {% if profile.graduated %}
         <div class="alert alert-success mt-3">
           🎉 You have graduated on {{ profile.graduation_date|date:"F j, Y" }}!<br>

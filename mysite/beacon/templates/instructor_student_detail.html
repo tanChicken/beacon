@@ -51,6 +51,22 @@
         <strong>Total Credit Accumulated:</strong>
         <span class="text-dark">{{ total_credit }}</span>
       </p>
+      <!-- Progress Bar -->
+      <div class="d-flex justify-content-between mb-1">
+        <span>0</span>
+        <span>120</span>
+      </div>
+      <div class="progress mb-4" style="height: 25px; border-radius: 10px;">
+        <div
+          class="progress-bar bg-success"
+          role="progressbar"
+          style="width: {{ progress }}%"
+          aria-valuenow="{{ total_credit }}"
+          aria-valuemin="0"
+          aria-valuemax="120">
+          {{ total_credit }}
+        </div>
+      </div>
 
       <!-- Courses and lessons -->
       <h5>Enrolled Courses & Lessons</h5>
