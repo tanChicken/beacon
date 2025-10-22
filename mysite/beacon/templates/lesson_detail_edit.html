@@ -674,21 +674,6 @@ document.addEventListener("click", function(e) {
     if (row) row.remove();
   }
 });
-
-document.addEventListener("DOMContentLoaded", function() {
-  const mainLessonForm = document.querySelector('form[onsubmit*="save the lesson details"]');
-  if (!mainLessonForm) return;
-
-  mainLessonForm.addEventListener('submit', function(e) {
-    const classrooms = mainLessonForm.querySelectorAll('#classroom-allocations select');
-    const hasClassroom = Array.from(classrooms).some(sel => sel.value && sel.value.trim() !== "");
-
-    if (!hasClassroom) {
-      e.preventDefault();
-      alert("⚠️ Please assign at least one classroom before saving this lesson.");
-    }
-  });
-});
 </script>
 
 {% endblock %}
