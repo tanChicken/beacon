@@ -544,6 +544,22 @@ def lesson_detail_edit(request, pk):
     can_edit = lesson.status == "DRAFT" and edit_permission
 
     if request.method == "POST":
+        action = request.POST.get("action")
+        
+        if action == "publish":
+            if not LessonClassroomAllocation.objects.filter(lesson=lesson).exists():
+                messages.warning(request, "You must assign at least one classroom before publishing this lesson.")
+                return redirect("lesson_detail_edit", pk=lesson.pk)
+
+            if lesson.status != "DRAFT":
+                messages.warning(request, "Only draft lessons can be published.")
+                return redirect("lesson_detail_edit", pk=lesson.pk)
+
+            lesson.status = "PUBLISHED"
+            lesson.save()
+            messages.success(request, f"Lesson '{lesson.title}' has been published!")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
+    
         if not edit_permission:
             messages.error(request, "You don't have edit permission.")
             return redirect("lesson_detail_edit", pk=lesson.pk)
@@ -744,22 +760,6 @@ def lesson_detail_edit(request, pk):
     allocations = LessonClassroomAllocation.objects.filter(lesson=lesson)
     duration = [(v, l) for v, l in LessonClassroomAllocation.PERIOD_CHOICES]
     isAllocated = len(allocations) != 0
-
-    # After saving all updates
-    if request.POST.get("action") == "publish":
-        # Optional: double-check preconditions
-        has_classroom = LessonClassroomAllocation.objects.filter(lesson=lesson).exists()
-        if not has_classroom:
-            messages.warning(request, "You must assign at least one classroom before publishing this lesson.")
-            return redirect("lesson_detail_edit", pk=lesson.pk)
-        if lesson.status != "DRAFT":
-            messages.warning(request, "Only draft lessons can be published.")
-            return redirect("lesson_detail_edit", pk=lesson.pk)
-
-        lesson.status = "PUBLISHED"
-        lesson.save()
-        messages.success(request, f"Lesson '{lesson.title}' has been published!")
-        return redirect("lesson_detail_edit", pk=lesson.pk)
 
     return render(request, "lesson_detail_edit.html", {
         "lesson": lesson,

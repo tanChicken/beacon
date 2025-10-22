@@ -708,6 +708,25 @@ document.addEventListener("click", function(e) {
     if (row) row.remove();
   }
 });
+
+document.addEventListener("DOMContentLoaded", function() {
+    const mainLessonForm = document.querySelector('form[onsubmit*="save the lesson details"]');
+    if (!mainLessonForm) return;
+
+    mainLessonForm.addEventListener('submit', function(e) {
+        // Only check if the clicked button is the Publish button
+        const submitter = e.submitter; // e.submitter is supported in modern browsers
+        if (submitter && submitter.name === "action" && submitter.value === "publish") {
+            const classrooms = mainLessonForm.querySelectorAll('#classroom-allocations select');
+            const hasClassroom = Array.from(classrooms).some(sel => sel.value && sel.value.trim() !== "");
+
+            if (!hasClassroom) {
+                e.preventDefault();
+                alert("⚠️ Please assign at least one classroom before publishing this lesson.");
+            }
+        }
+    });
+});
 </script>
 
 {% endblock %}
