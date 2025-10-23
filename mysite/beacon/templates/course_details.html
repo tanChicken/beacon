@@ -18,6 +18,21 @@
   color: #bf360c; 
   text-decoration: none;
 }
+
+.list-group-item.draft {
+  background-color: #fff3e0;  
+  color: #bf360c;
+}
+
+.list-group-item.published {
+  background-color: #e0f7fa; 
+  color: #006064;
+}
+
+.list-group-item.archived {
+  background-color: #ffe9f3;  
+  color: #636363;
+}
 </style>
 
 <div class="container mt-4">
@@ -58,7 +73,12 @@
     <h4>Lessons</h4>
     <div class="list-group mb-3">
       {% for lesson in lessons %}
-        <a href="{% url 'lesson_detail_edit' lesson.pk %}" class="list-group-item list-group-item-action d-flex align-items-center">
+        <a href="{% url 'lesson_detail_edit' lesson.pk %}"
+          class="list-group-item list-group-item-action 
+                  {% if lesson.status == 'DRAFT' %}draft
+                  {% elif lesson.status == 'PUBLISHED' %}published
+                  {% elif lesson.status == 'ARCHIVED' %}archived
+                  {% endif %} d-flex align-items-center">
           <strong>{{ lesson.lesson_id }}</strong>: {{ lesson.title }} ({{ lesson.status }})
         </a>
       {% empty %}
@@ -123,7 +143,7 @@ function addLesson() {
   const remaining = parseInt(btn.getAttribute('data-remaining-points'), 10) || 0;
 
   if (remaining <= 0) {
-    alert("⚠️ No remaining credit points for this course. You cannot add more lessons.");
+    alert("⚠ No remaining credit points for this course. You cannot add more lessons.");
     return;
   }
 
