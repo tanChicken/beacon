@@ -60,13 +60,23 @@
     border-color: #f5d0a9 !important;
   }
 
+  /* ✅ Let text wrap fully */
   .card-title,
   .course-meta {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    word-wrap: break-word;
   }
 
+  /* Responsive behavior */
+  @media (max-width: 767px) {
+    #cardView .col-md-4 {
+      width: 100%;
+      display: block;
+    }
+  }
+  
   /* === DARK MODE === */
   body.dark-mode .list-group-item,
   body.dark-mode .custom-course-card {

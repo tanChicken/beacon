@@ -244,69 +244,69 @@
     <section class="mb-4">
         <h3 class="mb-3">Reading List</h3>
         <div class="checklist">
-        {% for item in lesson.checklist_items.all %}
-            {% if item.item_type == "READING" %}
-            <div class="check-item">
-            <div class="desc-box">{{ item.title }}</div>
-            <div class="check-wrap">
-                <input
-                type="checkbox"
-                class="check-toggle"
-                data-item-id="{{ item.id }}"
-                {% if item.id in completed_item_ids %}checked{% endif %}
-                >
-            </div>
-            </div>
+            {% if reading_items %}
+                {% for item in reading_items %}
+                <div class="check-item">
+                    <div class="desc-box">{{ item.title }}</div>
+                    <div class="check-wrap">
+                        <input
+                            type="checkbox"
+                            class="check-toggle"
+                            data-item-id="{{ item.id }}"
+                            {% if item.id in completed_item_ids %}checked{% endif %}
+                        >
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No reading items yet.</p>
             {% endif %}
-        {% empty %}
-            <p class="text-muted">No reading items yet.</p>
-        {% endfor %}
         </div>
     </section>
 
     <section class="mb-4">
-    <h3 class="mb-3">Assignments</h3>
-    <div class="assignment-list">
-    {% for item in lesson.checklist_items.all %}
-        {% if item.item_type == "ASSIGNMENT" %}
-        <div class="assignment-item-wrapper d-flex align-items-center justify-content-between mb-3">
-            <div class="assignment-block p-3 border rounded flex-grow-1 me-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="mb-0">{{ item.title }}</h5>
-                    <small class="text-muted">
-                        {% if item.deadline %}
-                            Due: {{ item.deadline|date:"M d, Y" }}
+        <h3 class="mb-3">Assignments</h3>
+        <div class="assignment-list">
+            {% if assignment_items %}
+                {% for item in assignment_items %}
+                <div class="assignment-item-wrapper d-flex align-items-center justify-content-between mb-3">
+                    <div class="assignment-block p-3 border rounded flex-grow-1 me-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">{{ item.title }}</h5>
+                            <small class="text-muted">
+                                {% if item.deadline %}
+                                    Due: {{ item.deadline|date:"M d, Y" }}
+                                {% else %}
+                                    No deadline
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        {% if item.instructions %}
+                            <div class="instruction-box p-2 border rounded bg-light">
+                                <p class="mb-0">{{ item.instructions|linebreaksbr }}</p>
+                            </div>
                         {% else %}
-                            No deadline
+                            <div class="instruction-box p-2 border rounded bg-light text-muted fst-italic">
+                                <p class="mb-0">No instructions provided.</p>
+                            </div>
                         {% endif %}
-                    </small>
+                    </div>
+
+                    <div class="check-wrap d-flex align-items-center">
+                        <input
+                            type="checkbox"
+                            class="check-toggle"
+                            data-item-id="{{ item.id }}"
+                            {% if item.id in completed_item_ids %}checked{% endif %}
+                        >
+                    </div>
                 </div>
-
-                {% if item.instructions %}
-                    <div class="instruction-box p-2 border rounded bg-light">
-                        <p class="mb-0">{{ item.instructions|linebreaksbr }}</p>
-                    </div>
-                {% else %}
-                    <div class="instruction-box p-2 border rounded bg-light text-muted fst-italic">
-                        <p class="mb-0">No instructions provided.</p>
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="check-wrap d-flex align-items-center">
-                <input
-                    type="checkbox"
-                    class="check-toggle"
-                    data-item-id="{{ item.id }}"
-                    {% if item.id in completed_item_ids %}checked{% endif %}
-                >
-            </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No assignments yet.</p>
+            {% endif %}
         </div>
-        {% endif %}
-    {% empty %}
-        <p class="text-muted">No assignments yet.</p>
-    {% endfor %}
-    </div>
     </section>
 
     </div>
@@ -366,19 +366,27 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function showClassroomPopup(data, enrolUrl) {
+    const darkMode = document.body.classList.contains('dark-mode');
+
     const popup = document.createElement('div');
     popup.id = 'classroomPopup';
     popup.innerHTML = `
       <div style="
         position: fixed; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
-        background: white; border-radius: 10px;
+        background: ${darkMode ? '#121212' : 'white'};
+        color: ${darkMode ? '#ffffff' : '#000000'};
+        border-radius: 10px;
         padding: 20px; width: 650px;
         max-height: 80vh; overflow-y: auto;
         box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        z-index: 9999;">
-        <h4>Select a Classroom</h4>
-        <table class="table table-bordered mt-3">
+        z-index: 9999;
+      ">
+        <h4 style="color: ${darkMode ? '#ffffff' : '#000000'}">Select a Classroom</h4>
+        <table class="table table-bordered mt-3" style="
+            background: ${darkMode ? '#1e1e1e' : 'white'};
+            color: ${darkMode ? '#ffffff' : '#000000'};
+        ">
           <thead>
             <tr>
               <th>ID</th><th>Schedule</th>
@@ -389,11 +397,11 @@ document.addEventListener('DOMContentLoaded', function () {
             ${
               data.classrooms.length > 0 
               ? data.classrooms.map(c => `
-                <tr>
+                <tr style="color: ${darkMode ? '#ffffff' : '#000000'}">
                   <td>${c.classroom_id || c.id}</td>
                   <td>${c.schedule || 'TBA'}</td>
                   <td>${(c.building || '') + ' ' + (c.room || '')}</td>
-                  <td>${c.online_link ? `<a href="${c.online_link}" target="_blank">Link</a>` : '-'}</td>
+                  <td>${c.online_link ? `<a href="${c.online_link}" target="_blank" style="color: ${darkMode ? '#41ca7c' : ''}">Link</a>` : '-'}</td>
                   <td><button class="btn btn-sm btn-success select-classroom" data-id="${c.id}">Select</button></td>
                 </tr>`).join('')
               : `<tr><td colspan="6" class="text-center text-muted">No classrooms available.</td></tr>`
@@ -401,15 +409,14 @@ document.addEventListener('DOMContentLoaded', function () {
           </tbody>
         </table>
         <div class="text-center mt-3">
-          ${data.classrooms.length === 0 ? `
-            <button id="enrolAnyway" class="btn btn-primary">Enroll Anyway</button>` : ''}
+          ${data.classrooms.length === 0 ? `<button id="enrolAnyway" class="btn btn-primary">Enroll Anyway</button>` : ''}
           <button id="closePopup" class="btn btn-secondary ms-2">Cancel</button>
         </div>
       </div>
       <div id="overlay" style="
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5); z-index: 9998;">
-      </div>
+        background: rgba(0,0,0,0.7); z-index: 9998;
+      "></div>
     `;
     document.body.appendChild(popup);
 

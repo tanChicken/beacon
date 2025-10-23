@@ -13,7 +13,9 @@ from datetime import datetime, timezone, date
 from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.urls import reverse
 import json
+import re
 
 def home(request):
     return render(request, "home.html", {"hide_sidebar": True})
@@ -54,6 +56,22 @@ def student_signup(request):
 
         if password != confirm:
             messages.error(request, "Passwords do not match.")
+            return render(request, "signup.html")
+        
+        if len(password) < 8:
+            messages.error(request, "Password must be at least 8 characters long.")
+            return render(request, "signup.html")
+
+        if not re.search(r"[A-Z]", password):
+            messages.error(request, "Password must contain at least one uppercase letter.")
+            return render(request, "signup.html")
+
+        if not re.search(r"[a-z]", password):
+            messages.error(request, "Password must contain at least one lowercase letter.")
+            return render(request, "signup.html")
+
+        if not re.search(r"\d", password):
+            messages.error(request, "Password must contain at least one number.")
             return render(request, "signup.html")
         
         UserModel = get_user_model()
@@ -127,17 +145,28 @@ def enrol_course(request, course_id):
     total_cp = _get_student_credits(student)
     if getattr(student, "studentprofile", None) and (student.studentprofile.graduated or total_cp >= 120):
         messages.error(
-            request, 
-            "Enrolling in other courses is not possible anymore,"
-            "since you have already reached the 120 credit points limit."
+            request,
+            "You cannot enroll in more courses because you have reached 120 credit points or already graduated."
         )
         return redirect("enrolment_page")
 
-    # Only allow enrollment in active courses that the student isn't already enrolled in
     course = get_object_or_404(Course, id=course_id, status="active")
+    lessons = course.lessons.filter(status="PUBLISHED")
 
-    course.students.add(student)
-    messages.success(request, f"You have enrolled in {course.title}!")
+    with transaction.atomic():
+        for lesson in lessons:
+            # Create enrolment if not exists
+            enrolment, created = Enrolment.objects.get_or_create(
+                student=student,
+                lesson=lesson
+            )
+            if created and not enrolment.course_enrolled_at:
+                enrolment.course_enrolled_at = timezone.now()
+                enrolment.save()
+
+        course.students.add(student)
+
+    messages.success(request, f"You have successfully enrolled in {course.title}!")
     return redirect("student_dashboard")
 
 @role_required("STUDENT")
@@ -165,6 +194,25 @@ def student_course_details(request, pk):
     lesson_status = []
     for lesson in lessons:
         enrolment = Enrolment.objects.filter(student=student, lesson=lesson).first()
+
+        total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
+        completed_items = StudentChecklistProgress.objects.filter(
+            student=student, item__lesson=lesson, completed=True
+        ).count()
+
+        # ✅ Auto-mark as completed if lesson has no items or all done
+        if enrolment:
+            if total_items == 0 or total_items == completed_items:
+                if not enrolment.completed:
+                    enrolment.completed = True
+                    enrolment.credit_earned = lesson.credit_point
+                    enrolment.save()
+            else:
+                if enrolment.completed:
+                    enrolment.completed = False
+                    enrolment.credit_earned = 0
+                    enrolment.save()
+
         completed = enrolment.completed if enrolment else False
         enrolled = enrolment is not None and not completed
         prereqs = lesson.prerequisites.all()
@@ -247,6 +295,9 @@ def student_lesson_details(request, pk):
         student=student, completed=True, item__lesson=lesson
     ).values_list("item_id", flat=True)
 
+    reading_items = lesson.checklist_items.filter(item_type="READING")
+    assignment_items = lesson.checklist_items.filter(item_type="ASSIGNMENT")
+
     return render(request, "student_lesson_details.html", {
         "lesson": lesson,
         "is_enrolled": is_enrolled,
@@ -254,6 +305,8 @@ def student_lesson_details(request, pk):
         "missing_prereqs": missing_prereqs,  
         "is_completed": is_completed,
         "completed_item_ids": list(completed_item_ids),
+        "reading_items": reading_items,
+        "assignment_items": assignment_items,
     })
 
 @role_required("STUDENT")
@@ -280,7 +333,7 @@ def toggle_checklist_item(request, item_id):
         student=student, item__lesson=lesson, completed=True
     ).count()
 
-    if total_items > 0 and total_items == completed_items:
+    if total_items >= 0 and total_items == completed_items:
         # Student finished all checklist items → mark enrolment completed
         enrolment, _ = Enrolment.objects.get_or_create(student=student, lesson=lesson)
         enrolment.completed = True
@@ -379,9 +432,24 @@ def instructor_login(request):
 
 @role_required("INSTRUCTOR")
 def instructor_dashboard(request):
+    # courses = (
+    #     Course.objects.filter(
+    # Q(instructor=request.user) | Q(lessons__designer=request.user)).distinct().order_by("status","course_id") 
+    # )
+    u = request.user
     courses = (
         Course.objects.filter(
-    Q(instructor=request.user) | Q(lessons__designer=request.user)).distinct().order_by("status","course_id") 
+            Q(instructor=u) |                              # course director (your current meaning)
+            Q(lessons__designer=u) |                       # lesson designer
+            Q(classrooms__supervisor__iexact=u.email)      # classroom supervisor (email string match)
+        )
+        .select_related("instructor")                      # FK
+        .prefetch_related(                                 # reverse/M2M for performance
+            Prefetch("lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+            Prefetch("classrooms", queryset=Classroom.objects.only("id", "course_id", "supervisor")),
+        )
+        .distinct()
+        .order_by("status", "course_id")
     )
     return render(request, "instructor_dashboard.html", {"courses": courses})
 
@@ -503,7 +571,12 @@ def course_detail(request, pk):
             for field in form.fields.values():
                 field.disabled = True
 
-    enrolled_students = course.students.all()
+    enrolled_students_qs = Enrolment.objects.filter(
+        lesson__in=lessons, student__isnull=False
+    ).select_related("student__studentprofile")
+
+    # Use a set to avoid duplicates
+    enrolled_students = {e.student for e in enrolled_students_qs}
 
     return render(request, "course_details.html", {
         "course": course,
@@ -528,6 +601,22 @@ def lesson_detail_edit(request, pk):
     can_edit = lesson.status == "DRAFT" and edit_permission
 
     if request.method == "POST":
+        action = request.POST.get("action")
+        
+        if action == "publish":
+            if not LessonClassroomAllocation.objects.filter(lesson=lesson).exists():
+                messages.warning(request, "You must assign at least one classroom before publishing this lesson.")
+                return redirect("lesson_detail_edit", pk=lesson.pk)
+
+            if lesson.status != "DRAFT":
+                messages.warning(request, "Only draft lessons can be published.")
+                return redirect("lesson_detail_edit", pk=lesson.pk)
+
+            lesson.status = "PUBLISHED"
+            lesson.save()
+            messages.success(request, f"Lesson '{lesson.title}' has been published!")
+            return redirect("lesson_detail_edit", pk=lesson.pk)
+    
         if not edit_permission:
             messages.error(request, "You don't have edit permission.")
             return redirect("lesson_detail_edit", pk=lesson.pk)
@@ -541,6 +630,32 @@ def lesson_detail_edit(request, pk):
         formset = LessonTaskFormSet(request.POST, instance=lesson)
 
         if form.is_valid() and formset.is_valid():
+            new_classrooms = request.POST.getlist('new_classroom_allocation')
+            new_schedules = request.POST.getlist('new_classroom_schedule')
+            new_duration = request.POST.getlist('new_classroom_duration')
+
+            incomplete = []
+
+            for classroom_id, schedule, duration in zip(new_classrooms, new_schedules, new_duration):
+                # Skip empty rows (nothing selected at all)
+                if not any([classroom_id, schedule, duration]):
+                    continue
+
+                # Check missing fields in allocation form
+                if not all([classroom_id, schedule, duration]):
+                    incomplete.append("⚠️ Missing classroom, schedule, or duration for classroom.")
+                    continue
+
+                classroom = Classroom.objects.filter(pk=classroom_id).first()
+                if not classroom:
+                    incomplete.append(f"⚠️ Classroom (ID {classroom_id}) does not exist.")
+                elif not all([classroom.supervisor, classroom.building, classroom.room]):
+                    incomplete.append(f"⚠️ Classroom {classroom.classroom_id} is missing supervisor, building, or room.")
+
+            if incomplete:
+                messages.error(request, "\n".join(incomplete))
+                return redirect("lesson_detail_edit", pk=lesson.pk)
+            
             # Save lesson
             lesson = form.save()
 
@@ -680,7 +795,7 @@ def lesson_detail_edit(request, pk):
             messages.success(request, f"Lesson '{lesson.title}' updated successfully!")
             return redirect("lesson_detail_edit", pk=lesson.pk)
         else:
-            messages.error(request, f"Please fix the errors below.")
+            messages.warning(request, f"Total credit points for this course exceed 30. Please adjust your input.")
             print("Form errors:", form.errors)
             print("Formset errors:", formset.errors)
     else:
@@ -764,8 +879,13 @@ def delete_lesson(request, pk):
 @role_required("INSTRUCTOR")
 def publish_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
+    has_classroom = LessonClassroomAllocation.objects.filter(lesson=lesson).exists()
+    if not has_classroom:
+        messages.warning(request, "You must assign at least one classroom before publishing this lesson.")
+        return redirect("lesson_detail_edit", pk=pk)
+    
     if lesson.status != "DRAFT":
-        messages.error(request, "Only draft lessons can be published.")
+        messages.warning(request, "Only draft lessons can be published.")
         return redirect("lesson_detail_edit", pk=pk)
     lesson.status = "PUBLISHED"
     lesson.save()
@@ -775,12 +895,18 @@ def publish_lesson(request, pk):
 @role_required("INSTRUCTOR")
 def archive_lesson(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
+
+    # Only allow archiving if it's published
     if lesson.status != "PUBLISHED":
         messages.error(request, "Only published lessons can be archived.")
         return redirect("lesson_detail_edit", pk=pk)
+
+    # Set status to archived and reset credit point
     lesson.status = "ARCHIVED"
-    lesson.save()
-    messages.success(request, f"Lesson '{lesson.title}' has been archived.")
+    lesson.credit_point = 0
+    lesson.save(update_fields=["status", "credit_point"])
+
+    messages.success(request, f"Lesson '{lesson.title}' has been archived. Credit point set to 0.")
     return redirect("lesson_detail_edit", pk=pk)
 
 @role_required("STUDENT")
@@ -898,12 +1024,27 @@ def instructor_classroom(request):
             "⚠️ The following lessons have expired and were reset: " +
             ", ".join(expired_lessons)
         )
+    # classrooms = (
+    #     Classroom.objects
+    #     .select_related("course_id")
+    #     .prefetch_related("allocations__lesson")
+    #     .filter(course_id__instructor=instructor)
+    #     .distinct()
+    # )
     classrooms = (
         Classroom.objects
-        .select_related("course_id")
-        .prefetch_related("allocations__lesson")
-        .filter(course_id__instructor=instructor)
+        .select_related("course_id")                      # FK: Classroom -> Course
+        .prefetch_related(
+            "allocations__lesson",
+            Prefetch("course_id__lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+        )
+        .filter(
+            Q(course_id__instructor=instructor) |               # course director
+            Q(supervisor__iexact=instructor.email) |            # classroom supervisor (CharField email)
+            Q(course_id__lessons__designer=instructor)          # any lesson designer in this course
+        )
         .distinct()
+        .order_by("course_id__status", "course_id__course_id")
     )
 
     return render(request, "instructor_classroom.html", {
@@ -933,7 +1074,6 @@ def edit_classroom(request, pk):
             form.save()
             allocation_formset.save()
             messages.success(request, "Classroom updated successfully.")
-            return redirect("instructor_classroom")
         else:
             messages.error(request, "Please fix the errors below.")
             for err in allocation_formset.non_form_errors():
@@ -952,7 +1092,7 @@ def edit_classroom(request, pk):
 @role_required("INSTRUCTOR")
 def create_classroom(request, pk=None):
     preselected_course = get_object_or_404(Course, pk=pk) if pk else None
-    next_url = request.GET.get("next") or request.POST.get("next")  # ✅ remember where to return
+    next_url = request.GET.get("next") or request.META.get("HTTP_REFERER") or reverse("course_list")
 
     if request.method == "POST":
         form = ClassroomForm(request.POST, request=request, preselected_course=preselected_course)
@@ -962,6 +1102,7 @@ def create_classroom(request, pk=None):
                 classroom.course_id = preselected_course
             classroom.save()
             messages.success(request, "Classroom created successfully.")
+            
 
             # Redirect back to the 'next' URL if provided
             if next_url:
@@ -992,51 +1133,65 @@ def delete_classroom(request, pk):
 def student_profile(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
     student = profile.user
+
     enrolled_courses = student.courses_enroling.all()
     completed_courses = get_completed_courses(student)
     all_courses = (enrolled_courses | completed_courses).distinct()
 
-    # Prefetch only published lessons for each course
     courses = all_courses.prefetch_related(
         Prefetch("lessons", queryset=Lesson.objects.filter(status="PUBLISHED"))
     )
 
-    enrolments = Enrolment.objects.filter(student=request.user).select_related("lesson")
+    enrolments = Enrolment.objects.filter(student=student).select_related("lesson")
+
+    # Map lesson_id -> enrolment
     enrolments_map = {e.lesson.id: e for e in enrolments}
 
-    # Attach status to each published lesson
+    # Attach lesson status and course_enrolled_at
     for course in courses:
-        for lesson in course.lessons.all():  # only published lessons
-            lesson.enrolment = enrolments_map.get(lesson.id)
+        for lesson in course.lessons.all():
+            lesson_enrolment = enrolments_map.get(lesson.id)
+            lesson.enrolment = lesson_enrolment
 
-            # Total checklist items for this lesson
-            total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
-
-            # Completed checklist items by student
-            completed_items = StudentChecklistProgress.objects.filter(
-                student=request.user,
+            # Lesson checklist items
+            lesson_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
+            lesson_completed_items = StudentChecklistProgress.objects.filter(
+                student=student,
                 item__lesson=lesson,
                 completed=True
             ).count()
 
-            # Decide lesson status
-            if total_items > 0 and completed_items == total_items:
-                lesson.status = "Completed"
-            elif completed_items > 0:
-                lesson.status = "In Progress"
-            else:
-                if lesson.enrolment:
-                    lesson.status = "Not Started"
+            # Determine lesson completion
+            if lesson_items == 0: 
+                # If no checklist, fall back to enrolment status
+                if lesson_enrolment and lesson_enrolment.completed:
+                    lesson.status = "Completed"
+                elif lesson_enrolment:
+                    lesson.status = "In Progress"
                 else:
                     lesson.status = "Not Enrolled"
+            else:
+                # Checklist-based status
+                if lesson_completed_items == lesson_items:
+                    lesson.status = "Completed"
+                elif lesson_completed_items > 0:
+                    lesson.status = "In Progress"
+                else:
+                    if lesson_enrolment:
+                        lesson.status = "In Progress"
+                    else:
+                        lesson.status = "Not Enrolled"
 
     # Calculate total credit earned
-    total_credit = sum(e.credit_earned for e in enrolments)
+    total_credit = completed_courses.count()*30
+
+    progress = (total_credit / 120) * 100
 
     return render(request, "student_profile.html", {
         "profile": profile,
         "courses": courses,
         "total_credit": total_credit,
+        "progress": progress,
     })
 
 @role_required("STUDENT")
@@ -1160,11 +1315,22 @@ def student_change_password(request):
         form = StudentPasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             new_password = form.cleaned_data["new_password"]
-            request.user.set_password(new_password)
-            request.user.save()
-            update_session_auth_hash(request, request.user)  
-            messages.success(request, "Your password has been changed successfully.")
-            return redirect("student_profile")  
+
+            if len(new_password) < 8:
+                messages.error(request, "Password must be at least 8 characters long.")
+            elif not re.search(r"[A-Z]", new_password):
+                messages.error(request, "Password must contain at least one uppercase letter.")
+            elif not re.search(r"[a-z]", new_password):
+                messages.error(request, "Password must contain at least one lowercase letter.")
+            elif not re.search(r"\d", new_password):
+                messages.error(request, "Password must contain at least one number.")
+            else:  
+                request.user.set_password(new_password)
+                request.user.save()
+                update_session_auth_hash(request, request.user)  
+                messages.success(request, "Your password has been changed successfully.")
+                return redirect("student_profile")  
+            return render(request, "student_change_password.html", {"form": form})
         else:
             messages.error(request, "Unable to change password. Please correct the errors below.")
     else:
@@ -1173,23 +1339,49 @@ def student_change_password(request):
 
 @role_required("INSTRUCTOR")
 def instructor_student_list(request):
-    # Get all courses taught by this instructor
-    courses = Course.objects.filter(instructor=request.user)
+    u = request.user
 
-    # Get all students who are enrolled in those courses
-    students = Student.objects.filter(
-        courses_enroling__in=courses
-    ).select_related("studentprofile").distinct()
+    # Get all relevant courses for this instructor
+    courses = (
+        Course.objects.filter(
+            Q(instructor=u) |                              # course director
+            Q(lessons__designer=u) |                       # lesson designer
+            Q(classrooms__supervisor__iexact=u.email)      # classroom supervisor
+        )
+        .select_related("instructor")
+        .prefetch_related(
+            Prefetch("lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+            Prefetch("classrooms", queryset=Classroom.objects.only("id", "course_id", "supervisor")),
+        )
+        .distinct()
+        .order_by("status", "course_id")
+    )
 
-    return render(request, "instructor_student_list.html", {"students": students})
+    # Get all lessons under these courses
+    lessons = Lesson.objects.filter(course__in=courses)
+
+    # Get all students enrolled in any of these lessons
+    enrolled_students_qs = Enrolment.objects.filter(
+        lesson__in=lessons
+    ).select_related("student__studentprofile")
+
+    # Remove duplicates
+    enrolled_students = {e.student for e in enrolled_students_qs}
+
+    # Optionally sort by last_name, first_name if you want
+    enrolled_students = sorted(
+        enrolled_students,
+        key=lambda s: (s.studentprofile.last_name or "", s.studentprofile.first_name or "")
+    )
+
+    return render(request, "instructor_student_list.html", {"students": enrolled_students})
 
 @role_required("INSTRUCTOR")
 def instructor_student_detail(request, student_id):
-    # Get the profile for the selected student
     profile = get_object_or_404(StudentProfile, user_id=student_id)
-
-    # Fetch courses where this student is enrolled
     student = profile.user
+
+    # Fetch courses the student is enrolled in or completed
     enrolled_courses = student.courses_enroling.all()
     completed_courses = get_completed_courses(student)
     all_courses = (enrolled_courses | completed_courses).distinct()
@@ -1200,62 +1392,125 @@ def instructor_student_detail(request, student_id):
     )
 
     # Fetch enrolments for this student
-    enrolments = Enrolment.objects.filter(student=profile.user).select_related("lesson")
+    enrolments = Enrolment.objects.filter(student=student).select_related("lesson")
+    # Map lesson_id -> enrolment
     enrolments_map = {e.lesson.id: e for e in enrolments}
 
-    # Attach lesson status
     for course in courses:
+        course_dates = []  # To track course enrollment date from lessons
         for lesson in course.lessons.all():
-            lesson.enrolment = enrolments_map.get(lesson.id)
+            lesson_enrolment = enrolments_map.get(lesson.id)
+            lesson.enrolment = lesson_enrolment
 
             total_items = StudentChecklistItem.objects.filter(lesson=lesson).count()
             completed_items = StudentChecklistProgress.objects.filter(
-                student=profile.user,
+                student=student,
                 item__lesson=lesson,
                 completed=True
             ).count()
 
-            if total_items > 0 and completed_items == total_items:
-                lesson.status = "Completed"
-            elif completed_items > 0:
-                lesson.status = "In Progress"
-            else:
-                if lesson.enrolment:
-                    lesson.status = "Not Started"
+            # Determine lesson completion
+            if total_items == 0: 
+                # If no checklist, fall back to enrolment status
+                if lesson_enrolment and lesson_enrolment.completed:
+                    lesson.status = "Completed"
+                elif lesson_enrolment:
+                    lesson.status = "In Progress"
                 else:
                     lesson.status = "Not Enrolled"
+            else:
+                # Checklist-based status
+                if completed_items == total_items:
+                    lesson.status = "Completed"
+                elif completed_items > 0:
+                    lesson.status = "In Progress"
+                else:
+                    if lesson_enrolment:
+                        lesson.status = "In Progress"
+                    else:
+                        lesson.status = "Not Enrolled"
 
-    # Calculate total credits earned
-    total_credit = sum(e.credit_earned for e in enrolments)
+            # Collect course enrollment dates from lesson enrolments
+            if lesson_enrolment and lesson_enrolment.course_enrolled_at:
+                course_dates.append(lesson_enrolment.course_enrolled_at)
+
+        # Earliest course enrolled date among all lessons
+        course.course_enrolled_at = min(course_dates) if course_dates else None
+
+    # Calculate total credit earned
+    total_credit = completed_courses.count()*30
+
+    progress = (total_credit / 120) * 100
 
     return render(request, "instructor_student_detail.html", {
         "profile": profile,
         "courses": courses,
         "total_credit": total_credit,
+        "progress": progress,
     })
 
 @role_required("INSTRUCTOR")
 def instructor_report(request):
+    u = request.user
     # Courses taught by this instructor
-    courses = Course.objects.filter(instructor=request.user)
+    courses = (
+        Course.objects.filter(
+            Q(instructor=u) |                              # course director
+            Q(lessons__designer=u) |                       # lesson designer
+            Q(classrooms__supervisor__iexact=u.email)      # classroom supervisor
+        )
+        .select_related("instructor")
+        .prefetch_related(
+            Prefetch("lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+            Prefetch("classrooms", queryset=Classroom.objects.only("id", "course_id", "supervisor")),
+        )
+        .distinct()
+        .order_by("status", "course_id")
+    )
 
-    # Students enrolled in those courses
-    students = Student.objects.filter(
-        courses_enroling__in=courses
-    ).select_related("studentprofile").distinct()
+    # Get all lessons under these courses
+    lessons = Lesson.objects.filter(course__in=courses)
+
+    # Get all students enrolled in any of these lessons
+    enrolled_students_qs = Enrolment.objects.filter(
+        lesson__in=lessons
+    ).select_related("student__studentprofile")
+
+    # Remove duplicates
+    enrolled_students = {e.student for e in enrolled_students_qs}
+
+    # Optionally sort by last_name, first_name if you want
+    enrolled_students = sorted(
+        enrolled_students,
+        key=lambda s: (s.studentprofile.last_name or "", s.studentprofile.first_name or "")
+    )
 
     return render(request, "instructor_report.html", {
         "courses": courses,
-        "students": students,
+        "students": enrolled_students,
     })
 
 @role_required("INSTRUCTOR")
 def instructor_course_students(request, course_id):
     # Get the course taught by this instructor
-    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    course = get_object_or_404(Course, id=course_id)
 
-    # Fetch all students enrolled in this course
-    enrolled_students = course.students.all().select_related("studentprofile")
+    # Get all lessons under these courses
+    lessons = Lesson.objects.filter(course=course)
+
+    # Get all students enrolled in any of these lessons
+    enrolled_students_qs = Enrolment.objects.filter(
+        lesson__in=lessons
+    ).select_related("student__studentprofile")
+
+    # Remove duplicates
+    enrolled_students = {e.student for e in enrolled_students_qs}
+
+    # Optionally sort by last_name, first_name if you want
+    enrolled_students = sorted(
+        enrolled_students,
+        key=lambda s: (s.studentprofile.last_name or "", s.studentprofile.first_name or "")
+    )
 
     return render(request, "instructor_course_students.html", {
         "course": course,
@@ -1264,10 +1519,23 @@ def instructor_course_students(request, course_id):
 
 @role_required("INSTRUCTOR")
 def course_bar_chart(request, course_id):
-    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    course = get_object_or_404(Course, id=course_id)
+    lessons = Lesson.objects.filter(course=course)
 
     # Fetch all students in this course
-    students = course.students.all().select_related("studentprofile")
+    students = Enrolment.objects.filter(
+        lesson__in=lessons
+    ).select_related("student__studentprofile")
+
+    # Remove duplicates
+    students = {e.student for e in students}
+
+    # Optionally sort by last_name, first_name if you want
+    students = sorted(
+        students,
+        key=lambda s: (s.studentprofile.last_name or "", s.studentprofile.first_name or "")
+    )
+
 
     labels = []
     values = []

@@ -1,5 +1,6 @@
 from django.utils import timezone
-from .models import Course, Enrolment, LessonClassroomAllocation, StudentChecklistItem, StudentChecklistProgress
+from django.db.models import Sum
+from .models import Course, Enrolment, Lesson, LessonClassroomAllocation, StudentChecklistItem, StudentChecklistProgress
 
 def get_completed_courses(user, auto_unenroll=True):
     completed_courses = []
@@ -9,22 +10,39 @@ def get_completed_courses(user, auto_unenroll=True):
     for course in courses:
         lessons = course.lessons.all()
 
+        # Get enrolments for this student and course
         enrolments = Enrolment.objects.filter(student=user, lesson__in=lessons)
-        if enrolments.count() != lessons.count():
-            continue
-        if enrolments.filter(completed=False).exists():
+
+        # Skip if not enrolled in any lessons
+        if not enrolments.exists():
             continue
 
+        # --- Step 1: Sum credit points of completed lessons only ---
+        completed_lessons = enrolments.filter(completed=True).values_list("lesson", flat=True)
+        total_completed_credit = (
+            Lesson.objects.filter(pk__in=completed_lessons)
+            .aggregate(total=Sum("credit_point"))
+            .get("total") or 0
+        )
+
+        # --- Step 2: Check if total credit ≥ 30 ---
+        if total_completed_credit < 30:
+            continue  # Not enough credit to complete the course
+
+        # --- Step 3: Optional checklist validation (optional, can keep or remove) ---
         checklist_items = StudentChecklistItem.objects.filter(lesson__in=lessons)
         checklist_progress = StudentChecklistProgress.objects.filter(
             student=user,
             item__in=checklist_items
         )
-        if checklist_items.count() != checklist_progress.count():
-            continue
-        if checklist_progress.filter(completed=False).exists():
-            continue
 
+        # If checklist exists but not all completed, skip
+        if checklist_items.exists():
+            if checklist_progress.filter(completed=False).exists() or \
+               checklist_progress.count() < checklist_items.count():
+                continue
+
+        # --- Step 4: Mark course as completed ---
         completed_courses.append(course.pk)
 
         if auto_unenroll and user.courses_enroling.filter(pk=course.pk).exists():

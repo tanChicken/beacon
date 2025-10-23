@@ -55,7 +55,23 @@
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <h4 class="mb-3">Academic Information</h4>
-      <p class="mb-4"><strong>Total Credit Accumulated:</strong> {{ total_credit }}</p>
+      <p class="mb-4"><strong>Total Credit Accumulated (Course completed):</strong> {{ total_credit }}</p>
+      <!-- Progress Bar -->
+      <div class="d-flex justify-content-between mb-1">
+        <span>0</span>
+        <span>120</span>
+      </div>
+      <div class="progress mb-4" style="height: 25px; border-radius: 10px;">
+        <div
+          class="progress-bar bg-success"
+          role="progressbar"
+          style="width: {{ progress }}%"
+          aria-valuenow="{{ total_credit }}"
+          aria-valuemin="0"
+          aria-valuemax="120">
+          {{ total_credit }}
+        </div>
+      </div>
       {% if profile.graduated %}
         <div class="alert alert-success mt-3">
           🎉 You have graduated on {{ profile.graduation_date|date:"F j, Y" }}!<br>
@@ -72,8 +88,13 @@
       {% if courses %}
         {% for course in courses %}
           <div class="card mb-3 shadow-sm">
-            <div class="card-header course-card-header">
-              <strong>{{ course.title }}</strong> ({{ course.course_id }})
+            <div class="card-header course-card-header d-flex justify-content-between align-items-center">
+              <strong>{{ course.title }} ({{ course.course_id }}) </strong>
+              {% if course.course_enrolled_at %}
+                <small class="text-light">
+                  Enrolled on: {{ course.course_enrolled_at|date:"F j, Y" }}
+                </small>
+              {% endif %}
             </div>
 
             <div class="card-body">
@@ -86,8 +107,6 @@
                         <span class="badge bg-success">Completed</span>
                       {% elif lesson.status == "In Progress" %}
                         <span class="badge bg-warning text-dark">In Progress</span>
-                      {% elif lesson.status == "Not Started" %}
-                        <span class="badge bg-secondary">Not Started</span>
                       {% else %}
                         <span class="badge bg-danger">Not Enrolled</span>
                       {% endif %}
