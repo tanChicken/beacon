@@ -13,6 +13,7 @@ from datetime import datetime, timezone, date
 from django.db.models import Sum, Prefetch, Q, F, Count
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.urls import reverse
 import json
 import re
 
@@ -570,7 +571,12 @@ def course_detail(request, pk):
             for field in form.fields.values():
                 field.disabled = True
 
-    enrolled_students = course.students.all()
+    enrolled_students_qs = Enrolment.objects.filter(
+        lesson__in=lessons, student__isnull=False
+    ).select_related("student__studentprofile")
+
+    # Use a set to avoid duplicates
+    enrolled_students = {e.student for e in enrolled_students_qs}
 
     return render(request, "course_details.html", {
         "course": course,
@@ -1068,7 +1074,6 @@ def edit_classroom(request, pk):
             form.save()
             allocation_formset.save()
             messages.success(request, "Classroom updated successfully.")
-            return redirect("instructor_classroom")
         else:
             messages.error(request, "Please fix the errors below.")
             for err in allocation_formset.non_form_errors():
@@ -1087,7 +1092,7 @@ def edit_classroom(request, pk):
 @role_required("INSTRUCTOR")
 def create_classroom(request, pk=None):
     preselected_course = get_object_or_404(Course, pk=pk) if pk else None
-    next_url = request.GET.get("next") or request.POST.get("next")  # ✅ remember where to return
+    next_url = request.GET.get("next") or request.META.get("HTTP_REFERER") or reverse("course_list")
 
     if request.method == "POST":
         form = ClassroomForm(request.POST, request=request, preselected_course=preselected_course)
@@ -1097,6 +1102,7 @@ def create_classroom(request, pk=None):
                 classroom.course_id = preselected_course
             classroom.save()
             messages.success(request, "Classroom created successfully.")
+            
 
             # Redirect back to the 'next' URL if provided
             if next_url:
@@ -1333,15 +1339,42 @@ def student_change_password(request):
 
 @role_required("INSTRUCTOR")
 def instructor_student_list(request):
-    # Get all courses taught by this instructor
-    courses = Course.objects.filter(instructor=request.user)
+    u = request.user
 
-    # Get all students who are enrolled in those courses
-    students = Student.objects.filter(
-        courses_enroling__in=courses
-    ).select_related("studentprofile").distinct()
+    # Get all relevant courses for this instructor
+    courses = (
+        Course.objects.filter(
+            Q(instructor=u) |                              # course director
+            Q(lessons__designer=u) |                       # lesson designer
+            Q(classrooms__supervisor__iexact=u.email)      # classroom supervisor
+        )
+        .select_related("instructor")
+        .prefetch_related(
+            Prefetch("lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+            Prefetch("classrooms", queryset=Classroom.objects.only("id", "course_id", "supervisor")),
+        )
+        .distinct()
+        .order_by("status", "course_id")
+    )
 
-    return render(request, "instructor_student_list.html", {"students": students})
+    # Get all lessons under these courses
+    lessons = Lesson.objects.filter(course__in=courses)
+
+    # Get all students enrolled in any of these lessons
+    enrolled_students_qs = Enrolment.objects.filter(
+        lesson__in=lessons
+    ).select_related("student__studentprofile")
+
+    # Remove duplicates
+    enrolled_students = {e.student for e in enrolled_students_qs}
+
+    # Optionally sort by last_name, first_name if you want
+    enrolled_students = sorted(
+        enrolled_students,
+        key=lambda s: (s.studentprofile.last_name or "", s.studentprofile.first_name or "")
+    )
+
+    return render(request, "instructor_student_list.html", {"students": enrolled_students})
 
 @role_required("INSTRUCTOR")
 def instructor_student_detail(request, student_id):
@@ -1418,26 +1451,66 @@ def instructor_student_detail(request, student_id):
 
 @role_required("INSTRUCTOR")
 def instructor_report(request):
+    u = request.user
     # Courses taught by this instructor
-    courses = Course.objects.filter(instructor=request.user)
+    courses = (
+        Course.objects.filter(
+            Q(instructor=u) |                              # course director
+            Q(lessons__designer=u) |                       # lesson designer
+            Q(classrooms__supervisor__iexact=u.email)      # classroom supervisor
+        )
+        .select_related("instructor")
+        .prefetch_related(
+            Prefetch("lessons", queryset=Lesson.objects.only("id", "course_id", "designer")),
+            Prefetch("classrooms", queryset=Classroom.objects.only("id", "course_id", "supervisor")),
+        )
+        .distinct()
+        .order_by("status", "course_id")
+    )
 
-    # Students enrolled in those courses
-    students = Student.objects.filter(
-        courses_enroling__in=courses
-    ).select_related("studentprofile").distinct()
+    # Get all lessons under these courses
+    lessons = Lesson.objects.filter(course__in=courses)
+
+    # Get all students enrolled in any of these lessons
+    enrolled_students_qs = Enrolment.objects.filter(
+        lesson__in=lessons
+    ).select_related("student__studentprofile")
+
+    # Remove duplicates
+    enrolled_students = {e.student for e in enrolled_students_qs}
+
+    # Optionally sort by last_name, first_name if you want
+    enrolled_students = sorted(
+        enrolled_students,
+        key=lambda s: (s.studentprofile.last_name or "", s.studentprofile.first_name or "")
+    )
 
     return render(request, "instructor_report.html", {
         "courses": courses,
-        "students": students,
+        "students": enrolled_students,
     })
 
 @role_required("INSTRUCTOR")
 def instructor_course_students(request, course_id):
     # Get the course taught by this instructor
-    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    course = get_object_or_404(Course, id=course_id)
 
-    # Fetch all students enrolled in this course
-    enrolled_students = course.students.all().select_related("studentprofile")
+    # Get all lessons under these courses
+    lessons = Lesson.objects.filter(course=course)
+
+    # Get all students enrolled in any of these lessons
+    enrolled_students_qs = Enrolment.objects.filter(
+        lesson__in=lessons
+    ).select_related("student__studentprofile")
+
+    # Remove duplicates
+    enrolled_students = {e.student for e in enrolled_students_qs}
+
+    # Optionally sort by last_name, first_name if you want
+    enrolled_students = sorted(
+        enrolled_students,
+        key=lambda s: (s.studentprofile.last_name or "", s.studentprofile.first_name or "")
+    )
 
     return render(request, "instructor_course_students.html", {
         "course": course,
@@ -1446,10 +1519,23 @@ def instructor_course_students(request, course_id):
 
 @role_required("INSTRUCTOR")
 def course_bar_chart(request, course_id):
-    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    course = get_object_or_404(Course, id=course_id)
+    lessons = Lesson.objects.filter(course=course)
 
     # Fetch all students in this course
-    students = course.students.all().select_related("studentprofile")
+    students = Enrolment.objects.filter(
+        lesson__in=lessons
+    ).select_related("student__studentprofile")
+
+    # Remove duplicates
+    students = {e.student for e in students}
+
+    # Optionally sort by last_name, first_name if you want
+    students = sorted(
+        students,
+        key=lambda s: (s.studentprofile.last_name or "", s.studentprofile.first_name or "")
+    )
+
 
     labels = []
     values = []
